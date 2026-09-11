@@ -1,0 +1,6 @@
+{
+  "name": "CheckCatch.com",
+  "description": "Two-Word Domain Verification & Valuation Engine. Check the Quality. Catch the Name.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
