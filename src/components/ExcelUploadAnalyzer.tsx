@@ -71,6 +71,16 @@ const POPULAR_NICHES: Record<Language, string[]> = {
     'E-Commerce & Vente',
     'PropTech & Immobilier',
   ],
+  es: [
+    'Fintech y Pagos',
+    'IA y Aprendizaje Automático',
+    'Cloud y DevOps',
+    'Salud y Biotecnología',
+    'Ciberseguridad',
+    'Web3 y Cripto',
+    'Comercio Electrónico',
+    'Bienes Raíces y PropTech',
+  ],
 };
 
 const POPULAR_KEYWORDS = [
@@ -367,10 +377,10 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
         onClick={() => fileInputRef.current?.click()}
         className={`relative border-2 border-dashed rounded-xl py-3 px-4 md:py-3.5 md:px-5 cursor-pointer transition-all duration-200 ${
           isDragging
-            ? 'border-blue-500 bg-blue-50 scale-[1.005]'
+            ? 'border-teal-500 bg-teal-50/70 scale-[1.005]'
             : sheetInfo
-            ? 'border-emerald-400 bg-emerald-50/60 hover:border-emerald-500 hover:bg-emerald-50'
-            : 'border-slate-300 bg-slate-50/70 hover:border-blue-500 hover:bg-blue-50/30'
+            ? 'border-teal-400 bg-teal-50/50 hover:border-teal-500 hover:bg-teal-50/80'
+            : 'border-teal-200/80 bg-gradient-to-r from-teal-50/40 via-sky-50/30 to-blue-50/30 hover:border-teal-400 hover:bg-teal-50/50'
         }`}
       >
         <input
@@ -387,14 +397,14 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
             <div
               className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs transition-transform ${
                 sheetInfo
-                  ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
-                  : 'bg-blue-100 text-blue-700 border border-blue-200'
+                  ? 'bg-teal-100 text-teal-800 border border-teal-300'
+                  : 'bg-gradient-to-br from-teal-100 to-blue-100 text-teal-800 border border-teal-200'
               }`}
             >
               {sheetInfo ? (
-                <FileCheck className="w-5 h-5" />
+                <FileCheck className="w-5 h-5 text-teal-700" />
               ) : (
-                <UploadCloud className="w-5 h-5" />
+                <UploadCloud className="w-5 h-5 text-teal-700" />
               )}
             </div>
 
@@ -403,19 +413,19 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                 <>
                   <div className="font-bold text-xs sm:text-sm text-slate-900 flex items-center gap-2">
                     <span className="truncate max-w-[200px] sm:max-w-xs">{sheetInfo.fileName}</span>
-                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-800 border border-teal-200">
                       {(sheetInfo.fileSize / 1024).toFixed(1)} KB
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-600">
                     {sheetInfo.totalRows} {lang === 'ar' ? 'سطراً' : lang === 'fr' ? 'lignes' : 'rows'} •{' '}
                     {t.excelAnalyzer.domainColumn}{' '}
-                    <strong className="text-emerald-700">{sheetInfo.selectedColumn}</strong>
+                    <strong className="text-teal-700 font-bold">{sheetInfo.selectedColumn}</strong>
                   </p>
                 </>
               ) : (
                 <>
-                  <div className="font-bold text-xs sm:text-sm text-slate-800">
+                  <div className="font-bold text-xs sm:text-sm text-slate-900">
                     {t.excelAnalyzer.dropTitle}
                   </div>
                   <p className="text-[11px] text-slate-500">
@@ -433,13 +443,13 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                 id="load-sample-spreadsheet-btn"
                 type="button"
                 onClick={handleLoadSample}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-semibold bg-white hover:bg-slate-50 border border-slate-300 text-blue-700 hover:text-blue-800 transition-colors shadow-xs"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold bg-white hover:bg-teal-50 border border-teal-200 text-teal-800 hover:text-teal-900 transition-colors shadow-xs"
               >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-blue-600" />
+                <FileSpreadsheet className="w-3.5 h-3.5 text-teal-600" />
                 {t.excelAnalyzer.loadSample}
               </button>
             ) : (
-              <span className="text-[11px] text-emerald-800 font-semibold px-2.5 py-1 rounded-lg bg-emerald-100/70 border border-emerald-300">
+              <span className="text-[11px] text-teal-800 font-bold px-2.5 py-1 rounded-lg bg-teal-100/70 border border-teal-300">
                 {lang === 'ar'
                   ? 'انقر للاستبدال'
                   : lang === 'fr'

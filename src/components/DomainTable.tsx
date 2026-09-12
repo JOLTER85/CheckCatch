@@ -91,11 +91,11 @@ export const DomainTable: React.FC<DomainTableProps> = ({
   return (
     <div
       id="domains-table-container"
-      className="w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm"
+      className="w-full overflow-x-auto rounded-2xl border border-teal-100 bg-white/95 shadow-sm"
     >
       <table className="w-full text-left text-xs border-collapse">
         <thead>
-          <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+          <tr className="border-b border-teal-100 bg-gradient-to-r from-teal-50/70 to-blue-50/70 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
             <th className="py-3.5 px-4 w-12 text-center">{t.table.rank}</th>
             <th className="py-3.5 px-4">{t.table.domainAndAnalysis}</th>
             <th className="py-3.5 px-4">{t.table.tld}</th>

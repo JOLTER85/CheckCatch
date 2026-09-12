@@ -138,13 +138,13 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
   return (
     <div
       id="controls-panel"
-      className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm"
+      className="bg-white/95 border border-teal-100/90 rounded-2xl p-5 md:p-6 shadow-sm backdrop-blur-xs"
       dir={lang === 'ar' ? 'rtl' : 'ltr'}
     >
       {/* Header */}
-      <div className="pb-3 border-b border-slate-100 mb-5 flex items-center justify-between">
+      <div className="pb-3 border-b border-teal-50 mb-5 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <SlidersHorizontal className="w-4 h-4 text-blue-600" />
+          <SlidersHorizontal className="w-4 h-4 text-teal-600" />
           <h2 className="text-xs font-bold tracking-wide text-slate-800 uppercase">
             CheckCatch
           </h2>
