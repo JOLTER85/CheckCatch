@@ -81,7 +81,24 @@ const VALID_TWO_LETTER_WORDS = new Set([
  */
 export function clientDecomposeWords(name: string, targetKeyword?: string): string[] {
   const clean = name.toLowerCase().replace(/[^a-z0-9]/g, '');
-  if (!clean || clean.length < 4) return [name];
+  if (!clean || clean.length < 3) return [name];
+
+  const cleanKw = targetKeyword ? targetKeyword.trim().toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+
+  // 1. Direct keyword prefix/suffix decomposition if keyword matches
+  if (cleanKw && clean.length > cleanKw.length) {
+    if (clean.startsWith(cleanKw)) {
+      const rest = clean.slice(cleanKw.length);
+      if (rest.length >= 2) {
+        return [cleanKw, rest];
+      }
+    } else if (clean.endsWith(cleanKw)) {
+      const prefix = clean.slice(0, clean.length - cleanKw.length);
+      if (prefix.length >= 2) {
+        return [prefix, cleanKw];
+      }
+    }
+  }
 
   const validSplits: [string, string][] = [];
 
@@ -93,34 +110,45 @@ export function clientDecomposeWords(name: string, targetKeyword?: string): stri
     if (w1.length === 2 && !VALID_TWO_LETTER_WORDS.has(w1)) continue;
     if (w2.length === 2 && !VALID_TWO_LETTER_WORDS.has(w2)) continue;
 
-    // Both constituent parts must be in the recognized dictionary
-    if (COMMON_DICTIONARY_SET.has(w1) && COMMON_DICTIONARY_SET.has(w2)) {
+    const isW1Valid = COMMON_DICTIONARY_SET.has(w1) || (cleanKw && w1 === cleanKw);
+    const isW2Valid = COMMON_DICTIONARY_SET.has(w2) || (cleanKw && w2 === cleanKw);
+
+    // Both constituent parts must be in dictionary or match target keyword
+    if (isW1Valid && isW2Valid) {
       validSplits.push([w1, w2]);
     }
   }
 
-  if (validSplits.length === 0) {
-    // Does not form two valid English words: return single item so words.length === 1
-    return [clean];
-  }
-
-  // If a target keyword is specified, prioritize a split containing that keyword
-  if (targetKeyword && targetKeyword.trim()) {
-    const cleanKw = targetKeyword.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (validSplits.length > 0) {
     if (cleanKw) {
       const match = validSplits.find(([a, b]) => a === cleanKw || b === cleanKw);
       if (match) return match;
     }
+
+    validSplits.sort((a, b) => {
+      const minLenA = Math.min(a[0].length, a[1].length);
+      const minLenB = Math.min(b[0].length, b[1].length);
+      if (minLenB !== minLenA) return minLenB - minLenA;
+      return Math.abs(a[0].length - a[1].length) - Math.abs(b[0].length - b[1].length);
+    });
+
+    return validSplits[0];
   }
 
-  validSplits.sort((a, b) => {
-    const minLenA = Math.min(a[0].length, a[1].length);
-    const minLenB = Math.min(b[0].length, b[1].length);
-    if (minLenB !== minLenA) return minLenB - minLenA;
-    return Math.abs(a[0].length - a[1].length) - Math.abs(b[0].length - b[1].length);
-  });
+  // Fallback: If keyword is contained anywhere inside clean name
+  if (cleanKw && clean.includes(cleanKw) && clean.length > cleanKw.length) {
+    const idx = clean.indexOf(cleanKw);
+    if (idx === 0) {
+      return [cleanKw, clean.slice(cleanKw.length)];
+    } else if (idx + cleanKw.length === clean.length) {
+      return [clean.slice(0, idx), cleanKw];
+    } else {
+      return [clean.slice(0, idx), clean.slice(idx)];
+    }
+  }
 
-  return validSplits[0];
+  // Does not form two valid English words: return single item
+  return [clean];
 }
 
 /**
@@ -371,6 +399,99 @@ export function matchKeywordRule(
 }
 
 /**
+ * Calculates a comprehensive domain quality score and commercial valuation metrics.
+ */
+export function calculateDomainQualityScore(
+  domain: string,
+  targetKeyword?: string,
+  nicheContext?: string
+): {
+  score: number;
+  tier: 'Premium' | 'Brandable' | 'Standard';
+  words: string[];
+  isTwoWords: boolean;
+  hasDashes: boolean;
+  hasNumbers: boolean;
+  estimatedValue: string;
+} {
+  const clean = domain.trim().toLowerCase();
+  const lastDot = clean.lastIndexOf('.');
+  const name = lastDot !== -1 ? clean.substring(0, lastDot) : clean;
+  const tld = lastDot !== -1 ? clean.substring(lastDot) : '.com';
+  const cleanKw = targetKeyword ? targetKeyword.trim().toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+
+  const words = clientDecomposeWords(name, cleanKw);
+  const isTwoWords = words.length === 2;
+  const hasDashes = name.includes('-') || name.includes('_');
+  const hasNumbers = /\d/.test(name);
+
+  let score = 80;
+
+  // TLD metrics
+  if (tld === '.com') score += 10;
+  else if (tld === '.ai' || tld === '.io') score += 8;
+  else if (tld === '.co' || tld === '.org') score += 5;
+  else score += 2;
+
+  // Structure quality
+  if (!hasDashes) score += 4;
+  else score -= 8;
+
+  if (!hasNumbers) score += 4;
+  else score -= 8;
+
+  // Character length balance (6-14 optimal)
+  if (name.length >= 6 && name.length <= 14) score += 4;
+  else if (name.length <= 18) score += 2;
+
+  // Two English words bonus
+  if (isTwoWords) score += 5;
+
+  // Keyword match bonus
+  if (cleanKw) {
+    if (matchKeywordRule(words, name, cleanKw).matches) {
+      score += 6;
+    }
+  }
+
+  // Niche match bonus
+  if (nicheContext && nicheContext.trim()) {
+    const nicheEval = matchNicheScore(words, name, nicheContext);
+    if (nicheEval.isMatch) {
+      score += Math.min(10, Math.round(nicheEval.bonus / 3));
+    }
+  }
+
+  score = Math.min(99, Math.max(72, score));
+
+  const tier: 'Premium' | 'Brandable' | 'Standard' =
+    score >= 90 ? 'Premium' : score >= 82 ? 'Brandable' : 'Standard';
+
+  let estimatedValue = '$1,200 - $3,500';
+  if (tier === 'Premium') {
+    const min = Math.round((3800 * (score / 85)) / 100) * 100;
+    const max = Math.round((9800 * (score / 85)) / 100) * 100;
+    estimatedValue = `$${min.toLocaleString()} - $${max.toLocaleString()}`;
+  } else if (tier === 'Brandable') {
+    const min = Math.round((1400 * (score / 85)) / 50) * 50;
+    const max = Math.round((3400 * (score / 85)) / 50) * 50;
+    estimatedValue = `$${min.toLocaleString()} - $${max.toLocaleString()}`;
+  } else {
+    estimatedValue = '$450 - $1,200';
+  }
+
+  return {
+    score,
+    tier,
+    words,
+    isTwoWords,
+    hasDashes,
+    hasNumbers,
+    estimatedValue,
+  };
+}
+
+/**
  * Client-side evaluation fallback engine:
  * Evaluates, scores, and ranks candidate domains locally in <2ms
  * if the server or network connection is slow or offline.
@@ -411,33 +532,34 @@ export function clientEvaluateBatch(
 
   const baseCandidates = isKeywordMode && matchingKeywordCandidates.length > 0
     ? matchingKeywordCandidates
-    : tldFiltered;
-
-  // If exactlyTwoWords is enabled, try filtering to 2-word domains
-  let pool = rules.exactlyTwoWords
-    ? baseCandidates.filter((d) => {
-        const lastDot = d.lastIndexOf('.');
-        const name = lastDot !== -1 ? d.substring(0, lastDot) : d;
-        return clientDecomposeWords(name, cleanKw).length === 2;
-      })
-    : baseCandidates;
+    : tldFiltered.length > 0
+    ? tldFiltered
+    : qualifiedDomains;
 
   // Filter pool by character length (minLetters to maxLetters)
   const minLen = typeof rules.minLetters === 'number' ? rules.minLetters : 2;
   const maxLen = typeof rules.maxLetters === 'number' ? rules.maxLetters : 25;
-  pool = pool.filter((d) => {
+  let pool = baseCandidates.filter((d) => {
     const lastDot = d.lastIndexOf('.');
     const name = lastDot !== -1 ? d.substring(0, lastDot) : d;
     return name.length >= minLen && name.length <= maxLen;
   });
 
-  // In keyword mode, if strict 2-word filter yielded 0 items, fallback to all keyword-matching candidates
-  if (isKeywordMode && pool.length === 0 && matchingKeywordCandidates.length > 0) {
-    pool = matchingKeywordCandidates.filter((d) => {
+  // If strict exactlyTwoWords produces at least count items, use them; otherwise use full pool with quality ranking
+  if (rules.exactlyTwoWords) {
+    const twoWordCandidates = pool.filter((d) => {
       const lastDot = d.lastIndexOf('.');
       const name = lastDot !== -1 ? d.substring(0, lastDot) : d;
-      return name.length >= minLen && name.length <= maxLen;
+      return clientDecomposeWords(name, cleanKw).length === 2;
     });
+    if (twoWordCandidates.length >= count || twoWordCandidates.length >= 3) {
+      pool = twoWordCandidates;
+    }
+  }
+
+  // Fallback: If pool is empty, use all qualifiedDomains directly
+  if (pool.length === 0 && qualifiedDomains.length > 0) {
+    pool = [...qualifiedDomains];
   }
 
   const evaluated: (DomainItem & { isNicheMatch?: boolean; isKeywordMatch?: boolean })[] = pool.map((domainStr, idx) => {
@@ -445,15 +567,10 @@ export function clientEvaluateBatch(
     const lastDot = raw.lastIndexOf('.');
     const name = lastDot !== -1 ? raw.substring(0, lastDot) : raw;
     const tld = lastDot !== -1 ? raw.substring(lastDot) : '.com';
-    const words = clientDecomposeWords(name);
+    const words = clientDecomposeWords(name, cleanKw);
 
-    let score = 84;
-    if (tld === '.com') score += 10;
-    else if (tld === '.ai' || tld === '.io') score += 8;
-    else if (tld === '.co') score += 5;
-
-    if (name.length >= 6 && name.length <= 11) score += 3;
-    if (words.some((w) => COMMON_DICTIONARY_SET.has(w))) score += 3;
+    const quality = calculateDomainQualityScore(raw, cleanKw, contextTopic);
+    let score = quality.score;
 
     // Niche relevance evaluation
     const nicheEval = matchNicheScore(words, name, contextTopic);
@@ -478,7 +595,7 @@ export function clientEvaluateBatch(
     const tier: 'Premium' | 'Brandable' | 'Standard' =
       score >= 92 ? 'Premium' : score >= 85 ? 'Brandable' : 'Standard';
 
-    let valRange = '$1,200 - $3,200';
+    let valRange = quality.estimatedValue;
     if (tier === 'Premium') {
       const min = Math.round((3500 * (score / 85)) / 100) * 100;
       const max = Math.round((9500 * (score / 85)) / 100) * 100;
@@ -488,15 +605,15 @@ export function clientEvaluateBatch(
       const max = Math.round((3200 * (score / 85)) / 50) * 50;
       valRange = `$${min.toLocaleString()} - $${max.toLocaleString()}`;
     } else {
-      valRange = '$550 - $1,100';
+      valRange = '$550 - $1,200';
     }
 
     let pitch = '';
     if (searchMode === 'keyword' && cleanKw) {
       const otherWord = words.find((w) => w.toLowerCase() !== cleanKw) || words[1] || 'venture';
-      pitch = `High-conviction 2-word synergy spotlights keyword "${cleanKw}" paired with "${otherWord}" for instant market recall.`;
+      pitch = `High-conviction synergy spotlights keyword "${cleanKw}" paired with "${otherWord}" for instant market recall.`;
     } else if (searchMode === 'niche' && isNicheMatch) {
-      pitch = `High-relevance match for ${contextTopic}: blends "${words[0]}" + "${words[1]}" with verified category authority.`;
+      pitch = `High-relevance match for ${contextTopic}: blends "${words[0]}" + "${words[1] || 'brand'}" with verified category authority.`;
     } else if (words.length === 2) {
       pitch = `Premium 2-word synergy combining "${words[0]}" + "${words[1]}" for ${contextTopic || 'modern digital ventures'}.`;
     } else {
@@ -511,7 +628,7 @@ export function clientEvaluateBatch(
       relevanceScore: score,
       wordsCount: words.length,
       words,
-      hasDashes: name.includes('-'),
+      hasDashes: name.includes('-') || name.includes('_'),
       hasNumbers: /\d/.test(name),
       valuationTier: tier,
       estimatedValue: valRange,
@@ -526,15 +643,19 @@ export function clientEvaluateBatch(
     };
   });
 
-  // Sort domains: if niche mode, niche matches come first, then sorted by relevanceScore descending
+  // Sort domains: if keyword mode, keyword matches first; if niche mode, niche matches first; then by score
   evaluated.sort((a, b) => {
-    if (searchMode === 'niche' && contextTopic?.trim()) {
-      if (a.isNicheMatch && !b.isNicheMatch) return -1;
-      if (!a.isNicheMatch && b.isNicheMatch) return 1;
-    } else if (searchMode === 'keyword' && cleanKw) {
+    if (searchMode === 'keyword' && cleanKw) {
       if (a.isKeywordMatch && !b.isKeywordMatch) return -1;
       if (!a.isKeywordMatch && b.isKeywordMatch) return 1;
+    } else if (searchMode === 'niche' && contextTopic?.trim()) {
+      if (a.isNicheMatch && !b.isNicheMatch) return -1;
+      if (!a.isNicheMatch && b.isNicheMatch) return 1;
     }
+    // Prioritize 2-word domains
+    if (a.wordsCount === 2 && b.wordsCount !== 2) return -1;
+    if (a.wordsCount !== 2 && b.wordsCount === 2) return 1;
+
     return b.relevanceScore - a.relevanceScore;
   });
 
@@ -778,36 +899,46 @@ export function validateDomainsAgainstRules(
     }
   }
 
-  // Auto-fallback for keyword mode: If strict filtering yields 0 qualified domains,
-  // only fallback to domains that contain the keyword AND ALSO satisfy the 2 English words rule AND match permitted TLDs
-  if (isKeywordMode && cleanKeyword && qualified.length === 0 && allKeywordDomains.length > 0) {
-    for (const d of allKeywordDomains) {
-      const lastDot = d.lastIndexOf('.');
-      const name = lastDot !== -1 ? d.substring(0, lastDot) : d;
-      const tld = lastDot !== -1 ? d.substring(lastDot) : '.com';
+  // SAFE FALLBACK MECHANISM:
+  // 1. If strict filtering returned at least 3 domains, use strict qualified list.
+  // 2. IF strict filtering returned less than 3 domains:
+  //    Automatically fall back to ranking ALL candidate domains (all matching keyword domains, or all valid uploaded domains)
+  //    based on quality metrics so the user is NEVER left with an empty array if domains exist in their input.
+  let finalQualified = [...qualified];
+  let autoRelaxed = false;
 
-      // Strictly enforce TLD matching in auto-fallback
-      if (normalizedTlds.length > 0 && !normalizedTlds.includes(tld)) {
-        continue;
-      }
+  const candidatePool = (isKeywordMode && cleanKeyword && allKeywordDomains.length > 0)
+    ? allKeywordDomains
+    : rawDomains.map((r) => r.trim().toLowerCase().replace(/https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '')).filter((d) => d.includes('.'));
 
-      if (rules.exactlyTwoWords) {
-        const words = clientDecomposeWords(name, cleanKeyword);
-        if (words.length !== 2) {
-          continue;
-        }
-      }
-      if (!seen.has(d)) {
-        seen.add(d);
-        qualified.push(d);
+  if (finalQualified.length < 3 && candidatePool.length > 0) {
+    autoRelaxed = true;
+    // Rank candidatePool by quality metrics
+    const rankedCandidates = [...candidatePool].map((d) => {
+      const q = calculateDomainQualityScore(d, cleanKeyword, options?.contextTopic);
+      return { domain: d, score: q.score, isTwoWords: q.isTwoWords };
+    });
+
+    // Sort: 2-words first, then highest score
+    rankedCandidates.sort((a, b) => {
+      if (a.isTwoWords && !b.isTwoWords) return -1;
+      if (!a.isTwoWords && b.isTwoWords) return 1;
+      return b.score - a.score;
+    });
+
+    const finalSet = new Set(finalQualified);
+    for (const item of rankedCandidates) {
+      if (!finalSet.has(item.domain)) {
+        finalSet.add(item.domain);
+        finalQualified.push(item.domain);
       }
     }
   }
 
   const stats: FilterEvaluationStats = {
     totalUploaded: rawDomains.length,
-    passedFilters: qualified.length,
-    failedCount: Math.max(0, rawDomains.length - qualified.length),
+    passedFilters: finalQualified.length,
+    failedCount: Math.max(0, rawDomains.length - finalQualified.length),
     showingCount: 0, // set by consumer based on count
     keywordMatchesTotal,
     keywordMatchesStrict,
@@ -817,7 +948,7 @@ export function validateDomainsAgainstRules(
 
   return {
     stats,
-    qualifiedDomains: qualified,
+    qualifiedDomains: finalQualified,
     allKeywordDomains,
   };
 }

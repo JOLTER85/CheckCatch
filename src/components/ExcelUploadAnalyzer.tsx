@@ -322,24 +322,39 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
   };
 
   const handleRunAnalysis = () => {
-    const candidates = validationResult?.qualifiedDomains || [];
+    let candidates = validationResult?.qualifiedDomains || [];
+
+    // Safe fallback: if candidates list is empty but detected domains exist
+    if ((!candidates || candidates.length === 0) && sheetInfo?.detectedDomains && sheetInfo.detectedDomains.length > 0) {
+      const cleanKw = targetKeyword.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (searchMode === 'keyword' && cleanKw) {
+        const kwMatches = sheetInfo.detectedDomains.filter((d) => d.toLowerCase().includes(cleanKw));
+        if (kwMatches.length > 0) {
+          candidates = kwMatches;
+        } else {
+          candidates = sheetInfo.detectedDomains;
+        }
+      } else {
+        candidates = sheetInfo.detectedDomains;
+      }
+    }
 
     if (!candidates || candidates.length === 0) {
       if (searchMode === 'keyword' && targetKeyword.trim()) {
         onErrorToast(
           lang === 'ar'
-            ? `لم يستوفِ أي دومين يحتوي على "${targetKeyword.trim()}" شرط الكلمتين الإنجليزيتين.`
+            ? `لم يتم العثور على أي دومينات تحتوي على "${targetKeyword.trim()}" في الملف المرفوع.`
             : lang === 'fr'
-            ? `Aucun domaine contenant "${targetKeyword.trim()}" ne respecte la règle des 2 mots anglais.`
-            : `No domains containing "${targetKeyword.trim()}" in your file met the strict two-word English rule.`
+            ? `Aucun domaine contenant "${targetKeyword.trim()}" n'a été trouvé dans le fichier.`
+            : `No domains containing "${targetKeyword.trim()}" were found in your uploaded file.`
         );
       } else {
         onErrorToast(
           lang === 'ar'
-            ? 'لم يستوفِ أي دومين الشروط المحددة للتقييم.'
+            ? 'لم يتم العثور على أي دومينات صالحة في الملف المرفوع.'
             : lang === 'fr'
-            ? 'Aucun domaine ne répond aux filtres actifs pour être évalué.'
-            : 'No domains met your active filter rules to evaluate.'
+            ? 'Aucun domaine valide détecté dans le fichier.'
+            : 'No valid domains detected in the uploaded file.'
         );
       }
       return;

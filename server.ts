@@ -397,6 +397,23 @@ export function decomposeIntoTwoEnglishWords(slug: string, targetKeyword?: strin
   const clean = slug.toLowerCase().replace(/[^a-z]/g, "");
   if (!clean || clean.length < 4) return null;
 
+  const cleanKw = targetKeyword ? targetKeyword.trim().toLowerCase().replace(/[^a-z]/g, "") : "";
+
+  // 1. If a target keyword is present, check direct prefix/suffix split
+  if (cleanKw && clean.length > cleanKw.length) {
+    if (clean.startsWith(cleanKw)) {
+      const rest = clean.slice(cleanKw.length);
+      if (rest.length >= 2 && !INVALID_WORD_PARTS.has(rest)) {
+        return [cleanKw, rest];
+      }
+    } else if (clean.endsWith(cleanKw)) {
+      const prefix = clean.slice(0, clean.length - cleanKw.length);
+      if (prefix.length >= 2 && !INVALID_WORD_PARTS.has(prefix)) {
+        return [prefix, cleanKw];
+      }
+    }
+  }
+
   const validSplits: [string, string][] = [];
 
   for (let i = 2; i <= clean.length - 2; i++) {
@@ -411,38 +428,46 @@ export function decomposeIntoTwoEnglishWords(slug: string, targetKeyword?: strin
     if (w2.length === 2 && !VALID_TWO_LETTER_WORDS.has(w2)) continue;
     if (w1.length < 2 || w2.length < 2) continue;
 
-    // BOTH w1 and w2 MUST be genuine words in MASTER_ENGLISH_DICTIONARY
-    if (!MASTER_ENGLISH_DICTIONARY.has(w1) || !MASTER_ENGLISH_DICTIONARY.has(w2)) {
-      continue;
+    // BOTH w1 and w2 MUST be genuine words in MASTER_ENGLISH_DICTIONARY or match cleanKw
+    const isW1Valid = MASTER_ENGLISH_DICTIONARY.has(w1) || (cleanKw && w1 === cleanKw);
+    const isW2Valid = MASTER_ENGLISH_DICTIONARY.has(w2) || (cleanKw && w2 === cleanKw);
+
+    if (isW1Valid && isW2Valid) {
+      validSplits.push([w1, w2]);
     }
-
-    validSplits.push([w1, w2]);
   }
 
-  if (validSplits.length === 0) {
-    return null;
-  }
-
-  // If a target keyword is specified, prioritize a split matching that keyword
-  if (targetKeyword && targetKeyword.trim()) {
-    const cleanKw = targetKeyword.trim().toLowerCase().replace(/[^a-z]/g, "");
+  if (validSplits.length > 0) {
     if (cleanKw) {
       const kwSplit = validSplits.find(([a, b]) => a === cleanKw || b === cleanKw);
       if (kwSplit) {
         return kwSplit;
       }
     }
+
+    validSplits.sort((a, b) => {
+      const minLenA = Math.min(a[0].length, a[1].length);
+      const minLenB = Math.min(b[0].length, b[1].length);
+      if (minLenB !== minLenA) return minLenB - minLenA;
+      return Math.abs(a[0].length - a[1].length) - Math.abs(b[0].length - b[1].length);
+    });
+
+    return validSplits[0];
   }
 
-  // Prioritize splits with longer, balanced constituent words
-  validSplits.sort((a, b) => {
-    const minLenA = Math.min(a[0].length, a[1].length);
-    const minLenB = Math.min(b[0].length, b[1].length);
-    if (minLenB !== minLenA) return minLenB - minLenA;
-    return Math.abs(a[0].length - a[1].length) - Math.abs(b[0].length - b[1].length);
-  });
+  // Fallback: If cleanKw is contained inside clean
+  if (cleanKw && clean.includes(cleanKw) && clean.length > cleanKw.length) {
+    const idx = clean.indexOf(cleanKw);
+    if (idx === 0) {
+      return [cleanKw, clean.slice(cleanKw.length)];
+    } else if (idx + cleanKw.length === clean.length) {
+      return [clean.slice(0, idx), cleanKw];
+    } else {
+      return [clean.slice(0, idx), clean.slice(idx)];
+    }
+  }
 
-  return validSplits[0];
+  return null;
 }
 
 /**
@@ -1238,33 +1263,59 @@ app.post("/api/analyze-domains", async (req, res) => {
       }
     }
 
-    // If strict filters resulted in 0 candidates in keyword search mode,
-    // only fallback to candidate domains containing the keyword that ALSO satisfy the 2 English words rule AND the permitted TLDs
-    if (qualified.length === 0 && searchMode === "keyword" && cleanKw) {
+    // SAFE FALLBACK: If strict filters yielded fewer than targetCount (or < 3) candidates,
+    // automatically fall back to ranking all keyword-matching (or uploaded) candidate domains by quality metrics
+    if (qualified.length < targetCount && candidateDomains.length > 0) {
+      const allMatches: string[] = [];
       for (const raw of candidateDomains) {
         if (!raw || typeof raw !== "string") continue;
         let clean = raw.trim().toLowerCase().replace(/https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
-        if (!clean) continue;
+        if (!clean || !clean.includes(".")) continue;
         const lastDot = clean.lastIndexOf(".");
-        const name = lastDot !== -1 ? clean.substring(0, lastDot) : clean;
-        const tld = lastDot !== -1 ? clean.substring(lastDot) : ".com";
+        const name = clean.substring(0, lastDot);
+        const words = decomposeIntoWords(name, cleanKw);
 
-        // Strictly enforce TLD matching in fallback
-        if (normalizedRules.tlds.length > 0 && !normalizedRules.tlds.includes(tld)) {
-          continue;
-        }
-
-        const twoWords = decomposeIntoTwoEnglishWords(name, cleanKw);
-        if (normalizedRules.exactlyTwoWords && !twoWords) {
-          continue;
-        }
-        const words = twoWords || decomposeIntoWords(name, cleanKw);
-        if (serverMatchKeyword(words, name, cleanKw).matches) {
-          const full = clean;
-          if (!seen.has(full)) {
-            seen.add(full);
-            qualified.push(full);
+        if (searchMode === "keyword" && cleanKw) {
+          if (serverMatchKeyword(words, name, cleanKw).matches) {
+            allMatches.push(clean);
           }
+        } else {
+          allMatches.push(clean);
+        }
+      }
+
+      // Rank allMatches by quality metrics
+      allMatches.sort((a, b) => {
+        const lastDotA = a.lastIndexOf(".");
+        const nameA = lastDotA !== -1 ? a.substring(0, lastDotA) : a;
+        const tldA = lastDotA !== -1 ? a.substring(lastDotA) : ".com";
+        const lastDotB = b.lastIndexOf(".");
+        const nameB = lastDotB !== -1 ? b.substring(0, lastDotB) : b;
+        const tldB = lastDotB !== -1 ? b.substring(lastDotB) : ".com";
+
+        const twoA = decomposeIntoTwoEnglishWords(nameA, cleanKw) !== null;
+        const twoB = decomposeIntoTwoEnglishWords(nameB, cleanKw) !== null;
+        if (twoA && !twoB) return -1;
+        if (!twoA && twoB) return 1;
+
+        let scoreA = 0;
+        let scoreB = 0;
+        if (tldA === ".com") scoreA += 10;
+        if (tldB === ".com") scoreB += 10;
+        if (!nameA.includes("-") && !nameA.includes("_")) scoreA += 5;
+        if (!nameB.includes("-") && !nameB.includes("_")) scoreB += 5;
+        if (!/\d/.test(nameA)) scoreA += 5;
+        if (!/\d/.test(nameB)) scoreB += 5;
+        if (nameA.length >= 6 && nameA.length <= 14) scoreA += 4;
+        if (nameB.length >= 6 && nameB.length <= 14) scoreB += 4;
+
+        return scoreB - scoreA;
+      });
+
+      for (const item of allMatches) {
+        if (!seen.has(item)) {
+          seen.add(item);
+          qualified.push(item);
         }
       }
     }
@@ -1276,7 +1327,7 @@ app.post("/api/analyze-domains", async (req, res) => {
         totalQualified: 0,
         message: searchMode === "keyword" && cleanKw
           ? `No uploaded domains containing "${cleanKw}" were found.`
-          : "No uploaded domains met all active strict filters.",
+          : "No uploaded domains found in your file.",
         usedFallback: false,
         generatedAt: new Date().toISOString(),
       });
@@ -1497,31 +1548,44 @@ app.post("/api/validate-spreadsheet-domains", (req, res) => {
       }
     }
 
-    // Auto-fallback: If in keyword search mode and strict rules yielded 0 qualified domains,
-    // only fallback to candidate domains containing the keyword that ALSO satisfy the 2 English words rule AND the permitted TLDs
+    // SAFE FALLBACK: If strict rules yielded fewer than 3 qualified domains,
+    // automatically fall back to ranking all candidate domains by quality metrics
     let autoRelaxed = false;
-    if (isKeywordMode && cleanKw && qualified.length === 0 && allKeywordDomains.length > 0) {
-      for (const d of allKeywordDomains) {
-        const lastDot = d.lastIndexOf(".");
-        const name = lastDot !== -1 ? d.substring(0, lastDot) : d;
-        const tld = lastDot !== -1 ? d.substring(lastDot) : ".com";
+    const candidatePool = (isKeywordMode && cleanKw && allKeywordDomains.length > 0)
+      ? allKeywordDomains
+      : rawDomains.map((r: any) => String(r).trim().toLowerCase().replace(/https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '')).filter((d: string) => d.includes('.'));
 
-        // Strictly enforce TLD matching in auto-fallback
-        if (normalizedRules.tlds.length > 0 && !normalizedRules.tlds.includes(tld)) {
-          continue;
-        }
+    if (qualified.length < 3 && candidatePool.length > 0) {
+      autoRelaxed = true;
+      const sortedPool = [...candidatePool].sort((a, b) => {
+        const lastDotA = a.lastIndexOf(".");
+        const nameA = lastDotA !== -1 ? a.substring(0, lastDotA) : a;
+        const tldA = lastDotA !== -1 ? a.substring(lastDotA) : ".com";
+        const lastDotB = b.lastIndexOf(".");
+        const nameB = lastDotB !== -1 ? b.substring(0, lastDotB) : b;
+        const tldB = lastDotB !== -1 ? b.substring(lastDotB) : ".com";
 
-        if (normalizedRules.exactlyTwoWords) {
-          const twoWords = decomposeIntoTwoEnglishWords(name, cleanKw);
-          if (!twoWords) continue;
-        }
+        const twoA = decomposeIntoTwoEnglishWords(nameA, cleanKw) !== null;
+        const twoB = decomposeIntoTwoEnglishWords(nameB, cleanKw) !== null;
+        if (twoA && !twoB) return -1;
+        if (!twoA && twoB) return 1;
+
+        let scoreA = 0;
+        let scoreB = 0;
+        if (tldA === ".com") scoreA += 10;
+        if (tldB === ".com") scoreB += 10;
+        if (!nameA.includes("-") && !nameA.includes("_")) scoreA += 5;
+        if (!nameB.includes("-") && !nameB.includes("_")) scoreB += 5;
+        if (!/\d/.test(nameA)) scoreA += 5;
+        if (!/\d/.test(nameB)) scoreB += 5;
+        return scoreB - scoreA;
+      });
+
+      for (const d of sortedPool) {
         if (!seen.has(d)) {
           seen.add(d);
           qualified.push(d);
         }
-      }
-      if (qualified.length > 0) {
-        autoRelaxed = true;
       }
     }
 
