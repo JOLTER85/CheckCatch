@@ -75,6 +75,18 @@ const VALID_TWO_LETTER_WORDS = new Set([
 ]);
 
 /**
+ * Checks if a string is a genuine English word in the client dictionary.
+ */
+export function isClientRealEnglishWord(word: string): boolean {
+  if (!word) return false;
+  const clean = word.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+  if (clean.length < 2) return false;
+  if (INVALID_WORD_PARTS.has(clean)) return false;
+  if (clean.length === 2 && !VALID_TWO_LETTER_WORDS.has(clean)) return false;
+  return COMMON_DICTIONARY_SET.has(clean);
+}
+
+/**
  * Client-side domain decomposition:
  * Returns [w1, w2] ONLY if the name breaks into two verified English words from the dictionary.
  * If the domain is a single dictionary word, 3+ words, or cannot be cleanly split, returns [clean] (length 1).
@@ -86,15 +98,16 @@ export function clientDecomposeWords(name: string, targetKeyword?: string): stri
   const cleanKw = targetKeyword ? targetKeyword.trim().toLowerCase().replace(/[^a-z0-9]/g, '') : '';
 
   // 1. Direct keyword prefix/suffix decomposition if keyword matches
+  // CRITICAL: The paired non-keyword part MUST be a 100% verified real English dictionary word
   if (cleanKw && clean.length > cleanKw.length) {
     if (clean.startsWith(cleanKw)) {
       const rest = clean.slice(cleanKw.length);
-      if (rest.length >= 2) {
+      if (isClientRealEnglishWord(rest)) {
         return [cleanKw, rest];
       }
     } else if (clean.endsWith(cleanKw)) {
       const prefix = clean.slice(0, clean.length - cleanKw.length);
-      if (prefix.length >= 2) {
+      if (isClientRealEnglishWord(prefix)) {
         return [prefix, cleanKw];
       }
     }
@@ -106,14 +119,10 @@ export function clientDecomposeWords(name: string, targetKeyword?: string): stri
     const w1 = clean.substring(0, i);
     const w2 = clean.substring(i);
 
-    if (INVALID_WORD_PARTS.has(w1) || INVALID_WORD_PARTS.has(w2)) continue;
-    if (w1.length === 2 && !VALID_TWO_LETTER_WORDS.has(w1)) continue;
-    if (w2.length === 2 && !VALID_TWO_LETTER_WORDS.has(w2)) continue;
+    const isW1Valid = isClientRealEnglishWord(w1) || (cleanKw && w1 === cleanKw);
+    const isW2Valid = isClientRealEnglishWord(w2) || (cleanKw && w2 === cleanKw);
 
-    const isW1Valid = COMMON_DICTIONARY_SET.has(w1) || (cleanKw && w1 === cleanKw);
-    const isW2Valid = COMMON_DICTIONARY_SET.has(w2) || (cleanKw && w2 === cleanKw);
-
-    // Both constituent parts must be in dictionary or match target keyword
+    // Both constituent parts must be verified real English dictionary words
     if (isW1Valid && isW2Valid) {
       validSplits.push([w1, w2]);
     }
@@ -133,18 +142,6 @@ export function clientDecomposeWords(name: string, targetKeyword?: string): stri
     });
 
     return validSplits[0];
-  }
-
-  // Fallback: If keyword is contained anywhere inside clean name
-  if (cleanKw && clean.includes(cleanKw) && clean.length > cleanKw.length) {
-    const idx = clean.indexOf(cleanKw);
-    if (idx === 0) {
-      return [cleanKw, clean.slice(cleanKw.length)];
-    } else if (idx + cleanKw.length === clean.length) {
-      return [clean.slice(0, idx), cleanKw];
-    } else {
-      return [clean.slice(0, idx), clean.slice(idx)];
-    }
   }
 
   // Does not form two valid English words: return single item

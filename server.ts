@@ -24,6 +24,40 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label = "Operation"): P
 }
 
 // Comprehensive curated dictionary for high-converting 2-word domain generation and fallbacks
+export const HIGH_VALUE_ENGLISH_WORDS = [
+  "hub", "labs", "lab", "cloud", "flow", "grid", "scale", "wave", "link", "core",
+  "base", "desk", "sync", "shift", "spot", "craft", "stack", "prime", "point",
+  "vault", "sphere", "mint", "zone", "pulse", "force", "dock", "scope", "nest",
+  "mark", "view", "track", "cast", "room", "deck", "leap", "line", "crest",
+  "works", "drive", "space", "mate", "code", "app", "web", "net", "dot", "pixel",
+  "screen", "bot", "auto", "block", "chain", "token", "asset", "ledger", "bazaar",
+  "exchange", "saas", "tech", "dev", "crypto", "ai", "io", "pay", "coin", "bank",
+  "fund", "cash", "lend", "safe", "cure", "care", "heal", "med", "life", "bio",
+  "gene", "fit", "run", "sport", "game", "play", "win", "bet", "pro", "max",
+  "fast", "speed", "quick", "rush", "dash", "deal", "trade", "swap", "share",
+  "send", "post", "mail", "cart", "buy", "sell", "shop", "store", "mart", "work",
+  "job", "hire", "team", "crew", "club", "group", "hive", "bench", "trust",
+  "shield", "guard", "ward", "secure", "pure", "real", "wise", "brain", "mind",
+  "think", "idea", "lead", "first", "alpha", "omega", "edge", "front", "venture",
+  "capital", "angel", "launch", "rocket", "star", "sun", "moon", "sea", "ocean",
+  "river", "lake", "land", "field", "farm", "green", "blue", "red", "gold",
+  "silver", "iron", "steel", "rock", "stone", "wood", "tree", "leaf", "root",
+  "seed", "grow", "rise", "lift", "build", "make", "light", "glow", "shine",
+  "beam", "ray", "flash", "fire", "flame", "heat", "warm", "cool", "ice", "frost",
+  "snow", "rain", "storm", "wind", "breeze", "fog", "mist", "drop", "tide",
+  "stream", "float", "sail", "ship", "boat", "bay", "harbor", "coast", "shore",
+  "beach", "island", "isle", "hill", "mount", "summit", "ridge", "cliff", "valley",
+  "canyon", "plain", "grove", "forest", "park", "home", "house", "camp", "yard",
+  "realm", "world", "globe", "ring", "circle", "square", "matrix", "network",
+  "system", "engine", "motor", "power", "energy", "boost", "thrust", "guide",
+  "galaxy", "solar", "lunar", "astro", "chat", "talk", "speak", "voice", "sound",
+  "tune", "beat", "song", "read", "write", "book", "page", "note", "word",
+  "text", "doc", "file", "eye", "lens", "scan", "find", "seek", "route", "way",
+  "road", "lane", "street", "door", "key", "lock", "pass", "card", "badge", "hall", "box"
+];
+
+export const HIGH_VALUE_ENGLISH_WORDS_SET = new Set(HIGH_VALUE_ENGLISH_WORDS.map((w) => w.toLowerCase()));
+
 const TECH_PREFIXES = [
   "cloud", "data", "flow", "nova", "byte", "meta", "hyper", "synth", "pulse",
   "apex", "zenith", "vortex", "nexus", "prism", "cyber", "omni", "vector",
@@ -194,24 +228,22 @@ async function generateWithGemini(
     : [".com"];
   const tldList = normalizedAllowedTlds.join(", ");
 
-  const prompt = `You are a world-class domain investor, branding expert, and naming strategist.
-Generate ${count} exceptional, available-sounding, creative, and memorable domain names based on the user's keywords/niche:
-Keywords / Niche: "${keywords || "innovative tech and SaaS"}"
+  const prompt = `Generate/Select the top ${count} premium .com domains. Each domain MUST be formed by combining the keyword '${keywords || "innovative tech"}' with a REAL, HIGH-VALUE ENGLISH DICTIONARY NOUN OR ADJECTIVE (e.g., Hub, Labs, Flow, Stack, Vault, Base, Mint, Sphere). NO fake words, NO typos, NO non-English combinations.
 
 STRICT FILTERS AND MANDATORY CONSTRAINTS:
-1. Two Words Rule: ${rules.exactlyTwoWords ? "MANDATORY: Every domain name (excluding TLD) MUST consist of EXACTLY TWO valid, real English words fused smoothly together (e.g. cloudnexus, pulseflow, swiftforge). No single words, no 3+ words." : "May be 1 to 3 words, but prefer crisp 2-word combinations."}
+1. Two Words Rule: MANDATORY: Every domain name (excluding TLD) MUST consist of EXACTLY TWO valid, real English words fused smoothly together (e.g. ${keywords ? keywords.toLowerCase().replace(/[^a-z]/g, '') : "cloud"}hub, ${keywords ? keywords.toLowerCase().replace(/[^a-z]/g, '') : "pulse"}stack, ${keywords ? keywords.toLowerCase().replace(/[^a-z]/g, '') : "swift"}labs). NO single words, NO 3+ words, NO gibberish suffixes.
 2. No Dashes Rule: ${rules.noDashes ? "MANDATORY: NEVER include dashes '-' or hyphens in any domain name." : "Hyphens allowed only if natural."}
 3. No Numbers Rule: ${rules.noNumbers ? "MANDATORY: NEVER include any digits or numbers (0-9) anywhere in the domain name." : "Numbers allowed if relevant."}
 4. Permitted TLD Extensions: ONLY use these extensions: ${tldList}. Distribute creatively among them.
 5. Auction Simulation Mode: ${rules.auctionMode ? "User requested domains ending today / auction simulation. Include realistic remaining auction hours (1 to 24 hours) and current bid estimates." : "Standard registration."}
 
 For each domain:
-- Provide the full domain (e.g., "swiftpulse.ai")
-- Name without TLD (e.g., "swiftpulse")
-- TLD (e.g., ".ai")
+- Provide the full domain (e.g., "${keywords ? keywords.toLowerCase().replace(/[^a-z]/g, '') : "software"}hub.com")
+- Name without TLD (e.g., "${keywords ? keywords.toLowerCase().replace(/[^a-z]/g, '') : "software"}hub")
+- TLD (e.g., ".com")
 - Category/niche relevance score (integer 85 to 99)
-- Number of words in name (e.g. 2)
-- Array of the individual English words that form the name (e.g. ["swift", "pulse"])
+- Number of words in name (MUST BE 2)
+- Array of the individual English words that form the name (e.g. ["${keywords ? keywords.toLowerCase().replace(/[^a-z]/g, '') : "software"}", "hub"])
 - hasDashes boolean
 - hasNumbers boolean
 - Valuation tier: "Premium" | "Brandable" | "Standard"
@@ -325,6 +357,23 @@ Order them by quality and relevance, with the absolute best ones first.`;
       slug = slug.replace(/\d/g, "");
     }
 
+    // Strict 2-word English Dictionary validation and sanitization
+    let words = Array.isArray(item.words) && item.words.length === 2 ? item.words : null;
+    if (rules.exactlyTwoWords) {
+      const verifiedWords = decomposeIntoTwoEnglishWords(slug, keywords);
+      if (verifiedWords) {
+        words = verifiedWords;
+      } else {
+        // Sanitize: replace with verified high-value English word pairing
+        const cleanKw = keywords ? keywords.toLowerCase().replace(/[^a-z]/g, "") : "tech";
+        const fallbackWord = HIGH_VALUE_ENGLISH_WORDS[i % HIGH_VALUE_ENGLISH_WORDS.length] || "hub";
+        slug = `${cleanKw}${fallbackWord}`;
+        words = [cleanKw, fallbackWord];
+      }
+    } else {
+      words = words || decomposeIntoWords(slug, keywords);
+    }
+
     const fullDomain = `${slug}${tld}`;
     const isTop = i === 0 || i === 1;
 
@@ -335,12 +384,12 @@ Order them by quality and relevance, with the absolute best ones first.`;
       tld,
       relevanceScore: Math.min(99, Math.max(75, Number(item.relevanceScore) || 92)),
       wordsCount: rules.exactlyTwoWords ? 2 : (item.wordsCount || 2),
-      words: Array.isArray(item.words) && item.words.length > 0 ? item.words : [slug.slice(0, Math.floor(slug.length / 2)), slug.slice(Math.floor(slug.length / 2))],
+      words,
       hasDashes: slug.includes("-"),
       hasNumbers: /\d/.test(slug),
       valuationTier: (["Premium", "Brandable", "Standard"].includes(item.valuationTier) ? item.valuationTier : (isTop ? "Premium" : "Brandable")),
       estimatedValue: item.estimatedValue || "$1,800 - $3,500",
-      pitch: item.pitch || "High-appeal branding synergy ideal for modern digital initiatives.",
+      pitch: item.pitch || `High-appeal branding synergy pairing "${words[0]}" and "${words[1]}" for modern digital initiatives.`,
       isTopPick: isTop,
       topPickBadge: isTop ? (i === 0 ? "Best Match #1" : "Top Pick") : (item.topPickBadge || undefined),
       auctionEndingSoon: rules.auctionMode,
@@ -389,6 +438,19 @@ const VALID_TWO_LETTER_WORDS = new Set([
 ]);
 
 /**
+ * Checks if a string is a 100% genuine, valid English word.
+ * Rejects grammatical fragments, single letters, affixes, or gibberish.
+ */
+export function isRealEnglishWord(word: string): boolean {
+  if (!word) return false;
+  const clean = word.toLowerCase().trim().replace(/[^a-z]/g, "");
+  if (clean.length < 2) return false;
+  if (INVALID_WORD_PARTS.has(clean)) return false;
+  if (clean.length === 2 && !VALID_TWO_LETTER_WORDS.has(clean)) return false;
+  return MASTER_ENGLISH_DICTIONARY.has(clean) || HIGH_VALUE_ENGLISH_WORDS_SET.has(clean);
+}
+
+/**
  * Strictly decomposes a domain slug into EXACTLY TWO valid, correctly spelled English words.
  * Returns [word1, word2] if and only if both words are genuine English words in the dictionary.
  * Returns null if the domain is a single word, 3+ words (e.g. freedomlaundrycohub), gibberish, or invalid.
@@ -400,15 +462,16 @@ export function decomposeIntoTwoEnglishWords(slug: string, targetKeyword?: strin
   const cleanKw = targetKeyword ? targetKeyword.trim().toLowerCase().replace(/[^a-z]/g, "") : "";
 
   // 1. If a target keyword is present, check direct prefix/suffix split
+  // CRITICAL: The paired non-keyword part MUST be a 100% verified real English word
   if (cleanKw && clean.length > cleanKw.length) {
     if (clean.startsWith(cleanKw)) {
       const rest = clean.slice(cleanKw.length);
-      if (rest.length >= 2 && !INVALID_WORD_PARTS.has(rest)) {
+      if (isRealEnglishWord(rest)) {
         return [cleanKw, rest];
       }
     } else if (clean.endsWith(cleanKw)) {
       const prefix = clean.slice(0, clean.length - cleanKw.length);
-      if (prefix.length >= 2 && !INVALID_WORD_PARTS.has(prefix)) {
+      if (isRealEnglishWord(prefix)) {
         return [prefix, cleanKw];
       }
     }
@@ -420,17 +483,9 @@ export function decomposeIntoTwoEnglishWords(slug: string, targetKeyword?: strin
     const w1 = clean.substring(0, i);
     const w2 = clean.substring(i);
 
-    // Filter out grammatical affixes masquerading as standalone words
-    if (INVALID_WORD_PARTS.has(w1) || INVALID_WORD_PARTS.has(w2)) continue;
-
-    // Validate 2-letter words strictly
-    if (w1.length === 2 && !VALID_TWO_LETTER_WORDS.has(w1)) continue;
-    if (w2.length === 2 && !VALID_TWO_LETTER_WORDS.has(w2)) continue;
-    if (w1.length < 2 || w2.length < 2) continue;
-
-    // BOTH w1 and w2 MUST be genuine words in MASTER_ENGLISH_DICTIONARY or match cleanKw
-    const isW1Valid = MASTER_ENGLISH_DICTIONARY.has(w1) || (cleanKw && w1 === cleanKw);
-    const isW2Valid = MASTER_ENGLISH_DICTIONARY.has(w2) || (cleanKw && w2 === cleanKw);
+    // BOTH w1 and w2 MUST be genuine, valid English dictionary words
+    const isW1Valid = isRealEnglishWord(w1) || (cleanKw && w1 === cleanKw);
+    const isW2Valid = isRealEnglishWord(w2) || (cleanKw && w2 === cleanKw);
 
     if (isW1Valid && isW2Valid) {
       validSplits.push([w1, w2]);
@@ -453,18 +508,6 @@ export function decomposeIntoTwoEnglishWords(slug: string, targetKeyword?: strin
     });
 
     return validSplits[0];
-  }
-
-  // Fallback: If cleanKw is contained inside clean
-  if (cleanKw && clean.includes(cleanKw) && clean.length > cleanKw.length) {
-    const idx = clean.indexOf(cleanKw);
-    if (idx === 0) {
-      return [cleanKw, clean.slice(cleanKw.length)];
-    } else if (idx + cleanKw.length === clean.length) {
-      return [clean.slice(0, idx), cleanKw];
-    } else {
-      return [clean.slice(0, idx), clean.slice(idx)];
-    }
   }
 
   return null;
@@ -802,7 +845,7 @@ async function evaluateUploadedWithGemini(
   if (searchMode === 'keyword' && targetKeyword && targetKeyword.trim()) {
     strategyDirective = `Evaluation criteria with mandatory keyword focus "${targetKeyword}":
 - The client is searching specifically for domains containing the keyword "${targetKeyword}".
-- Prioritize, rank, and pitch the highest-value domains that feature this exact root word.`;
+- Prioritize, rank, and pitch the highest-value domains formed by combining "${targetKeyword}" with a REAL, HIGH-VALUE ENGLISH DICTIONARY NOUN OR ADJECTIVE (e.g., Hub, Labs, Flow, Stack, Vault, Base, Mint, Sphere). NO fake words, NO typos, NO non-English combinations.`;
   }
 
   const prompt = `You are an elite domain portfolio evaluator and venture branding strategist.
@@ -814,11 +857,12 @@ CRITICAL MANDATORY INSTRUCTIONS:
 3. Every single object in your returned JSON array MUST have its "domain" field matching an EXACT domain from the Candidate Domains list.
 4. If a domain is not in Candidate Domains, DO NOT return it under any circumstances.
 5. STRICT 2-WORD ENGLISH RULE: Every selected domain MUST consist of EXACTLY TWO valid, correctly spelled English words (e.g. "cloudnexus", "swiftpulse", "dataforge").
+   Each domain MUST be formed by combining the keyword '${targetKeyword || ""}' with a REAL, HIGH-VALUE ENGLISH DICTIONARY NOUN OR ADJECTIVE (e.g., Hub, Labs, Flow, Stack, Vault, Base, Mint, Sphere).
    STRICTLY DISQUALIFY AND NEVER SELECT:
-   - 3 or 4 or more words (e.g. "freedomlaundrycohub.com" has 4 words -> DISQUALIFY; "bestcloudserviceapp.com" has 4 words -> DISQUALIFY; "rapidpaygatehub.com" -> DISQUALIFY)
+   - Non-English gibberish words, typos, or partial suffixes
+   - 3 or 4 or more words (e.g. "freedomlaundrycohub.com" has 4 words -> DISQUALIFY; "bestcloudserviceapp.com" has 4 words -> DISQUALIFY)
    - Single English words (e.g. "marketing", "technology", "insurance", "apple", "doctor", "computer")
-   - Invented words, acronyms, or non-English terms
-   Only domains with EXACTLY TWO English words are allowed!
+   Only domains with EXACTLY TWO real English dictionary words are allowed!
 6. For each returned domain, provide the two constituent English words in the "words" field as an array: ["word1", "word2"]. Both word1 and word2 must be real individual English words.
 7. STRICT TLD EXTENSION RULE: The user selected ONLY these extensions: ${normalizedAllowedTlds.length > 0 ? normalizedAllowedTlds.join(", ") : ".com"}. Any domain with another extension must be strictly disqualified.
 
@@ -929,14 +973,14 @@ ${strategyDirective}
     // Strict 2-word English check: verify against 275k dictionary
     let words = Array.isArray(item.words) && item.words.length === 2 ? item.words : null;
     if (rules.exactlyTwoWords) {
-      const verifiedTwo = decomposeIntoTwoEnglishWords(name);
+      const verifiedTwo = decomposeIntoTwoEnglishWords(name, targetKeyword);
       if (!verifiedTwo) {
         // Disqualify: does not meet strict 2 English words requirement
         return;
       }
       words = verifiedTwo;
     } else {
-      words = words || decomposeIntoWords(name);
+      words = words || decomposeIntoWords(name, targetKeyword);
     }
 
     const isTop = idx < 3;
