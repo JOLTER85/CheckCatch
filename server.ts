@@ -229,15 +229,15 @@ async function generateWithGemini(
   const tldList = normalizedAllowedTlds.join(", ");
   const isOnlyCom = normalizedAllowedTlds.length === 1 && normalizedAllowedTlds[0] === ".com";
   const tldConstraint = isOnlyCom
-    ? "MANDATORY TLD: ONLY output domains ending strictly in .com (e.g. smartgym.com, smartlife.com). STRICTLY FORBIDDEN from using any other extension like .cc, .tools, .io, .net, .org, .ai, etc."
+    ? "### CRITICAL DOMAIN CONSTRAINTS ###\n1. STRICT TLD ENFORCEMENT: You MUST ONLY generate, output, and evaluate domains using the \".com\" extension.\n2. NO ALTERNATIVE TLDS: Do NOT output domains ending in .cc, .tools, .io, .net, .co, or any other extension.\n3. UI TEXT/DESCRIPTIONS: When writing descriptions or evaluating domains, only refer to them as \".com\" domains (e.g., \"This provides top-tier .com authority\"). Never mention alternative TLDs.\n4. FORMATTING: All returned domain names must strictly be formatted as \"wordword.com\"."
     : `Permitted TLD Extensions: ONLY use these extensions: ${tldList}. Distribute creatively among them.`;
 
-  const prompt = `Generate/Select the top ${count} premium .com domains. Each domain MUST be formed by combining the keyword '${keywords || "innovative tech"}' with a REAL, HIGH-VALUE ENGLISH DICTIONARY NOUN OR ADJECTIVE (e.g., Hub, Labs, Flow, Stack, Vault, Base, Mint, Sphere). NO fake words, NO typos, NO non-English combinations.
+  const prompt = `Generate/Select the top ${count} premium ${isOnlyCom ? '.com' : tldList} domains. Each domain MUST be formed by combining the keyword '${keywords || "innovative tech"}' with a REAL, HIGH-VALUE ENGLISH DICTIONARY NOUN OR ADJECTIVE (e.g., Hub, Labs, Flow, Stack, Vault, Base, Mint, Sphere). NO fake words, NO typos, NO non-English combinations.
 
 STRICT FILTERS AND MANDATORY CONSTRAINTS:
-1. Two Words Rule: MANDATORY: Every domain name (excluding TLD) MUST consist of EXACTLY TWO valid, real English words fused smoothly together (e.g. ${keywords ? keywords.toLowerCase().replace(/[^a-z]/g, '') : "cloud"}hub, ${keywords ? keywords.toLowerCase().replace(/[^a-z]/g, '') : "pulse"}stack, ${keywords ? keywords.toLowerCase().replace(/[^a-z]/g, '') : "swift"}labs). NO single words, NO 3+ words, NO gibberish suffixes.
-2. No Dashes Rule: ${rules.noDashes ? "MANDATORY: NEVER include dashes '-' or hyphens in any domain name." : "Hyphens allowed only if natural."}
-3. No Numbers Rule: ${rules.noNumbers ? "MANDATORY: NEVER include any digits or numbers (0-9) anywhere in the domain name." : "Numbers allowed if relevant."}
+1. Two Words Rule: MANDATORY: Every domain name (excluding TLD) MUST consist of EXACTLY TWO valid, real English words fused smoothly together (e.g. ${keywords ? keywords.toLowerCase().replace(/[^a-z]/g, '') : "cloud"}hub).
+2. No Dashes Rule: ${rules.noDashes ? "MANDATORY: NEVER include dashes '-' or hyphens." : "Hyphens allowed only if natural."}
+3. No Numbers Rule: ${rules.noNumbers ? "MANDATORY: NEVER include any digits or numbers (0-9)." : "Numbers allowed if relevant."}
 4. ${tldConstraint}
 5. Auction Simulation Mode: ${rules.auctionMode ? "User requested domains ending today / auction simulation. Include realistic remaining auction hours (1 to 24 hours) and current bid estimates." : "Standard registration."}
 
@@ -345,13 +345,10 @@ Order them by quality and relevance, with the absolute best ones first.`;
   const validDomains: any[] = [];
   for (let i = 0; i < parsed.length; i++) {
     const item = parsed[i];
-    let slug = sanitizeDomainSlug(item.name || item.domain, rules);
-    if (slug.includes(".")) {
-      slug = slug.substring(0, slug.lastIndexOf("."));
-    }
-    slug = slug.replace(/[^a-z0-9-]/g, "");
-
     // Force strict compliance with user's selected TLDs (.com default)
+    let rawString = String(item.name || item.domain || "").toLowerCase().trim();
+    let slug = rawString.split('.')[0].replace(/[^a-z0-9-]/g, ""); // Hard strip of TLDs
+    
     let targetTld = ".com";
     if (normalizedAllowedTlds.length === 1) {
       targetTld = normalizedAllowedTlds[0];
@@ -388,6 +385,14 @@ Order them by quality and relevance, with the absolute best ones first.`;
       words = words || decomposeIntoWords(slug, keywords);
     }
 
+    let pitch = item.pitch || `High-appeal branding synergy pairing "${words[0]}" and "${words[1]}" for modern digital initiatives.`;
+    // UI Text Fix for Hallucinated extensions
+    if (pitch) {
+      const wrongDomainRegex = new RegExp(`${slug}\\.[a-z]+`, 'gi');
+      pitch = pitch.replace(wrongDomainRegex, `${slug}${targetTld}`);
+      pitch = pitch.replace(/(?:\s|^)\.(cc|tools|io|net|co|org|biz|info|xyz|me)\b/gi, ` ${targetTld}`);
+    }
+
     const fullDomain = `${slug}${targetTld}`;
     const isTop = i === 0 || i === 1;
 
@@ -403,7 +408,7 @@ Order them by quality and relevance, with the absolute best ones first.`;
       hasNumbers: /\d/.test(slug),
       valuationTier: (["Premium", "Brandable", "Standard"].includes(item.valuationTier) ? item.valuationTier : (isTop ? "Premium" : "Brandable")),
       estimatedValue: item.estimatedValue || "$1,800 - $3,500",
-      pitch: item.pitch || `High-appeal branding synergy pairing "${words[0]}" and "${words[1]}" for modern digital initiatives.`,
+      pitch,
       isTopPick: isTop,
       topPickBadge: isTop ? (i === 0 ? "Best Match #1" : "Top Pick") : (item.topPickBadge || undefined),
       auctionEndingSoon: rules.auctionMode,
@@ -905,6 +910,7 @@ CRITICAL MANDATORY INSTRUCTIONS:
    Only domains with EXACTLY TWO real English dictionary words are allowed!
 6. For each returned domain, provide the two constituent English words in the "words" field as an array: ["word1", "word2"]. Both word1 and word2 must be real individual English words.
 7. STRICT TLD EXTENSION RULE: The user selected ONLY these extensions: ${normalizedAllowedTlds.length > 0 ? normalizedAllowedTlds.join(", ") : ".com"}. Any domain with another extension must be strictly disqualified.
+${normalizedAllowedTlds.length === 1 && normalizedAllowedTlds[0] === ".com" ? "\n8. CRITICAL TLD ENFORCEMENT: You MUST ONLY evaluate and describe domains using the \".com\" extension. Do NOT mention alternative extensions in descriptions (e.g. no .cc, .tools, .io)." : ""}
 
 Candidate Domains:
 ${domainBatch}
@@ -1033,6 +1039,12 @@ ${strategyDirective}
     const isTop = idx < 3;
     const topBadge = idx === 0 ? "Best Match #1" : idx === 1 ? "Top Pick #2" : idx === 2 ? "Top Pick #3" : undefined;
     const finalFullDomain = `${cleanName}${tld}`;
+    
+    let finalPitch = item.pitch || `High commercial visibility combining "${words[0]}" and "${words[1] || ''}" for ${contextTopic || "modern ventures"}.`;
+    // UI Sanitization
+    const wrongDomainRegex = new RegExp(`${cleanName}\\.[a-z]+`, 'gi');
+    finalPitch = finalPitch.replace(wrongDomainRegex, finalFullDomain);
+    finalPitch = finalPitch.replace(/(?:\s|^)\.(cc|tools|io|net|co|org|biz|info|xyz|me)\b/gi, ` ${tld}`);
 
     formatted.push({
       id: `ai-eval-${idx + 1}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -1046,7 +1058,7 @@ ${strategyDirective}
       hasNumbers: /\d/.test(cleanName),
       valuationTier: (["Premium", "Brandable", "Standard"].includes(item.valuationTier) ? item.valuationTier : (isTop ? "Premium" : "Brandable")),
       estimatedValue: item.estimatedValue || "$2,200 - $4,500",
-      pitch: item.pitch || `High commercial visibility combining "${words[0]}" and "${words[1] || ''}" for ${contextTopic || "modern ventures"}.`,
+      pitch: finalPitch,
       isTopPick: isTop,
       topPickBadge: isTop ? topBadge : (item.topPickBadge || undefined),
       auctionEndingSoon: rules.auctionMode,

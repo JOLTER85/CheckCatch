@@ -51,11 +51,12 @@ export const DomainSearch: React.FC<DomainSearchProps> = ({
       const usedWords = new Set<string>();
 
       items.forEach((item, idx) => {
-        let rawDomain = String(item.domain || '').toLowerCase().replace(/[^a-z0-9.]/g, '');
-        if (!rawDomain.endsWith('.com')) {
-          rawDomain = `${rawDomain.split('.')[0] || rawDomain}.com`;
-        }
-        let name = rawDomain.replace('.com', '');
+        let rawString = String(item.domain || '').toLowerCase().trim();
+        
+        // 1. Strict TLD Strip & Enforce
+        let cleanName = rawString.split('.')[0].replace(/[^a-z0-9-]/g, '');
+        let rawDomain = `${cleanName}.com`;
+        let name = cleanName;
 
         // Extract second word
         let secondWord = '';
@@ -73,6 +74,7 @@ export const DomainSearch: React.FC<DomainSearchProps> = ({
           const fallback = VALID_ENGLISH_TECH_WORDS.find((w) => !usedWords.has(w)) || VALID_ENGLISH_TECH_WORDS[idx % VALID_ENGLISH_TECH_WORDS.length];
           secondWord = fallback;
           name = `${cleanKw}${secondWord}`;
+          cleanName = name;
           rawDomain = `${name}.com`;
         }
 
@@ -81,13 +83,19 @@ export const DomainSearch: React.FC<DomainSearchProps> = ({
         const capitalizedSecond = secondWord.charAt(0).toUpperCase() + secondWord.slice(1);
         const capitalizedKw = cleanKw.charAt(0).toUpperCase() + cleanKw.slice(1);
 
+        // 3. UI Text & Description Fix
+        let reasoning = item.reasoning || `Strict 2-word compound joining "${capitalizedKw}" with verified dictionary word "${capitalizedSecond}".`;
+        const wrongDomainRegex = new RegExp(`${cleanName}\\.[a-z]+`, 'gi');
+        reasoning = reasoning.replace(wrongDomainRegex, rawDomain);
+        reasoning = reasoning.replace(/(?:\s|^)\.(cc|tools|io|net|co|org|biz|info|us|uk|ca|me|xyz)\b/gi, ' .com');
+
         sanitized.push({
           domain: rawDomain,
           score: Math.min(99, Math.max(80, Number(item.score) || (92 - idx * 3))),
           word_breakdown: `${capitalizedKw} + ${capitalizedSecond}`,
           commercial_intent: item.commercial_intent || (idx === 0 ? "High Enterprise" : idx === 1 ? "Very High SaaS" : "High Commercial"),
           valuation: item.valuation || (idx === 0 ? "$4,500 - $7,500" : idx === 1 ? "$3,200 - $5,500" : "$2,500 - $4,200"),
-          reasoning: item.reasoning || `Strict 2-word compound joining "${capitalizedKw}" with verified dictionary word "${capitalizedSecond}".`,
+          reasoning: reasoning,
         });
       });
 
@@ -98,11 +106,17 @@ export const DomainSearch: React.FC<DomainSearchProps> = ({
       if (apiKey) {
         const promptText = `Generate/Select the top 3 premium .com domains. Each domain MUST be formed by combining the keyword '${cleanKw}' with a REAL, HIGH-VALUE ENGLISH DICTIONARY NOUN OR ADJECTIVE (e.g., Hub, Labs, Flow, Stack, Vault, Base, Mint, Sphere). NO fake words, NO typos, NO non-English combinations.
 
+### CRITICAL DOMAIN CONSTRAINTS ###
+1. STRICT TLD ENFORCEMENT: You MUST ONLY generate, output, and evaluate domains using the ".com" extension.
+2. NO ALTERNATIVE TLDS: Do NOT output domains ending in .cc, .tools, .io, .net, .co, or any other extension.
+3. UI TEXT/DESCRIPTIONS: When writing descriptions or evaluating domains, only refer to them as ".com" domains (e.g., "This provides top-tier .com authority"). Never mention alternative TLDs.
+4. FORMATTING: All returned domain names must strictly be formatted as "wordword.com" (e.g., "smartgym.com").
+
 Return ONLY a valid JSON array of 3 brandable 2-word .com domains in this format:
 [
-  {"domain": "${cleanKw}hub.com", "score": 92, "word_breakdown": "${cleanKw} + Hub", "commercial_intent": "High Enterprise", "valuation": "$4,500 - $7,000", "reasoning": "High-value English compound with prime brand recall"},
-  {"domain": "${cleanKw}labs.com", "score": 89, "word_breakdown": "${cleanKw} + Labs", "commercial_intent": "Tech Ecosystem", "valuation": "$3,800 - $6,000", "reasoning": "Standard tech ecosystem 2-word naming pattern"},
-  {"domain": "${cleanKw}flow.com", "score": 87, "word_breakdown": "${cleanKw} + Flow", "commercial_intent": "SaaS Workflow", "valuation": "$3,000 - $5,000", "reasoning": "Agile SaaS product alignment"}
+  {"domain": "${cleanKw}hub.com", "score": 92, "word_breakdown": "${cleanKw} + Hub", "commercial_intent": "High Enterprise", "valuation": "$4,500 - $7,000", "reasoning": "High-value English compound with prime .com brand recall"},
+  {"domain": "${cleanKw}labs.com", "score": 89, "word_breakdown": "${cleanKw} + Labs", "commercial_intent": "Tech Ecosystem", "valuation": "$3,800 - $6,000", "reasoning": "Standard tech ecosystem 2-word naming pattern on .com"},
+  {"domain": "${cleanKw}flow.com", "score": 87, "word_breakdown": "${cleanKw} + Flow", "commercial_intent": "SaaS Workflow", "valuation": "$3,000 - $5,000", "reasoning": "Agile SaaS product alignment with .com authority"}
 ]`;
 
         const response = await fetch(
@@ -139,7 +153,7 @@ Return ONLY a valid JSON array of 3 brandable 2-word .com domains in this format
         }
       }
 
-      // If client key is not present or direct fetch returned empty, try backend server route
+      // Query backend server route (server-side Gemini API with automated fallback)
       const serverRes = await fetch('/api/generate-domains', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

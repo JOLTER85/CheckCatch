@@ -1118,6 +1118,7 @@ export function createSamplePortfolioWorkbook(): File {
 /**
  * Hardcoded TLD Enforcer:
  * Strips alternative/rogue extensions and attaches the strictly selected TLD (e.g. .com).
+ * Sanitizes UI Text & Descriptions to ensure no hallucinatory extensions are shown.
  */
 export function enforceStrictDomainItem(item: DomainItem, allowedTlds: string[] = ['.com']): DomainItem {
   const normTlds = Array.isArray(allowedTlds) && allowedTlds.length > 0
@@ -1127,27 +1128,31 @@ export function enforceStrictDomainItem(item: DomainItem, allowedTlds: string[] 
     ? normTlds[0]
     : (normTlds.includes(item.tld?.toLowerCase()) ? item.tld.toLowerCase() : normTlds[0]);
 
-  let cleanName = (item.name || item.domain || '')
-    .toLowerCase()
-    .trim()
-    .replace(/https?:\/\//i, '')
-    .replace(/^www\./i, '')
-    .split('/')[0];
+  let rawString = (item.name || item.domain || '').toLowerCase().trim().replace(/https?:\/\//i, '').replace(/^www\./i, '').split('/')[0];
 
-  // Strip any existing dot or extension from cleanName
-  if (cleanName.includes('.')) {
-    cleanName = cleanName.substring(0, cleanName.lastIndexOf('.'));
-  }
-  cleanName = cleanName.replace(/[^a-z0-9-]/g, '');
+  // Strip any existing dot or alternative extension directly using split('.')[0]
+  let cleanName = rawString.split('.')[0].replace(/[^a-z0-9-]/g, '');
 
   const finalTld = targetTld.startsWith('.') ? targetTld : `.${targetTld}`;
   const finalFullDomain = `${cleanName}${finalTld}`;
+
+  // Sanitize UI text & Pitch descriptions to replace hallucinatory TLDs
+  let finalPitch = item.pitch || '';
+  if (finalPitch) {
+    // 1. Fix full domain references (e.g. smartgym.cc -> smartgym.com)
+    const wrongDomainRegex = new RegExp(`${cleanName}\\.[a-z]+`, 'gi');
+    finalPitch = finalPitch.replace(wrongDomainRegex, finalFullDomain);
+
+    // 2. Fix generic text references (e.g. "top-tier .cc authority" -> "top-tier .com authority")
+    finalPitch = finalPitch.replace(/(?:\s|^)\.(cc|tools|io|net|co|org|biz|info|us|uk|ca|me|ai|xyz)\b/gi, ` ${finalTld}`);
+  }
 
   return {
     ...item,
     name: cleanName,
     tld: finalTld,
     domain: finalFullDomain,
+    pitch: finalPitch,
   };
 }
 
