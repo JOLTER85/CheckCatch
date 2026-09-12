@@ -20,6 +20,7 @@ import {
   exportDomainsToCsv,
   clientEvaluateBatch,
   clientGenerateDomains,
+  enforceStrictDomainItem,
 } from './utils/spreadsheet';
 import { Language, translations } from './utils/translations';
 import {
@@ -149,21 +150,24 @@ export default function App() {
 
       const data: GenerateResponse = await response.json();
       if (data.success && Array.isArray(data.domains) && data.domains.length > 0) {
-        setGeneratorDomains(data.domains);
-        setSelectedBestDomainId(data.domains[0].id);
+        const cleanDomains = data.domains.map((d: DomainItem) => enforceStrictDomainItem(d, rules.tlds));
+        setGeneratorDomains(cleanDomains);
+        setSelectedBestDomainId(cleanDomains[0].id);
         setLastGeneratedAt(data.generatedAt);
         setUsedFallback(Boolean(data.usedFallback));
         showToast(
           lang === 'ar'
-            ? `تم فحص وتثمين ${data.domains.length} دومينات مختارة`
-            : `Generated ${data.domains.length} verified domain candidates`
+            ? `تم فحص وتثمين ${cleanDomains.length} دومينات مختارة`
+            : `Generated ${cleanDomains.length} verified domain candidates`
         );
       } else {
         throw new Error(data.error || 'Failed to generate domains');
       }
     } catch (err: any) {
       console.warn('Deploying local synthesizer:', err?.message || err);
-      const localGenerated = clientGenerateDomains(keywords, count, rules);
+      const localGenerated = clientGenerateDomains(keywords, count, rules).map((d: DomainItem) =>
+        enforceStrictDomainItem(d, rules.tlds)
+      );
       setGeneratorDomains(localGenerated);
       if (localGenerated.length > 0) {
         setSelectedBestDomainId(localGenerated[0].id);
@@ -212,16 +216,26 @@ export default function App() {
 
       const data = await response.json();
       if (data.success && Array.isArray(data.domains)) {
-        const allowedSpreadsheetSet = new Set(qualifiedDomains.map((d) => d.toLowerCase().trim()));
-        let strictSpreadsheet = data.domains.filter((d: DomainItem) =>
-          allowedSpreadsheetSet.has(d.domain.toLowerCase().trim())
+        const cleanDataDomains = data.domains.map((d: DomainItem) => enforceStrictDomainItem(d, rules.tlds));
+        const allowedSpreadsheetSet = new Set(
+          qualifiedDomains.map((d) => {
+            let cl = d.toLowerCase().trim().replace(/https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+            if (cl.includes('.')) cl = cl.substring(0, cl.lastIndexOf('.'));
+            return cl.replace(/[^a-z0-9-]/g, '');
+          })
+        );
+        let strictSpreadsheet = cleanDataDomains.filter((d: DomainItem) =>
+          allowedSpreadsheetSet.has(d.name.toLowerCase().trim())
         );
 
-        if (strictSpreadsheet.length === 0 && data.domains.length > 0) {
-          strictSpreadsheet = data.domains;
+        if (strictSpreadsheet.length === 0 && cleanDataDomains.length > 0) {
+          strictSpreadsheet = cleanDataDomains;
         }
 
         setSpreadsheetDomains(strictSpreadsheet);
+        if (strictSpreadsheet.length > 0) {
+          setSelectedBestDomainId(strictSpreadsheet[0].id);
+        }
         setLastGeneratedAt(data.generatedAt || new Date().toISOString());
         setUsedFallback(Boolean(data.usedFallback));
         setEvaluationStats({
@@ -254,7 +268,7 @@ export default function App() {
         contextTopic,
         searchMode,
         targetKeyword
-      );
+      ).map((d: DomainItem) => enforceStrictDomainItem(d, rules.tlds));
       setSpreadsheetDomains(localEvaluated);
       if (localEvaluated.length > 0) {
         setSelectedBestDomainId(localEvaluated[0].id);

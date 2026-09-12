@@ -588,11 +588,23 @@ export function clientEvaluateBatch(
   const evaluated: (DomainItem & { isNicheMatch?: boolean; isKeywordMatch?: boolean })[] = pool.map((domainStr, idx) => {
     const raw = domainStr.trim().toLowerCase();
     const lastDot = raw.lastIndexOf('.');
-    const name = lastDot !== -1 ? raw.substring(0, lastDot) : raw;
-    const tld = lastDot !== -1 ? raw.substring(lastDot) : '.com';
+    let name = lastDot !== -1 ? raw.substring(0, lastDot) : raw;
+    name = name.replace(/https?:\/\//i, '').replace(/^www\./i, '').split('/')[0];
+    if (name.includes('.')) {
+      name = name.substring(0, name.lastIndexOf('.'));
+    }
+    name = name.replace(/[^a-z0-9-]/g, '');
+
+    const rawTld = lastDot !== -1 ? raw.substring(lastDot) : '.com';
+    let tld = rawTld.toLowerCase().startsWith('.') ? rawTld.toLowerCase() : `.${rawTld.toLowerCase()}`;
+    if (normalizedAllowedTlds.length > 0 && !normalizedAllowedTlds.includes(tld)) {
+      tld = normalizedAllowedTlds[0] || '.com';
+    }
+    if (!tld.startsWith('.')) tld = `.${tld}`;
+
     const words = clientDecomposeWords(name, cleanKw);
 
-    const quality = calculateDomainQualityScore(raw, cleanKw, contextTopic);
+    const quality = calculateDomainQualityScore(`${name}${tld}`, cleanKw, contextTopic);
     let score = quality.score;
 
     // Niche relevance evaluation
@@ -643,9 +655,11 @@ export function clientEvaluateBatch(
       pitch = `High-recall branding candidate tailored for ${contextTopic || 'modern digital ventures'}.`;
     }
 
+    const fullDomain = `${name}${tld}`;
+
     return {
       id: `client-eval-${idx + 1}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      domain: `${name}${tld}`,
+      domain: fullDomain,
       name,
       tld,
       relevanceScore: score,
@@ -1100,3 +1114,40 @@ export function createSamplePortfolioWorkbook(): File {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
 }
+
+/**
+ * Hardcoded TLD Enforcer:
+ * Strips alternative/rogue extensions and attaches the strictly selected TLD (e.g. .com).
+ */
+export function enforceStrictDomainItem(item: DomainItem, allowedTlds: string[] = ['.com']): DomainItem {
+  const normTlds = Array.isArray(allowedTlds) && allowedTlds.length > 0
+    ? allowedTlds.map((t) => (t.toLowerCase().startsWith('.') ? t.toLowerCase() : `.${t.toLowerCase()}`))
+    : ['.com'];
+  const targetTld = normTlds.length === 1
+    ? normTlds[0]
+    : (normTlds.includes(item.tld?.toLowerCase()) ? item.tld.toLowerCase() : normTlds[0]);
+
+  let cleanName = (item.name || item.domain || '')
+    .toLowerCase()
+    .trim()
+    .replace(/https?:\/\//i, '')
+    .replace(/^www\./i, '')
+    .split('/')[0];
+
+  // Strip any existing dot or extension from cleanName
+  if (cleanName.includes('.')) {
+    cleanName = cleanName.substring(0, cleanName.lastIndexOf('.'));
+  }
+  cleanName = cleanName.replace(/[^a-z0-9-]/g, '');
+
+  const finalTld = targetTld.startsWith('.') ? targetTld : `.${targetTld}`;
+  const finalFullDomain = `${cleanName}${finalTld}`;
+
+  return {
+    ...item,
+    name: cleanName,
+    tld: finalTld,
+    domain: finalFullDomain,
+  };
+}
+

@@ -689,8 +689,9 @@ export function generateDomainArabicBreakdown(domainItem: DomainItem): DomainAra
   const combinedPowerAr = `الدمج بين كلمة "${w1}" (${word1Analysis.meaningAr.split('/')[0].trim()}) وكلمة "${w2}" (${word2Analysis.meaningAr.split('/')[0].trim()}) يكوّن اسماً علامياً متناغماً يجمع بين الوظيفة التشغيلية وسرعة الإدراك الذهني، مما يرفع تقييم الدومين التجاري ويوفر آلاف الدولارات في تكاليف الإعلانات وبناء الثقة لدى العملاء.`;
   const combinedPowerEn = `The combination of "${w1}" and "${w2}" creates a high-synergy compound brand that fuses operational clarity with high market recall, reducing customer acquisition costs and boosting instant digital authority.`;
 
-  const summary = `يحظى هذا الدومين بطلب قوي من الشركات والمستثمرين لأنه يتكون من كلمتين إنجليزيتين معروفتين عالمياً بدون أرقام أو شرطات مع امتداد موثوق (${domainItem.tld})، مما يجعله أصلاً رقمياً ذا سيولة عالية وقدرة تنافسية شرسة في الاستحواذ على حصة سوقية وتسجيل علامة تجارية عالمية.`;
-  const summaryEn = `Strong institutional demand from tech startups and venture builders seeking a clean, hyphen-free 2-word compound with top-tier .${domainItem.tld || 'com'} authority and immediate trademark defensibility.`;
+  const cleanTld = (domainItem.tld || 'com').toLowerCase().replace(/^\.+/, '') || 'com';
+  const summary = `يحظى هذا الدومين بطلب قوي من الشركات والمستثمرين لأنه يتكون من كلمتين إنجليزيتين معروفتين عالمياً بدون أرقام أو شرطات مع امتداد موثوق (.${cleanTld})، مما يجعله أصلاً رقمياً ذا سيولة عالية وقدرة تنافسية شرسة في الاستحواذ على حصة سوقية وتسجيل علامة تجارية عالمية.`;
+  const summaryEn = `Strong institutional demand from tech startups and venture builders seeking a clean, hyphen-free 2-word compound with top-tier .${cleanTld} authority and immediate trademark defensibility.`;
 
   const companiesEn = [
     "Enterprise Software & SaaS Providers",

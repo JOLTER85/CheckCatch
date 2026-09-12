@@ -227,6 +227,10 @@ async function generateWithGemini(
     ? rules.tlds.map((t) => (t.toLowerCase().startsWith(".") ? t.toLowerCase() : `.${t.toLowerCase()}`))
     : [".com"];
   const tldList = normalizedAllowedTlds.join(", ");
+  const isOnlyCom = normalizedAllowedTlds.length === 1 && normalizedAllowedTlds[0] === ".com";
+  const tldConstraint = isOnlyCom
+    ? "MANDATORY TLD: ONLY output domains ending strictly in .com (e.g. smartgym.com, smartlife.com). STRICTLY FORBIDDEN from using any other extension like .cc, .tools, .io, .net, .org, .ai, etc."
+    : `Permitted TLD Extensions: ONLY use these extensions: ${tldList}. Distribute creatively among them.`;
 
   const prompt = `Generate/Select the top ${count} premium .com domains. Each domain MUST be formed by combining the keyword '${keywords || "innovative tech"}' with a REAL, HIGH-VALUE ENGLISH DICTIONARY NOUN OR ADJECTIVE (e.g., Hub, Labs, Flow, Stack, Vault, Base, Mint, Sphere). NO fake words, NO typos, NO non-English combinations.
 
@@ -234,7 +238,7 @@ STRICT FILTERS AND MANDATORY CONSTRAINTS:
 1. Two Words Rule: MANDATORY: Every domain name (excluding TLD) MUST consist of EXACTLY TWO valid, real English words fused smoothly together (e.g. ${keywords ? keywords.toLowerCase().replace(/[^a-z]/g, '') : "cloud"}hub, ${keywords ? keywords.toLowerCase().replace(/[^a-z]/g, '') : "pulse"}stack, ${keywords ? keywords.toLowerCase().replace(/[^a-z]/g, '') : "swift"}labs). NO single words, NO 3+ words, NO gibberish suffixes.
 2. No Dashes Rule: ${rules.noDashes ? "MANDATORY: NEVER include dashes '-' or hyphens in any domain name." : "Hyphens allowed only if natural."}
 3. No Numbers Rule: ${rules.noNumbers ? "MANDATORY: NEVER include any digits or numbers (0-9) anywhere in the domain name." : "Numbers allowed if relevant."}
-4. Permitted TLD Extensions: ONLY use these extensions: ${tldList}. Distribute creatively among them.
+4. ${tldConstraint}
 5. Auction Simulation Mode: ${rules.auctionMode ? "User requested domains ending today / auction simulation. Include realistic remaining auction hours (1 to 24 hours) and current bid estimates." : "Standard registration."}
 
 For each domain:
@@ -342,13 +346,23 @@ Order them by quality and relevance, with the absolute best ones first.`;
   for (let i = 0; i < parsed.length; i++) {
     const item = parsed[i];
     let slug = sanitizeDomainSlug(item.name || item.domain, rules);
-    let rawTld = item.tld ? item.tld.toLowerCase().trim() : "";
-    let tld = rawTld.startsWith(".") ? rawTld : (rawTld ? `.${rawTld}` : ".com");
-
-    // Force strict compliance with user's selected TLDs
-    if (normalizedAllowedTlds.length > 0 && !normalizedAllowedTlds.includes(tld)) {
-      tld = normalizedAllowedTlds[i % normalizedAllowedTlds.length];
+    if (slug.includes(".")) {
+      slug = slug.substring(0, slug.lastIndexOf("."));
     }
+    slug = slug.replace(/[^a-z0-9-]/g, "");
+
+    // Force strict compliance with user's selected TLDs (.com default)
+    let targetTld = ".com";
+    if (normalizedAllowedTlds.length === 1) {
+      targetTld = normalizedAllowedTlds[0];
+    } else if (normalizedAllowedTlds.length > 1) {
+      let rawTld = item.tld ? item.tld.toLowerCase().trim() : "";
+      if (!rawTld.startsWith(".")) rawTld = `.${rawTld}`;
+      targetTld = normalizedAllowedTlds.includes(rawTld)
+        ? rawTld
+        : normalizedAllowedTlds[i % normalizedAllowedTlds.length];
+    }
+    if (!targetTld.startsWith(".")) targetTld = `.${targetTld}`;
 
     if (rules.noDashes && slug.includes("-")) {
       slug = slug.replace(/-/g, "");
@@ -374,14 +388,14 @@ Order them by quality and relevance, with the absolute best ones first.`;
       words = words || decomposeIntoWords(slug, keywords);
     }
 
-    const fullDomain = `${slug}${tld}`;
+    const fullDomain = `${slug}${targetTld}`;
     const isTop = i === 0 || i === 1;
 
     validDomains.push({
       id: `domain-${i + 1}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       domain: fullDomain,
       name: slug,
-      tld,
+      tld: targetTld,
       relevanceScore: Math.min(99, Math.max(75, Number(item.relevanceScore) || 92)),
       wordsCount: rules.exactlyTwoWords ? 2 : (item.wordsCount || 2),
       words,
@@ -987,41 +1001,49 @@ ${strategyDirective}
     seen.add(rawDomain);
 
     const lastDot = rawDomain.lastIndexOf(".");
-    const name = item.name || (lastDot !== -1 ? rawDomain.substring(0, lastDot) : rawDomain);
+    let cleanName = item.name || (lastDot !== -1 ? rawDomain.substring(0, lastDot) : rawDomain);
+    cleanName = cleanName.replace(/https?:\/\//i, "").replace(/^www\./i, "").split("/")[0];
+    if (cleanName.includes(".")) {
+      cleanName = cleanName.substring(0, cleanName.lastIndexOf("."));
+    }
+    cleanName = cleanName.replace(/[^a-z0-9-]/g, "");
+
     const rawTld = lastDot !== -1 ? rawDomain.substring(lastDot) : (item.tld || ".com");
-    const tld = rawTld.toLowerCase().startsWith(".") ? rawTld.toLowerCase() : `.${rawTld.toLowerCase()}`;
+    let tld = rawTld.toLowerCase().startsWith(".") ? rawTld.toLowerCase() : `.${rawTld.toLowerCase()}`;
     
     // Strict TLD filter: disqualify any domain whose TLD is not in selected list
     if (normalizedAllowedTlds.length > 0 && !normalizedAllowedTlds.includes(tld)) {
       return;
     }
+    if (!tld.startsWith(".")) tld = `.${tld}`;
 
     // Strict 2-word English check: verify against 275k dictionary
     let words = Array.isArray(item.words) && item.words.length === 2 ? item.words : null;
     if (rules.exactlyTwoWords) {
-      const verifiedTwo = decomposeIntoTwoEnglishWords(name, targetKeyword);
+      const verifiedTwo = decomposeIntoTwoEnglishWords(cleanName, targetKeyword);
       if (!verifiedTwo) {
         // Disqualify: does not meet strict 2 English words requirement
         return;
       }
       words = verifiedTwo;
     } else {
-      words = words || decomposeIntoWords(name, targetKeyword);
+      words = words || decomposeIntoWords(cleanName, targetKeyword);
     }
 
     const isTop = idx < 3;
     const topBadge = idx === 0 ? "Best Match #1" : idx === 1 ? "Top Pick #2" : idx === 2 ? "Top Pick #3" : undefined;
+    const finalFullDomain = `${cleanName}${tld}`;
 
     formatted.push({
       id: `ai-eval-${idx + 1}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      domain: rawDomain,
-      name,
-      tld: tld.startsWith(".") ? tld : `.${tld}`,
+      domain: finalFullDomain,
+      name: cleanName,
+      tld: tld,
       relevanceScore: Math.min(99, Math.max(75, Number(item.relevanceScore) || 90)),
       wordsCount: words.length,
       words,
-      hasDashes: name.includes("-"),
-      hasNumbers: /\d/.test(name),
+      hasDashes: cleanName.includes("-"),
+      hasNumbers: /\d/.test(cleanName),
       valuationTier: (["Premium", "Brandable", "Standard"].includes(item.valuationTier) ? item.valuationTier : (isTop ? "Premium" : "Brandable")),
       estimatedValue: item.estimatedValue || "$2,200 - $4,500",
       pitch: item.pitch || `High commercial visibility combining "${words[0]}" and "${words[1] || ''}" for ${contextTopic || "modern ventures"}.`,
@@ -1055,7 +1077,7 @@ app.post("/api/generate-domains", async (req, res) => {
       noNumbers: Boolean(rules.noNumbers ?? true),
       tlds: Array.isArray(rules.tlds) && rules.tlds.length > 0
         ? rules.tlds.map((t: string) => (t.toLowerCase().startsWith(".") ? t.toLowerCase() : `.${t.toLowerCase()}`))
-        : [".com", ".ai", ".io", ".co"],
+        : [".com"],
       auctionMode: Boolean(rules.auctionMode ?? false),
       minLetters: typeof rules.minLetters === "number" ? rules.minLetters : 2,
       maxLetters: typeof rules.maxLetters === "number" ? rules.maxLetters : 25,
@@ -1270,7 +1292,7 @@ app.post("/api/analyze-domains", async (req, res) => {
       noNumbers: Boolean(rules.noNumbers ?? true),
       tlds: Array.isArray(rules.tlds) && rules.tlds.length > 0
         ? rules.tlds.map((t: string) => t.toLowerCase().startsWith(".") ? t.toLowerCase() : `.${t.toLowerCase()}`)
-        : [".com", ".ai", ".io", ".co"],
+        : [".com"],
       auctionMode: Boolean(rules.auctionMode ?? false),
       minLetters: typeof rules.minLetters === "number" ? rules.minLetters : 2,
       maxLetters: typeof rules.maxLetters === "number" ? rules.maxLetters : 25,
