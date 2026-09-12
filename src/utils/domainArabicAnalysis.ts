@@ -1,4 +1,5 @@
 import { WordAnalysis, DomainArabicBreakdown, DomainItem } from '../types';
+import { clientDecomposeWords } from './spreadsheet';
 
 /**
  * Comprehensive dictionary of domain keywords with Arabic meanings,
@@ -632,7 +633,12 @@ export function extractDomainTwoWords(domainItem: { name?: string; domain?: stri
 
   const raw = (domainItem.name || domainItem.domain || '').split('.')[0].toLowerCase().replace(/[^a-z]/g, '');
 
-  // Try to match against known prefixes
+  const decomposed = clientDecomposeWords(raw);
+  if (decomposed.length === 2) {
+    return [decomposed[0], decomposed[1]];
+  }
+
+  // Try to match against known profiles
   const knownWords = Object.keys(ARABIC_WORD_PROFILES).sort((a, b) => b.length - a.length);
   for (const prefix of knownWords) {
     if (raw.startsWith(prefix) && raw.length > prefix.length) {

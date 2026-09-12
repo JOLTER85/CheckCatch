@@ -451,9 +451,31 @@ export function isRealEnglishWord(word: string): boolean {
 }
 
 /**
+ * Checks if a string is a single atomic English word,
+ * meaning it is a real English word and cannot be further split into
+ * two or more valid English words of length >= 2 (e.g. "voltcharge" -> "volt" + "charge" is NOT atomic).
+ */
+export function isAtomicEnglishWord(word: string): boolean {
+  if (!isRealEnglishWord(word)) return false;
+  const clean = word.toLowerCase().trim().replace(/[^a-z]/g, "");
+  if (clean.length < 4) return true;
+
+  for (let i = 2; i <= clean.length - 2; i++) {
+    const sub1 = clean.substring(0, i);
+    const sub2 = clean.substring(i);
+    if (isRealEnglishWord(sub1) && isRealEnglishWord(sub2)) {
+      // Compound of multiple English words (e.g. volt + charge, urban + villages)
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
  * Strictly decomposes a domain slug into EXACTLY TWO valid, correctly spelled English words.
- * Returns [word1, word2] if and only if both words are genuine English words in the dictionary.
- * Returns null if the domain is a single word, 3+ words (e.g. freedomlaundrycohub), gibberish, or invalid.
+ * Returns [word1, word2] if and only if both words are genuine atomic English words in the dictionary.
+ * Returns null if the domain is a single word, 3+ words (e.g. smartvoltcharge, smarturbanvillages), gibberish, or invalid.
  */
 export function decomposeIntoTwoEnglishWords(slug: string, targetKeyword?: string): [string, string] | null {
   const clean = slug.toLowerCase().replace(/[^a-z]/g, "");
@@ -462,18 +484,22 @@ export function decomposeIntoTwoEnglishWords(slug: string, targetKeyword?: strin
   const cleanKw = targetKeyword ? targetKeyword.trim().toLowerCase().replace(/[^a-z]/g, "") : "";
 
   // 1. If a target keyword is present, check direct prefix/suffix split
-  // CRITICAL: The paired non-keyword part MUST be a 100% verified real English word
+  // CRITICAL: The paired non-keyword part MUST be a 100% verified atomic single English word
   if (cleanKw && clean.length > cleanKw.length) {
     if (clean.startsWith(cleanKw)) {
       const rest = clean.slice(cleanKw.length);
-      if (isRealEnglishWord(rest)) {
+      if (isAtomicEnglishWord(rest)) {
         return [cleanKw, rest];
       }
+      return null;
     } else if (clean.endsWith(cleanKw)) {
       const prefix = clean.slice(0, clean.length - cleanKw.length);
-      if (isRealEnglishWord(prefix)) {
+      if (isAtomicEnglishWord(prefix)) {
         return [prefix, cleanKw];
       }
+      return null;
+    } else {
+      return null;
     }
   }
 
@@ -483,9 +509,9 @@ export function decomposeIntoTwoEnglishWords(slug: string, targetKeyword?: strin
     const w1 = clean.substring(0, i);
     const w2 = clean.substring(i);
 
-    // BOTH w1 and w2 MUST be genuine, valid English dictionary words
-    const isW1Valid = isRealEnglishWord(w1) || (cleanKw && w1 === cleanKw);
-    const isW2Valid = isRealEnglishWord(w2) || (cleanKw && w2 === cleanKw);
+    // BOTH w1 and w2 MUST be genuine atomic English dictionary words
+    const isW1Valid = isAtomicEnglishWord(w1) || (cleanKw && w1 === cleanKw);
+    const isW2Valid = isAtomicEnglishWord(w2) || (cleanKw && w2 === cleanKw);
 
     if (isW1Valid && isW2Valid) {
       validSplits.push([w1, w2]);
@@ -597,29 +623,29 @@ function serverMatchKeyword(words: string[], domainName: string, keyword?: strin
   const nameOnly = lastDot !== -1 ? rawLower.substring(0, lastDot) : rawLower;
   const cleanSlug = nameOnly.replace(/[^a-z0-9]/g, '');
 
-  // 1. Direct containment anywhere in the domain name or clean slug
-  if (cleanSlug.includes(cleanKw) || nameOnly.includes(cleanKw) || rawLower.includes(cleanKw)) {
-    return { matches: true, matchedWord: cleanKw };
-  }
-
-  // 2. Tokenized check for hyphenated/underscored domains (e.g. "my-cloud-app")
-  const tokens = nameOnly.split(/[-_.]+/).filter(Boolean);
-  for (const token of tokens) {
-    const cleanToken = token.replace(/[^a-z0-9]/g, '');
-    if (cleanToken === cleanKw || cleanToken.includes(cleanKw) || cleanKw.includes(cleanToken)) {
-      return { matches: true, matchedWord: token };
-    }
-  }
-
-  // 3. Constituent words check
+  // 1. Exact match in constituent words array (e.g. ['smart', 'labs'] matches 'smart')
   if (words && words.length > 0) {
     const foundWord = words.find((w) => {
       const lowerW = (w || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-      return lowerW === cleanKw || lowerW.includes(cleanKw) || cleanKw.includes(lowerW);
+      return lowerW === cleanKw;
     });
     if (foundWord) {
       return { matches: true, matchedWord: foundWord };
     }
+  }
+
+  // 2. Tokenized check for hyphenated/underscored domains (e.g. "smart-labs")
+  const tokens = nameOnly.split(/[-_.]+/).filter(Boolean);
+  for (const token of tokens) {
+    const cleanToken = token.replace(/[^a-z0-9]/g, '');
+    if (cleanToken === cleanKw) {
+      return { matches: true, matchedWord: token };
+    }
+  }
+
+  // 3. Exact prefix or suffix in cleanSlug (e.g., smartlabs starts with smart, techsmart ends with smart)
+  if (cleanSlug.startsWith(cleanKw) || cleanSlug.endsWith(cleanKw)) {
+    return { matches: true, matchedWord: cleanKw };
   }
 
   return { matches: false };

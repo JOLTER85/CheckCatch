@@ -87,9 +87,31 @@ export function isClientRealEnglishWord(word: string): boolean {
 }
 
 /**
+ * Checks if a string is a single atomic English word,
+ * meaning it is a real English word and cannot be further split into
+ * two or more valid English words of length >= 2 (e.g. "voltcharge" -> "volt" + "charge" is NOT atomic).
+ */
+export function isClientAtomicEnglishWord(word: string): boolean {
+  if (!isClientRealEnglishWord(word)) return false;
+  const clean = word.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+  if (clean.length < 4) return true;
+
+  for (let i = 2; i <= clean.length - 2; i++) {
+    const sub1 = clean.substring(0, i);
+    const sub2 = clean.substring(i);
+    if (isClientRealEnglishWord(sub1) && isClientRealEnglishWord(sub2)) {
+      // Composite of multiple English words (e.g. volt + charge, urban + villages)
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
  * Client-side domain decomposition:
- * Returns [w1, w2] ONLY if the name breaks into two verified English words from the dictionary.
- * If the domain is a single dictionary word, 3+ words, or cannot be cleanly split, returns [clean] (length 1).
+ * Returns [w1, w2] ONLY if the name breaks into EXACTLY two verified atomic English words from the dictionary.
+ * If the domain is a single dictionary word, 3+ words (e.g. smartvoltcharge, smarturbanvillages), or cannot be cleanly split, returns [clean] (length 1).
  */
 export function clientDecomposeWords(name: string, targetKeyword?: string): string[] {
   const clean = name.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -98,18 +120,22 @@ export function clientDecomposeWords(name: string, targetKeyword?: string): stri
   const cleanKw = targetKeyword ? targetKeyword.trim().toLowerCase().replace(/[^a-z0-9]/g, '') : '';
 
   // 1. Direct keyword prefix/suffix decomposition if keyword matches
-  // CRITICAL: The paired non-keyword part MUST be a 100% verified real English dictionary word
+  // CRITICAL: The paired non-keyword part MUST be a 100% verified atomic single English dictionary word
   if (cleanKw && clean.length > cleanKw.length) {
     if (clean.startsWith(cleanKw)) {
       const rest = clean.slice(cleanKw.length);
-      if (isClientRealEnglishWord(rest)) {
+      if (isClientAtomicEnglishWord(rest)) {
         return [cleanKw, rest];
       }
+      return [clean]; // Has 3+ words or invalid suffix
     } else if (clean.endsWith(cleanKw)) {
       const prefix = clean.slice(0, clean.length - cleanKw.length);
-      if (isClientRealEnglishWord(prefix)) {
+      if (isClientAtomicEnglishWord(prefix)) {
         return [prefix, cleanKw];
       }
+      return [clean]; // Has 3+ words or invalid prefix
+    } else {
+      return [clean];
     }
   }
 
@@ -119,10 +145,10 @@ export function clientDecomposeWords(name: string, targetKeyword?: string): stri
     const w1 = clean.substring(0, i);
     const w2 = clean.substring(i);
 
-    const isW1Valid = isClientRealEnglishWord(w1) || (cleanKw && w1 === cleanKw);
-    const isW2Valid = isClientRealEnglishWord(w2) || (cleanKw && w2 === cleanKw);
+    const isW1Valid = isClientAtomicEnglishWord(w1) || (cleanKw && w1 === cleanKw);
+    const isW2Valid = isClientAtomicEnglishWord(w2) || (cleanKw && w2 === cleanKw);
 
-    // Both constituent parts must be verified real English dictionary words
+    // Both constituent parts must be verified atomic English dictionary words
     if (isW1Valid && isW2Valid) {
       validSplits.push([w1, w2]);
     }
@@ -367,29 +393,29 @@ export function matchKeywordRule(
   const nameOnly = lastDot !== -1 ? rawLower.substring(0, lastDot) : rawLower;
   const cleanSlug = nameOnly.replace(/[^a-z0-9]/g, '');
 
-  // 1. Direct containment anywhere in the domain name or clean slug
-  if (cleanSlug.includes(cleanKw) || nameOnly.includes(cleanKw) || rawLower.includes(cleanKw)) {
-    return { matches: true, matchedWord: cleanKw };
-  }
-
-  // 2. Tokenized check for hyphenated/underscored domains (e.g. "my-cloud-app")
-  const tokens = nameOnly.split(/[-_.]+/).filter(Boolean);
-  for (const token of tokens) {
-    const cleanToken = token.replace(/[^a-z0-9]/g, '');
-    if (cleanToken === cleanKw || cleanToken.includes(cleanKw) || cleanKw.includes(cleanToken)) {
-      return { matches: true, matchedWord: token };
-    }
-  }
-
-  // 3. Constituent words check
+  // 1. Exact match in constituent words (e.g. ['smart', 'labs'] matches 'smart')
   if (words && words.length > 0) {
     const foundWord = words.find((w) => {
       const lowerW = (w || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-      return lowerW === cleanKw || lowerW.includes(cleanKw) || cleanKw.includes(lowerW);
+      return lowerW === cleanKw;
     });
     if (foundWord) {
       return { matches: true, matchedWord: foundWord };
     }
+  }
+
+  // 2. Tokenized check for hyphenated/underscored domains (e.g. "smart-labs")
+  const tokens = nameOnly.split(/[-_.]+/).filter(Boolean);
+  for (const token of tokens) {
+    const cleanToken = token.replace(/[^a-z0-9]/g, '');
+    if (cleanToken === cleanKw) {
+      return { matches: true, matchedWord: token };
+    }
+  }
+
+  // 3. Exact prefix or suffix in cleanSlug (e.g., smartlabs starts with smart, techsmart ends with smart)
+  if (cleanSlug.startsWith(cleanKw) || cleanSlug.endsWith(cleanKw)) {
+    return { matches: true, matchedWord: cleanKw };
   }
 
   return { matches: false };
@@ -799,8 +825,13 @@ export function validateDomainsAgainstRules(
   const seen = new Set<string>();
 
   for (const raw of rawDomains) {
-    const clean = raw.trim().toLowerCase();
+    let clean = raw.trim().toLowerCase().replace(/https?:\/\//i, '').replace(/^www\./i, '').replace(/\/.*$/, '');
     if (!clean) continue;
+
+    // Sanitize common broken extensions (e.g. ".c" -> ".com")
+    if (clean.endsWith('.c') && !clean.endsWith('.co') && !clean.endsWith('.cc')) {
+      clean = clean.slice(0, -2) + '.com';
+    }
 
     const lastDot = clean.lastIndexOf('.');
     if (lastDot === -1 || lastDot === 0 || lastDot === clean.length - 1) {
@@ -812,13 +843,13 @@ export function validateDomainsAgainstRules(
     const name = clean.substring(0, lastDot);
     const tld = clean.substring(lastDot);
 
-    // In keyword mode, check keyword containment
+    // In keyword mode, check exact whole-word keyword presence
     const words = clientDecomposeWords(name, cleanKeyword);
     if (isKeywordMode && cleanKeyword) {
       const kwMatch = matchKeywordRule(words, name, cleanKeyword);
       if (!kwMatch.matches) {
         breakdown.keywordMismatch++;
-        discarded.push({ domain: clean, reason: `Does not contain mandatory keyword "${cleanKeyword}"` });
+        discarded.push({ domain: clean, reason: `Does not contain mandatory keyword "${cleanKeyword}" as a standalone word` });
         continue;
       }
       keywordMatchesTotal++;
@@ -862,14 +893,14 @@ export function validateDomainsAgainstRules(
       continue;
     }
 
-    // Rule 4: Exactly 2 English Words
+    // Rule 4: Exactly 2 English Words (Strict 2-word enforcer: rejects 3+ words & single words)
     if (rules.exactlyTwoWords) {
       if (words.length !== 2) {
         breakdown.words++;
         const isSingle = COMMON_DICTIONARY_SET.has(name.toLowerCase().replace(/[^a-z]/g, ''));
         const reason = isSingle
           ? 'Single English word (condition requires exactly two English words)'
-          : 'Does not form two valid English words';
+          : 'Does not form exactly two valid English words (3+ words or non-dictionary parts)';
         discarded.push({ domain: clean, reason });
         continue;
       }
@@ -896,17 +927,17 @@ export function validateDomainsAgainstRules(
     }
   }
 
-  // SAFE FALLBACK MECHANISM:
-  // 1. If strict filtering returned at least 3 domains, use strict qualified list.
-  // 2. IF strict filtering returned less than 3 domains:
-  //    Automatically fall back to ranking ALL candidate domains (all matching keyword domains, or all valid uploaded domains)
-  //    based on quality metrics so the user is NEVER left with an empty array if domains exist in their input.
+  // Safe fallback mechanism respecting strict 2-word rules
   let finalQualified = [...qualified];
   let autoRelaxed = false;
 
   const candidatePool = (isKeywordMode && cleanKeyword && allKeywordDomains.length > 0)
     ? allKeywordDomains
-    : rawDomains.map((r) => r.trim().toLowerCase().replace(/https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '')).filter((d) => d.includes('.'));
+    : rawDomains.map((r) => {
+        let d = r.trim().toLowerCase().replace(/https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+        if (d.endsWith('.c') && !d.endsWith('.co') && !d.endsWith('.cc')) d = d.slice(0, -2) + '.com';
+        return d;
+      }).filter((d) => d.includes('.'));
 
   if (finalQualified.length < 3 && candidatePool.length > 0) {
     autoRelaxed = true;
@@ -916,15 +947,16 @@ export function validateDomainsAgainstRules(
       return { domain: d, score: q.score, isTwoWords: q.isTwoWords };
     });
 
-    // Sort: 2-words first, then highest score
-    rankedCandidates.sort((a, b) => {
-      if (a.isTwoWords && !b.isTwoWords) return -1;
-      if (!a.isTwoWords && b.isTwoWords) return 1;
-      return b.score - a.score;
-    });
+    // If exactlyTwoWords is enforced, ONLY allow 2-word candidates into the qualified set
+    const eligibleCandidates = rules.exactlyTwoWords
+      ? rankedCandidates.filter((item) => item.isTwoWords)
+      : rankedCandidates;
+
+    // Sort by highest score
+    eligibleCandidates.sort((a, b) => b.score - a.score);
 
     const finalSet = new Set(finalQualified);
-    for (const item of rankedCandidates) {
+    for (const item of eligibleCandidates) {
       if (!finalSet.has(item.domain)) {
         finalSet.add(item.domain);
         finalQualified.push(item.domain);
