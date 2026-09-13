@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bookmark, ShieldCheck, Globe, ChevronDown, Check } from 'lucide-react';
+import { Bookmark, ShieldCheck, Globe, ChevronDown, Check, Info, Mail } from 'lucide-react';
 import { Language, translations } from '../utils/translations';
 import { CheckCatchLogo } from './CheckCatchLogo';
+import { LegalModalType } from './LegalModal';
 
 interface NavbarProps {
   savedCount: number;
@@ -9,6 +10,7 @@ interface NavbarProps {
   hasApiKey: boolean;
   lang?: Language;
   onToggleLang?: (lang: Language) => void;
+  onOpenLegal?: (type: LegalModalType) => void;
 }
 
 const LANGUAGES: { code: Language; label: string; flag: string; nativeName: string }[] = [
@@ -23,8 +25,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSaved,
   lang = 'en',
   onToggleLang,
+  onOpenLegal,
 }) => {
   const t = translations[lang] || translations.en;
+  const isAr = lang === 'ar';
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const langMenuRef = useRef<HTMLDivElement>(null);
 
@@ -80,10 +84,34 @@ export const Navbar: React.FC<NavbarProps> = ({
           </a>
         </div>
 
-        {/* Right Controls: Strict Rules Badge, Language Selector & Shortlist */}
+        {/* Right Controls: About, Contact, Strict Rules Badge, Language Selector & Shortlist */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Informational Quick Links */}
+          {onOpenLegal && (
+            <div className="hidden md:flex items-center gap-1.5 border-r rtl:border-r-0 rtl:border-l border-slate-200 pr-2.5 rtl:pr-0 rtl:pl-2.5">
+              <button
+                id="nav-about-btn"
+                type="button"
+                onClick={() => onOpenLegal('about')}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-teal-800 hover:bg-teal-50/60 transition-all"
+              >
+                <Info className="w-3.5 h-3.5 text-teal-600" />
+                <span>{isAr ? 'عن المنصة' : 'About'}</span>
+              </button>
+              <button
+                id="nav-contact-btn"
+                type="button"
+                onClick={() => onOpenLegal('contact')}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-teal-800 hover:bg-teal-50/60 transition-all"
+              >
+                <Mail className="w-3.5 h-3.5 text-teal-600" />
+                <span>{isAr ? 'اتصل بنا' : 'Contact'}</span>
+              </button>
+            </div>
+          )}
+
           {/* Rules indicator */}
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-50/80 border border-teal-200/80 text-xs font-semibold text-teal-900">
+          <div className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-50/80 border border-teal-200/80 text-xs font-semibold text-teal-900">
             <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
             <span>{t.nav.rulesActive}</span>
           </div>

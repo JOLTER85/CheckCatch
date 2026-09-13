@@ -6,6 +6,8 @@ import { DomainTable } from './components/DomainTable';
 import { SavedDomainsDrawer } from './components/SavedDomainsDrawer';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { CheckCatchLogo } from './components/CheckCatchLogo';
+import { Footer } from './components/Footer';
+import { LegalModal, LegalModalType } from './components/LegalModal';
 import {
   DomainItem,
   FilterRules,
@@ -102,6 +104,43 @@ export default function App() {
   const [selectedBestDomainId, setSelectedBestDomainId] = useState<string | null>(null);
   const [expandAllBreakdowns, setExpandAllBreakdowns] = useState<boolean>(false);
   const [hasAnalyzedSpreadsheet, setHasAnalyzedSpreadsheet] = useState<boolean>(false);
+  const [legalModalType, setLegalModalType] = useState<LegalModalType>(null);
+
+  // Synchronize URL hash with legal pages (/about, /contact, /privacy, /terms or #about, #contact, etc.)
+  useEffect(() => {
+    const handleHashOrPathChange = () => {
+      const hash = window.location.hash.replace('#', '').toLowerCase();
+      const path = window.location.pathname.replace('/', '').toLowerCase();
+      const target = hash || path;
+      if (target === 'about' || target === 'contact' || target === 'privacy' || target === 'terms') {
+        setLegalModalType(target as LegalModalType);
+      }
+    };
+
+    handleHashOrPathChange();
+    window.addEventListener('hashchange', handleHashOrPathChange);
+    window.addEventListener('popstate', handleHashOrPathChange);
+    return () => {
+      window.removeEventListener('hashchange', handleHashOrPathChange);
+      window.removeEventListener('popstate', handleHashOrPathChange);
+    };
+  }, []);
+
+  const openLegalModal = (type: LegalModalType) => {
+    setLegalModalType(type);
+    if (type) {
+      window.history.pushState(null, '', `#${type}`);
+    } else {
+      window.history.pushState(null, '', window.location.pathname);
+    }
+  };
+
+  const closeLegalModal = () => {
+    setLegalModalType(null);
+    if (window.location.hash) {
+      window.history.pushState(null, '', window.location.pathname);
+    }
+  };
 
   // Sync saved domains to local storage
   useEffect(() => {
@@ -450,6 +489,7 @@ export default function App() {
         hasApiKey={hasServerApiKey}
         lang={lang}
         onToggleLang={setLang}
+        onOpenLegal={openLegalModal}
       />
 
       {/* Main Container */}
@@ -819,104 +859,18 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 py-8 bg-white text-xs text-slate-600 mt-auto shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-          {/* Main Footer Row: Brand, Description, Social Links */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-6 border-b border-slate-200">
-            {/* Left / Brand info */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
-              <div className="flex items-center gap-2">
-                <CheckCatchLogo className="w-6 h-6" />
-                <span className="font-mono font-bold text-base text-slate-900 tracking-tight">
-                  CheckCatch<span className="text-emerald-600">.com</span>
-                </span>
-                <span className="hidden sm:inline text-slate-300">|</span>
-              </div>
-              <p className="text-xs text-slate-500 max-w-md leading-relaxed">
-                {t.footer.description}
-              </p>
-            </div>
+      <Footer
+        lang={lang}
+        onOpenLegal={openLegalModal}
+        lastGeneratedAt={lastGeneratedAt}
+      />
 
-            {/* Social Media & Contact Links (Instagram, Facebook, WhatsApp) */}
-            <div id="footer-social-links" className="flex items-center gap-3 flex-wrap justify-center">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider hidden lg:inline">
-                {t.footer.socials.connect}:
-              </span>
-
-              {/* Instagram Button */}
-              <a
-                id="social-instagram-link"
-                href="https://www.instagram.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={t.footer.socials.instagram}
-                className="group flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 hover:border-pink-400 hover:bg-pink-50 text-slate-700 hover:text-pink-700 transition-all shadow-xs"
-              >
-                <div className="w-5 h-5 rounded-lg flex items-center justify-center bg-white group-hover:bg-pink-100 text-pink-600 transition-colors shadow-xs">
-                  <Instagram className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-xs font-semibold">{t.footer.socials.instagram}</span>
-              </a>
-
-              {/* Facebook Button */}
-              <a
-                id="social-facebook-link"
-                href="https://www.facebook.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={t.footer.socials.facebook}
-                className="group flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-700 hover:text-blue-700 transition-all shadow-xs"
-              >
-                <div className="w-5 h-5 rounded-lg flex items-center justify-center bg-white group-hover:bg-blue-100 text-blue-600 transition-colors shadow-xs">
-                  <Facebook className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-xs font-semibold">{t.footer.socials.facebook}</span>
-              </a>
-
-              {/* WhatsApp Button */}
-              <a
-                id="social-whatsapp-link"
-                href={`https://wa.me/?text=${encodeURIComponent(t.footer.socials.whatsappChatMessage)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={t.footer.socials.whatsapp}
-                className="group flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-300 hover:border-emerald-400 hover:bg-emerald-100 text-emerald-900 transition-all shadow-xs"
-              >
-                <div className="relative w-5 h-5 rounded-lg flex items-center justify-center bg-white text-emerald-600 shadow-xs">
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 animate-ping opacity-75" />
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500" />
-                </div>
-                <div className="flex flex-col items-start text-left">
-                  <span className="text-xs font-bold leading-tight">{t.footer.socials.whatsapp}</span>
-                  <span className="text-[9px] text-emerald-700 font-semibold leading-tight">
-                    {t.footer.socials.whatsappOnline}
-                  </span>
-                </div>
-              </a>
-            </div>
-          </div>
-
-          {/* Bottom Copyright and Verification Notice */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-500 text-[11px]">
-            <div>
-              <span>© {new Date().getFullYear()} CheckCatch.com. {t.footer.rights}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span>{t.footer.verifiedNotice}</span>
-              {lastGeneratedAt && (
-                <>
-                  <span className="text-slate-300">•</span>
-                  <span>
-                    {lang === 'ar' ? 'آخر فحص:' : 'Updated:'}{' '}
-                    {new Date(lastGeneratedAt).toLocaleTimeString()}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* Legal & Informational Pages Modal */}
+      <LegalModal
+        type={legalModalType}
+        onClose={closeLegalModal}
+        lang={lang}
+      />
 
       {/* Saved Domains Drawer */}
       <SavedDomainsDrawer
