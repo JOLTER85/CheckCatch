@@ -16,25 +16,119 @@ export interface WordAnalysis {
   meaningAr: string; // شرح معنى الكلمة بالعربي
   strengthEn?: string; // English commercial & brand strength
   strengthAr: string; // قوة الكلمة تسويقياً وتقنياً واستثمارياً
-  strengthScore: number; // 0 - 100
+  strengthScore: number; // 0 - 100 (retained for backward compatibility)
   categoryEn?: string; // English category
   categoryAr: string; // تصنيف الكلمة
+  length: number; // Character count
+  syllables: number; // Syllable count
+  partOfSpeechEn?: string; // e.g. "Spatial descriptor", "Technical noun"
+  partOfSpeechAr?: string; // e.g. "دلالة مكانية", "دلالة تقنية/وظيفية"
+}
+
+export interface RadioTestResult {
+  passed: boolean;
+  score: number; // 1 - 10
+  ratingAr: string; // e.g. "ناجح بامتياز (10/10)"
+  ratingEn: string; // e.g. "Passed with Excellence (10/10)"
+  verdictAr: string; // e.g. "يُكتب تماماً كما يُسمع دون حروف صامتة أو تشابه ملتبس"
+  verdictEn: string; // e.g. "Spelled exactly as heard with zero silent letters or ambiguous homophones"
+  hasDoubleLetterCollision: boolean;
+  hasSilentLetters: boolean;
+}
+
+export interface ComparableSale {
+  domain: string;
+  price: number;
+  priceFormatted: string; // e.g. "$1,500"
+  year: number;
+  venue?: string; // e.g. "NameBio / GoDaddy", "Sedo"
+  similarityAr?: string; // e.g. "نمط مشابه: كلمة مكانية + مصطلح تقني"
+  similarityEn?: string; // e.g. "Similar pattern: Spatial anchor + Tech term"
+}
+
+export interface RealisticValuationSplit {
+  resellerLow: number;
+  resellerHigh: number;
+  resellerRangeFormatted: string; // e.g. "$50 - $250"
+  resellerDescriptionAr: string; // "قيمة إعادة البيع السريعة لمستثمر دومينات في المزادات أو صفقات التصفية السريعة"
+  resellerDescriptionEn: string; // "Wholesale/liquid investor resale price in auctions or quick secondary flips"
+  endUserLow: number;
+  endUserHigh: number;
+  endUserRangeFormatted: string; // e.g. "$1,200 - $3,500"
+  endUserDescriptionAr: string; // "قيمة الاستخدام النهائي المتوقعة لشركة ناشئة أو مشروع تجاري يحتاج هذا الاسم بعد مفاوضات"
+  endUserDescriptionEn: string; // "Retail price for a funded startup or enterprise seeking this exact brand name"
 }
 
 export interface DomainArabicBreakdown {
   word1: WordAnalysis;
   word2: WordAnalysis;
-  combinedPowerEn?: string; // English synergy
-  combinedPowerAr: string; // قوة التركيبة بين الكلمتين
+
+  // Section 1: Summary & Structural Classification
+  classification?: {
+    structureTypeAr: string; // "نطاق مركب من كلمتين (دلالة مكانية + دلالة تقنية)"
+    structureTypeEn: string; // "Two-word compound (Spatial anchor + Technical core)"
+    idealSectorsAr: string[]; // ["B2B SaaS", "AI Infrastructure", "Cloud Platforms"]
+    idealSectorsEn: string[];
+    brandImpressionAr: string; // "القوة والاتجاه والرسوخ المؤسسي"
+    brandImpressionEn: string; // "Strength, Direction & Institutional Solidity"
+    cleanSummaryAr: string; // "نطاق مركب من كلمتين (دلالة مكانية + دلالة تقنية). مثالي لمجالات: B2B SaaS و AI Infrastructure. الانطباع الأولي: القوة والاتجاه."
+    cleanSummaryEn: string;
+  };
+
+  // Section 2: Phonetic & Structural Metrics
+  metrics?: {
+    totalLength: number;
+    lengthAssessmentAr: string; // "11 حرف - طول مثالي (أقل من 12 حرف لسهولة الكتابة والتذكر)"
+    lengthAssessmentEn: string;
+    totalSyllables: number;
+    syllablesAssessmentAr: string; // "3 مقاطع صوتية - إيقاع لفظي سلس وسريع الحفظ"
+    syllablesAssessmentEn: string;
+    radioTest: RadioTestResult;
+  };
+
+  // Section 3: Compound Synergy & Mental Metaphor
+  synergyAnalysis?: {
+    metaphorAr: string; // "الدمج يخلق استعارة مجازية تدل على [التوسع والرسوخ + الدقة الحسابية]"
+    metaphorEn: string;
+    visualFlowAr: string; // "لا توجد حروف مزدوجة بين الكلمتين (t و v)، مما يجعل القراءة البصرية مريحة ويمنع أخطاء الكتابة"
+    visualFlowEn: string;
+    hasDoubleLetterCollision?: boolean;
+  };
+
+  // Section 4: Specific End-Users (2-3 precise operators)
+  specificEndUsers?: {
+    buyersAr: string[]; // 2-3 specific end users e.g. ["منصات تحليل البيانات", "شركات إدارة السيرفرات السحابية", "أدوات الذكاء الاصطناعي التوليدي"]
+    buyersEn: string[];
+    primaryOperatorsAr?: string[];
+    primaryOperatorsEn?: string[];
+    useCaseAr: string; // "شركة ناشئة ممولة (Series A/B) تبحث عن علامة تجارية رصينة لمنتجها الأساسي"
+    useCaseEn: string;
+  };
+
+  // Section 5: Liquidity, Search Volume & Comps
+  liquidityData?: {
+    monthlySearchVolumeEstimate: number;
+    searchVolumeFormatted: string; // e.g. "~14,500 عملية بحث شهرياً"
+    searchVolumeNoteAr: string; // "تقدير عمليات البحث الشهرية التراكمية على الكلمتين في محركات البحث"
+    searchVolumeNoteEn: string;
+    comparableSales: ComparableSale[];
+  };
+
+  // Section 6: Realistic Dual Valuation
+  valuationSplit?: RealisticValuationSplit;
+
+  // Backward compatibility fields
+  combinedPowerEn?: string;
+  combinedPowerAr: string;
   interestedPartiesEn?: {
     companies: string[];
     individuals: string[];
     summary: string;
   };
   interestedPartiesAr: {
-    companies: string[]; // الشركات والقطاعات المستهدفة
-    individuals: string[]; // رواد الأعمال والمستثمرون المهتمون
-    summary: string; // ملخص الجهات المهتمة وسبب رغبتهم في الشراء
+    companies: string[];
+    individuals: string[];
+    summary: string;
   };
 }
 
@@ -57,6 +151,7 @@ export interface DomainItem {
   auctionEndsInHours?: number;
   auctionCurrentBid?: string;
   arabicBreakdown?: DomainArabicBreakdown;
+  valuationSplit?: RealisticValuationSplit;
 }
 
 export interface GenerateRequest {

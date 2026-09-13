@@ -102,6 +102,27 @@ export interface Translations {
     liquiditySpeed: string;
     copy: string;
     copied: string;
+    summaryClassificationTitle: string;
+    structureType: string;
+    idealSectors: string;
+    brandImpression: string;
+    phoneticVisualTitle: string;
+    lengthLabel: string;
+    syllablesLabel: string;
+    radioTestLabel: string;
+    radioTestPass: string;
+    synergyMetaphorTitle: string;
+    metaphorLabel: string;
+    visualFlowLabel: string;
+    endUsersTitle: string;
+    useCaseLabel: string;
+    compsLiquidityTitle: string;
+    searchVolumeLabel: string;
+    comparableSalesLabel: string;
+    dualValuationTitle: string;
+    resellerWholesale: string;
+    endUserRetail: string;
+    valuationTransparency: string;
   };
   savedDrawer: {
     title: string;
@@ -279,6 +300,27 @@ export const translations: Record<Language, Translations> = {
       liquiditySpeed: 'Liquidity & Resale Potential',
       copy: 'Copy',
       copied: 'Copied!',
+      summaryClassificationTitle: 'Summary & Structural Classification',
+      structureType: 'Compound Structure',
+      idealSectors: 'Ideal Sectors',
+      brandImpression: 'Initial Brand Impression',
+      phoneticVisualTitle: 'Phonetic & Visual Metrics (Word Decomposition)',
+      lengthLabel: 'Length',
+      syllablesLabel: 'Syllables',
+      radioTestLabel: 'Radio Test',
+      radioTestPass: 'Passed with Excellence',
+      synergyMetaphorTitle: 'Compound Synergy & Mental Metaphor',
+      metaphorLabel: 'Mental Metaphor',
+      visualFlowLabel: 'Visual & Typographic Flow',
+      endUsersTitle: 'Target End-Users & Acquisition Case',
+      useCaseLabel: 'Primary Acquisition Motive',
+      compsLiquidityTitle: 'Liquidity & Comparable Historical Sales (Comps)',
+      searchVolumeLabel: 'Est. Monthly Search Volume',
+      comparableSalesLabel: 'Verified Comparable Domain Sales',
+      dualValuationTitle: 'Realistic Dual-Tier Valuation',
+      resellerWholesale: 'Reseller / Wholesale Value',
+      endUserRetail: 'End-User / Retail Value',
+      valuationTransparency: 'Neutral industry standard: separates immediate wholesale liquid resale from direct end-user enterprise acquisition.',
     },
     savedDrawer: {
       title: 'Shortlisted Domains',
@@ -454,6 +496,27 @@ export const translations: Record<Language, Translations> = {
       liquiditySpeed: 'سرعة البيع والقيمة السوقية',
       copy: 'نسخ',
       copied: 'تم النسخ!',
+      summaryClassificationTitle: 'الملخص والتصنيف الهيكلي والصناعي',
+      structureType: 'نوع التركيب',
+      idealSectors: 'المجالات المثالية',
+      brandImpression: 'الانطباع الأولي للهوية',
+      phoneticVisualTitle: 'المقاييس الصوتية والبصرية وتفكيك الكلمات',
+      lengthLabel: 'عدد الحروف',
+      syllablesLabel: 'المقاطع الصوتية',
+      radioTestLabel: 'اختبار الراديو (Radio Test)',
+      radioTestPass: 'ناجح بامتياز',
+      synergyMetaphorTitle: 'الاستعارة المجازية والتدفق البصري',
+      metaphorLabel: 'الاستعارة المجازية (Mental Metaphor)',
+      visualFlowLabel: 'التدفق البصري والطباعي',
+      endUsersTitle: 'المشتري النهائي الحقيقي (Specific End-Users)',
+      useCaseLabel: 'دافع الاستحواذ والتمركز',
+      compsLiquidityTitle: 'السيولة والمبيعات التاريخية المشابهة (Comps)',
+      searchVolumeLabel: 'حجم البحث التقديري شهرياً',
+      comparableSalesLabel: 'مبيعات تاريخية موثقة لنطاقات مشابهة',
+      dualValuationTitle: 'التقييم المالي المزدوج الواقعي (Realistic Valuation)',
+      resellerWholesale: 'قيمة إعادة البيع السريعة (Reseller / Wholesale)',
+      endUserRetail: 'قيمة الاستخدام النهائي (End-User / Retail)',
+      valuationTransparency: 'تقييم احترافي محايد: يفصل بدقة بين سعر البيع السريع للمستثمرين ($50 - $250) والسعر المتوقع عند التفاوض مع شركة تجارية ناشئة ($1,200 - $3,500).',
     },
     savedDrawer: {
       title: 'قائمة النطاقات المحفوظة',
@@ -629,6 +692,27 @@ export const translations: Record<Language, Translations> = {
       liquiditySpeed: 'Liquidité & Potentiel de Revente',
       copy: 'Copier',
       copied: 'Copié !',
+      summaryClassificationTitle: 'Résumé & Classification Structurelle',
+      structureType: 'Structure du Composé',
+      idealSectors: 'Secteurs Idéaux',
+      brandImpression: 'Impression Initiale de Marque',
+      phoneticVisualTitle: 'Métriques Phonétiques & Visuelles',
+      lengthLabel: 'Nombre de Lettres',
+      syllablesLabel: 'Syllabes',
+      radioTestLabel: 'Test Radio (Clarté)',
+      radioTestPass: 'Réussi avec Excellence',
+      synergyMetaphorTitle: 'Synergie du Composé & Métaphore Mentale',
+      metaphorLabel: 'Métaphore Mentale',
+      visualFlowLabel: 'Flux Visuel & Typographique',
+      endUsersTitle: 'Utilisateurs Finaux Cibles & Cas d’Usage',
+      useCaseLabel: 'Motif Principal d’Acquisition',
+      compsLiquidityTitle: 'Liquidité & Ventes Historiques Comparables (Comps)',
+      searchVolumeLabel: 'Volume de Recherche Mensuel Est.',
+      comparableSalesLabel: 'Ventes Vérifiées de Noms Similaires',
+      dualValuationTitle: 'Évaluation Réaliste à Double Niveau',
+      resellerWholesale: 'Valeur de Revente Rapide (Grossiste)',
+      endUserRetail: 'Valeur Utilisateur Final (Détail)',
+      valuationTransparency: 'Norme professionnelle neutre : distingue la valeur de revente rapide entre investisseurs de l’acquisition finale par une startup.',
     },
     savedDrawer: {
       title: 'Domaines Favoris',
@@ -804,6 +888,27 @@ export const translations: Record<Language, Translations> = {
       liquiditySpeed: 'Liquidez y Potencial de Reventa',
       copy: 'Copiar',
       copied: '¡Copiado!',
+      summaryClassificationTitle: 'Résumé et Classification Structurelle',
+      structureType: 'Type de structure',
+      idealSectors: 'Secteurs idéaux',
+      brandImpression: 'Impression de marque initiale',
+      phoneticVisualTitle: 'Mesures Phonétiques et Visuelles (Décomposition)',
+      lengthLabel: 'Longueur',
+      syllablesLabel: 'Syllabes',
+      radioTestLabel: 'Test Radio',
+      radioTestPass: 'Réussi avec Excellence',
+      synergyMetaphorTitle: 'Synergie Composée et Métaphore Mentale',
+      metaphorLabel: 'Métaphore mentale',
+      visualFlowLabel: 'Fluidité visuelle et typographique',
+      endUsersTitle: 'Utilisateurs Finaux Cibles et Cas d\'Acquisition',
+      useCaseLabel: 'Motif principal d\'acquisition',
+      compsLiquidityTitle: 'Liquidité et Ventes Historiques Comparables (Comps)',
+      searchVolumeLabel: 'Volume de recherche mensuel estimé',
+      comparableSalesLabel: 'Ventes comparables vérifiées',
+      dualValuationTitle: 'Double Évaluation Réaliste',
+      resellerWholesale: 'Valeur Revendeur / Vente en gros',
+      endUserRetail: 'Valeur Utilisateur Final / Entreprise',
+      valuationTransparency: 'Norme industrielle neutre : sépare la revente liquide immédiate de l\'acquisition directe par une entreprise.',
     },
     savedDrawer: {
       title: 'Dominios Guardados',

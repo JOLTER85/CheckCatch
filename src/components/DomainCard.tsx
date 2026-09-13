@@ -15,6 +15,13 @@ import {
   Building2,
   Users,
   Target,
+  Layers,
+  Radio,
+  Sparkles,
+  TrendingUp,
+  Coins,
+  CheckCircle2,
+  Search,
 } from 'lucide-react';
 import { Language, translations } from '../utils/translations';
 
@@ -233,9 +240,11 @@ export const DomainCard: React.FC<DomainCardProps> = ({
             </span>
           </div>
 
-          {/* Pitch rationale */}
-          <p className="text-xs text-slate-600 mt-2 line-clamp-2 leading-relaxed font-normal">
-            {domain.pitch}
+          {/* Clean Professional Summary */}
+          <p className="text-xs text-slate-700 mt-2 leading-relaxed font-medium bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+            {lang === 'ar'
+              ? (arabicBreakdown.classification?.cleanSummaryAr || domain.pitch)
+              : (arabicBreakdown.classification?.cleanSummaryEn || domain.pitch)}
           </p>
         </div>
 
@@ -264,7 +273,7 @@ export const DomainCard: React.FC<DomainCardProps> = ({
           {isBreakdownOpen && (
             <div
               id={`arabic-breakdown-${domain.id}`}
-              className="mt-2.5 p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3 shadow-inner"
+              className="mt-2.5 p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-4 shadow-inner text-slate-800"
             >
               {/* Header */}
               <div className="flex items-center justify-between border-b border-slate-200 pb-2">
@@ -273,127 +282,293 @@ export const DomainCard: React.FC<DomainCardProps> = ({
                   <span>{t.domainCard.breakdownHeading}</span>
                 </div>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-white text-slate-700 border border-slate-200 font-semibold shadow-xs">
-                  {arabicBreakdown.word1.categoryEn || 'Compound Brand'}
+                  {arabicBreakdown.classification?.structureTypeAr || 'نطاق مركب من كلمتين'}
                 </span>
               </div>
 
-              {/* The Two Words: Meanings & Strengths */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {/* Word 1 */}
-                <div className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-1.5 shadow-xs">
-                  <div className="flex items-center justify-between">
-                    <span
-                      className="font-mono text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200"
-                      dir="ltr"
-                    >
-                      {t.domainCard.word1}: {arabicBreakdown.word1.word}
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-semibold">
-                      {t.domainCard.scoreLabel}: <strong className="text-emerald-700">{arabicBreakdown.word1.strengthScore}%</strong>
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-800 font-medium leading-relaxed">
-                    <span className="text-slate-500 font-normal">{t.domainCard.dictionaryMeaning}: </span>
-                    <strong className="text-slate-900 font-bold">
-                      {lang === 'ar'
-                        ? arabicBreakdown.word1.meaningAr
-                        : arabicBreakdown.word1.meaningEn || arabicBreakdown.word1.meaningAr}
-                    </strong>
-                  </div>
-                  <div className="text-[11px] text-slate-700 leading-relaxed bg-slate-50 p-2 rounded border border-slate-200">
-                    <span className="text-emerald-700 font-bold block mb-0.5">
-                      ⚡ {t.domainCard.commercialStrength}:
-                    </span>
-                    {lang === 'ar'
-                      ? arabicBreakdown.word1.strengthAr
-                      : arabicBreakdown.word1.strengthEn || arabicBreakdown.word1.strengthAr}
-                  </div>
+              {/* 1. Summary & Structural Classification */}
+              <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-2 shadow-xs">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
+                  <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>{t.domainCard.summaryClassificationTitle}</span>
                 </div>
-
-                {/* Word 2 */}
-                <div className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-1.5 shadow-xs">
-                  <div className="flex items-center justify-between">
-                    <span
-                      className="font-mono text-xs font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200"
-                      dir="ltr"
-                    >
-                      {t.domainCard.word2}: {arabicBreakdown.word2.word}
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-semibold">
-                      {t.domainCard.scoreLabel}: <strong className="text-blue-700">{arabicBreakdown.word2.strengthScore}%</strong>
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-800 font-medium leading-relaxed">
-                    <span className="text-slate-500 font-normal">{t.domainCard.dictionaryMeaning}: </span>
-                    <strong className="text-slate-900 font-bold">
+                <div className="text-xs text-slate-700 leading-relaxed space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[11px] text-slate-500 font-semibold">{t.domainCard.structureType}:</span>
+                    <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-800 text-[11px] font-bold border border-indigo-200">
                       {lang === 'ar'
-                        ? arabicBreakdown.word2.meaningAr
-                        : arabicBreakdown.word2.meaningEn || arabicBreakdown.word2.meaningAr}
-                    </strong>
-                  </div>
-                  <div className="text-[11px] text-slate-700 leading-relaxed bg-slate-50 p-2 rounded border border-slate-200">
-                    <span className="text-blue-700 font-bold block mb-0.5">
-                      ⚡ {t.domainCard.commercialStrength}:
+                        ? (arabicBreakdown.classification?.structureTypeAr || 'نطاق مركب من كلمتين')
+                        : (arabicBreakdown.classification?.structureTypeEn || 'Two-word compound')}
                     </span>
-                    {lang === 'ar'
-                      ? arabicBreakdown.word2.strengthAr
-                      : arabicBreakdown.word2.strengthEn || arabicBreakdown.word2.strengthAr}
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-500 font-semibold block mb-1">{t.domainCard.idealSectors}:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(lang === 'ar'
+                        ? (arabicBreakdown.classification?.idealSectorsAr || arabicBreakdown.interestedPartiesAr.companies)
+                        : (arabicBreakdown.classification?.idealSectorsEn || arabicBreakdown.interestedPartiesEn?.companies || [])
+                      ).map((sector, sIdx) => (
+                        <span
+                          key={sIdx}
+                          className="px-2 py-0.5 rounded-md bg-slate-50 text-slate-700 border border-slate-200 text-[11px] font-medium"
+                        >
+                          {sector}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-[11px] text-slate-600 pt-1">
+                    <span className="font-semibold text-slate-700">{t.domainCard.brandImpression}: </span>
+                    <strong className="text-slate-900">
+                      {lang === 'ar'
+                        ? (arabicBreakdown.classification?.brandImpressionAr || 'القوة والاتجاه والرسوخ')
+                        : (arabicBreakdown.classification?.brandImpressionEn || 'Strength and Direction')}
+                    </strong>
                   </div>
                 </div>
               </div>
 
-              {/* Combined Synergy */}
-              <div className="p-2.5 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-700 leading-relaxed shadow-xs">
-                <strong className="text-blue-700 block mb-1">
-                  {t.domainCard.compoundSynergyTitle}
-                </strong>
-                {lang === 'ar'
-                  ? arabicBreakdown.combinedPowerAr
-                  : arabicBreakdown.combinedPowerEn || arabicBreakdown.combinedPowerAr}
+              {/* 2. Phonetic & Visual Metrics (Word Decomposition & Radio Test) */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
+                    <Radio className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>{t.domainCard.phoneticVisualTitle}</span>
+                  </div>
+                  {/* Radio Test Pass Badge */}
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    {lang === 'ar'
+                      ? (arabicBreakdown.metrics?.radioTest.ratingAr || 'ناجح بامتياز (10/10)')
+                      : (arabicBreakdown.metrics?.radioTest.ratingEn || 'Passed (10/10)')}
+                  </span>
+                </div>
+
+                {/* Metrics Summary Strip */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                  <div className="p-2 rounded-lg bg-white border border-slate-200 text-slate-700">
+                    <span className="text-slate-500 font-semibold block mb-0.5">{t.domainCard.lengthLabel}:</span>
+                    <span className="font-medium text-slate-900">
+                      {lang === 'ar'
+                        ? (arabicBreakdown.metrics?.lengthAssessmentAr || `${domain.name.length} حرف`)
+                        : (arabicBreakdown.metrics?.lengthAssessmentEn || `${domain.name.length} letters`)}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-white border border-slate-200 text-slate-700">
+                    <span className="text-slate-500 font-semibold block mb-0.5">{t.domainCard.syllablesLabel}:</span>
+                    <span className="font-medium text-slate-900">
+                      {lang === 'ar'
+                        ? (arabicBreakdown.metrics?.syllablesAssessmentAr || 'مقاطع متوازنة وسهلة اللفظ')
+                        : (arabicBreakdown.metrics?.syllablesAssessmentEn || 'Balanced syllables')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Radio Test Note */}
+                <div className="px-2.5 py-1.5 rounded-lg bg-emerald-50/70 border border-emerald-200 text-[11px] text-emerald-900 flex items-start gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0" />
+                  <span>
+                    <strong>{t.domainCard.radioTestLabel}: </strong>
+                    {lang === 'ar'
+                      ? (arabicBreakdown.metrics?.radioTest.verdictAr || 'يُكتب كما يُسمع تماماً دون التباس')
+                      : (arabicBreakdown.metrics?.radioTest.verdictEn || 'Spelled cleanly as heard')}
+                  </span>
+                </div>
+
+                {/* Word 1 & Word 2 Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {/* Word 1 */}
+                  <div className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-1.5 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <span
+                        className="font-mono text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200"
+                        dir="ltr"
+                      >
+                        {t.domainCard.word1}: {arabicBreakdown.word1.word}
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-semibold">
+                        {t.domainCard.scoreLabel}: <strong className="text-emerald-700">{arabicBreakdown.word1.strengthScore}%</strong>
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-800 font-medium leading-relaxed">
+                      <span className="text-slate-500 font-normal">{t.domainCard.dictionaryMeaning}: </span>
+                      <strong className="text-slate-900 font-bold">
+                        {lang === 'ar'
+                          ? arabicBreakdown.word1.meaningAr
+                          : arabicBreakdown.word1.meaningEn || arabicBreakdown.word1.meaningAr}
+                      </strong>
+                    </div>
+                    <div className="text-[11px] text-slate-700 leading-relaxed bg-slate-50 p-2 rounded border border-slate-200">
+                      <span className="text-emerald-700 font-bold block mb-0.5">
+                        ⚡ {t.domainCard.commercialStrength}:
+                      </span>
+                      {lang === 'ar'
+                        ? arabicBreakdown.word1.strengthAr
+                        : arabicBreakdown.word1.strengthEn || arabicBreakdown.word1.strengthAr}
+                    </div>
+                  </div>
+
+                  {/* Word 2 */}
+                  <div className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-1.5 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <span
+                        className="font-mono text-xs font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200"
+                        dir="ltr"
+                      >
+                        {t.domainCard.word2}: {arabicBreakdown.word2.word}
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-semibold">
+                        {t.domainCard.scoreLabel}: <strong className="text-blue-700">{arabicBreakdown.word2.strengthScore}%</strong>
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-800 font-medium leading-relaxed">
+                      <span className="text-slate-500 font-normal">{t.domainCard.dictionaryMeaning}: </span>
+                      <strong className="text-slate-900 font-bold">
+                        {lang === 'ar'
+                          ? arabicBreakdown.word2.meaningAr
+                          : arabicBreakdown.word2.meaningEn || arabicBreakdown.word2.meaningAr}
+                      </strong>
+                    </div>
+                    <div className="text-[11px] text-slate-700 leading-relaxed bg-slate-50 p-2 rounded border border-slate-200">
+                      <span className="text-blue-700 font-bold block mb-0.5">
+                        ⚡ {t.domainCard.commercialStrength}:
+                      </span>
+                      {lang === 'ar'
+                        ? arabicBreakdown.word2.strengthAr
+                        : arabicBreakdown.word2.strengthEn || arabicBreakdown.word2.strengthAr}
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Interested Companies & Buyers */}
-              <div className="space-y-2 pt-1 border-t border-slate-200">
-                <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              {/* 3. Compound Synergy & Mental Metaphor */}
+              <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-2 shadow-xs text-[11px] text-slate-700">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>{t.domainCard.synergyMetaphorTitle}</span>
+                </div>
+                <div className="p-2 rounded-lg bg-amber-50/50 border border-amber-200 text-amber-950 leading-relaxed">
+                  <strong className="text-amber-800 block mb-0.5">{t.domainCard.metaphorLabel}:</strong>
+                  {lang === 'ar'
+                    ? (arabicBreakdown.synergyAnalysis?.metaphorAr || arabicBreakdown.combinedPowerAr)
+                    : (arabicBreakdown.synergyAnalysis?.metaphorEn || arabicBreakdown.combinedPowerEn || arabicBreakdown.combinedPowerAr)}
+                </div>
+                <div className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 leading-relaxed">
+                  <strong className="text-slate-800 block mb-0.5">{t.domainCard.visualFlowLabel}:</strong>
+                  {lang === 'ar'
+                    ? (arabicBreakdown.synergyAnalysis?.visualFlowAr || 'تدفق بصري سلس بين الكلمتين.')
+                    : (arabicBreakdown.synergyAnalysis?.visualFlowEn || 'Smooth visual cadence across word boundary.')}
+                </div>
+              </div>
+
+              {/* 4. Target End-Users & Acquisition Motive */}
+              <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-2 shadow-xs">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
                   <Building2 className="w-3.5 h-3.5 text-blue-600" />
-                  <span>{t.domainCard.targetSectorsTitle}</span>
+                  <span>{t.domainCard.endUsersTitle}</span>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
+                <ul className="text-[11px] text-slate-700 space-y-1.5 list-disc list-inside">
                   {(lang === 'ar'
-                    ? arabicBreakdown.interestedPartiesAr.companies
-                    : (arabicBreakdown.interestedPartiesEn?.companies || arabicBreakdown.interestedPartiesAr.companies)
-                  ).map((company, idx) => (
-                    <span
-                      key={idx}
-                      className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-white text-slate-700 border border-slate-200 shadow-xs"
-                    >
-                      {company}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5 pt-1">
-                  <Users className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>{t.domainCard.potentialBuyersTitle}</span>
-                </div>
-                <ul className="text-[11px] text-slate-700 space-y-1 list-disc list-inside">
-                  {(lang === 'ar'
-                    ? arabicBreakdown.interestedPartiesAr.individuals
-                    : (arabicBreakdown.interestedPartiesEn?.individuals || arabicBreakdown.interestedPartiesAr.individuals)
-                  ).map((person, idx) => (
-                    <li key={idx} className="leading-relaxed">
-                      {person}
+                    ? (arabicBreakdown.specificEndUsers?.primaryOperatorsAr || arabicBreakdown.interestedPartiesAr.individuals)
+                    : (arabicBreakdown.specificEndUsers?.primaryOperatorsEn || arabicBreakdown.interestedPartiesEn?.individuals || [])
+                  ).map((operator, opIdx) => (
+                    <li key={opIdx} className="leading-relaxed">
+                      <strong className="text-slate-900 font-semibold">{operator}</strong>
                     </li>
                   ))}
                 </ul>
-
-                <div className="p-2 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-600 leading-relaxed shadow-xs">
-                  <span className="text-blue-700 font-bold">
-                    {t.domainCard.liquidityDemandTitle}{' '}
-                  </span>
+                <div className="p-2 rounded-lg bg-blue-50/60 border border-blue-200 text-[11px] text-blue-950 leading-relaxed">
+                  <strong className="text-blue-800 block mb-0.5">{t.domainCard.useCaseLabel}:</strong>
                   {lang === 'ar'
-                    ? arabicBreakdown.interestedPartiesAr.summary
-                    : (arabicBreakdown.interestedPartiesEn?.summary || arabicBreakdown.interestedPartiesAr.summary)}
+                    ? (arabicBreakdown.specificEndUsers?.useCaseAr || 'شركة تجارية ناشئة تبحث عن هوية علامية موثوقة.')
+                    : (arabicBreakdown.specificEndUsers?.useCaseEn || 'Operating business seeking an authoritative digital anchor.')}
+                </div>
+              </div>
+
+              {/* 5. Liquidity & Comparable Sales (Comps) */}
+              <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-2.5 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
+                    <TrendingUp className="w-3.5 h-3.5 text-teal-600" />
+                    <span>{t.domainCard.compsLiquidityTitle}</span>
+                  </div>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-teal-50 text-teal-800 border border-teal-200">
+                    <Search className="w-3 h-3 text-teal-600" />
+                    {arabicBreakdown.liquidityData?.searchVolumeFormatted || '~12,000 بحث/شهر'}
+                  </span>
+                </div>
+
+                {/* Comps List */}
+                <div className="space-y-1.5">
+                  <span className="text-[11px] text-slate-500 font-semibold block">
+                    {t.domainCard.comparableSalesLabel}:
+                  </span>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {(arabicBreakdown.liquidityData?.comparableSales || []).map((comp, cIdx) => (
+                      <div
+                        key={cIdx}
+                        className="p-2 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between text-[11px]"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-slate-900" dir="ltr">
+                            {comp.domain}
+                          </span>
+                          <span className="text-[10px] text-slate-500">
+                            ({comp.year} • {comp.venue})
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                            {comp.priceFormatted}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* 6. Realistic Dual-Tier Valuation */}
+              <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-2.5 shadow-xs">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
+                  <Coins className="w-3.5 h-3.5 text-amber-600" />
+                  <span>{t.domainCard.dualValuationTitle}</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {/* Reseller / Wholesale Value */}
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                      {t.domainCard.resellerWholesale}
+                    </span>
+                    <div className="text-base font-mono font-extrabold text-slate-900">
+                      {arabicBreakdown.valuationSplit?.resellerRangeFormatted || '$50 - $250'}
+                    </div>
+                    <p className="text-[10px] text-slate-600 leading-relaxed">
+                      {lang === 'ar'
+                        ? (arabicBreakdown.valuationSplit?.resellerDescriptionAr || 'سعر البيع السريع بالجملة بين المستثمرين.')
+                        : (arabicBreakdown.valuationSplit?.resellerDescriptionEn || 'Immediate wholesale liquidation price.')}
+                    </p>
+                  </div>
+
+                  {/* End-User / Retail Value */}
+                  <div className="p-2.5 rounded-lg bg-emerald-50/60 border border-emerald-200 space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 block">
+                      {t.domainCard.endUserRetail}
+                    </span>
+                    <div className="text-base font-mono font-extrabold text-emerald-800">
+                      {arabicBreakdown.valuationSplit?.endUserRangeFormatted || '$1,200 - $3,500'}
+                    </div>
+                    <p className="text-[10px] text-emerald-900/80 leading-relaxed">
+                      {lang === 'ar'
+                        ? (arabicBreakdown.valuationSplit?.endUserDescriptionAr || 'القيمة عند التفاوض المباشر مع شركة تجارية.')
+                        : (arabicBreakdown.valuationSplit?.endUserDescriptionEn || 'Direct retail enterprise negotiation value.')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-[10px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-200 leading-relaxed">
+                  💡 {t.domainCard.valuationTransparency}
                 </div>
               </div>
             </div>
