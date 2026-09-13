@@ -38,6 +38,7 @@ import {
   Facebook,
   MessageCircle,
   ExternalLink,
+  AlertCircle,
 } from 'lucide-react';
 
 const INITIAL_RULES: FilterRules = {
@@ -100,6 +101,7 @@ export default function App() {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [selectedBestDomainId, setSelectedBestDomainId] = useState<string | null>(null);
   const [expandAllBreakdowns, setExpandAllBreakdowns] = useState<boolean>(false);
+  const [hasAnalyzedSpreadsheet, setHasAnalyzedSpreadsheet] = useState<boolean>(false);
 
   // Sync saved domains to local storage
   useEffect(() => {
@@ -193,6 +195,24 @@ export default function App() {
     relaxKeywordFilters: boolean = false
   ) => {
     setIsLoading(true);
+    setHasAnalyzedSpreadsheet(true);
+
+    if (!qualifiedDomains || qualifiedDomains.length === 0) {
+      setSpreadsheetDomains([]);
+      setSelectedBestDomainId(null);
+      setEvaluationStats({
+        ...stats,
+        showingCount: 0,
+      });
+      setIsLoading(false);
+      showToast(
+        lang === 'ar'
+          ? 'لم يتم العثور على أي دومين يطابق الشروط الصارمة (كلمتين فقط مع الكلمة المختارة)'
+          : 'No domains matched the strict 2-word criteria with the chosen keyword',
+        'info'
+      );
+      return;
+    }
 
     try {
       const candidatePayload = qualifiedDomains.slice(0, 200);
@@ -224,17 +244,15 @@ export default function App() {
             return cl.replace(/[^a-z0-9-]/g, '');
           })
         );
-        let strictSpreadsheet = cleanDataDomains.filter((d: DomainItem) =>
+        const strictSpreadsheet = cleanDataDomains.filter((d: DomainItem) =>
           allowedSpreadsheetSet.has(d.name.toLowerCase().trim())
         );
-
-        if (strictSpreadsheet.length === 0 && cleanDataDomains.length > 0) {
-          strictSpreadsheet = cleanDataDomains;
-        }
 
         setSpreadsheetDomains(strictSpreadsheet);
         if (strictSpreadsheet.length > 0) {
           setSelectedBestDomainId(strictSpreadsheet[0].id);
+        } else {
+          setSelectedBestDomainId(null);
         }
         setLastGeneratedAt(data.generatedAt || new Date().toISOString());
         setUsedFallback(Boolean(data.usedFallback));
@@ -272,6 +290,8 @@ export default function App() {
       setSpreadsheetDomains(localEvaluated);
       if (localEvaluated.length > 0) {
         setSelectedBestDomainId(localEvaluated[0].id);
+      } else {
+        setSelectedBestDomainId(null);
       }
       setLastGeneratedAt(new Date().toISOString());
       setUsedFallback(true);
@@ -701,19 +721,35 @@ export default function App() {
               </div>
             </div>
           ) : mode === 'analyzer' && spreadsheetDomains.length === 0 ? (
-            <div className="py-16 text-center rounded-2xl bg-white border border-slate-200 p-8 space-y-3 shadow-xs">
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center mx-auto text-blue-600">
-                <FileSpreadsheet className="w-6 h-6" />
+            hasAnalyzedSpreadsheet ? (
+              <div id="no-matching-domains-banner" className="py-16 text-center rounded-2xl bg-amber-50/70 border border-amber-200 p-8 space-y-3 shadow-xs">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center mx-auto text-amber-700">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <p className="text-base font-bold text-slate-900">
+                  {lang === 'ar' ? 'لم يتم العثور على أي نتائج مطابقة للشروط' : 'No Domains Matched Strict 2-Word Criteria'}
+                </p>
+                <p className="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed">
+                  {lang === 'ar'
+                    ? 'لم يتم العثور في الملف على أي دومين يتكون من الكلمة المختارة وكلمة إنجليزية ثانية صحيحة فقط (كلمتين اثنتين). تم استبعاد الدومينات التي تحتوي على 3 كلمات أو أكثر، أو كلمات غير إنجليزية، أو لا تحتوي على الكلمة المطلوبة.'
+                    : 'No domains in your uploaded file meet the strict criteria of containing the selected keyword paired with exactly one valid English dictionary word (strictly two words). Domains with 3+ words or non-dictionary elements were disqualified.'}
+                </p>
               </div>
-              <p className="text-base font-bold text-slate-900">
-                {lang === 'ar' ? 'ارفع جدول النطاقات للتحليل والفرز' : 'Upload Spreadsheet to Rank Top Picks'}
-              </p>
-              <p className="text-xs text-slate-500 max-w-md mx-auto">
-                {lang === 'ar'
-                  ? 'اسحب وأفلت ملف Excel (.xlsx) أو CSV أعلاه لاكتشاف أقوى النطاقات الثنائية المطابقة للشروط الصارمة.'
-                  : 'Drop your Excel (.xlsx) or CSV file above to isolate and rank qualified two-word brandable domains.'}
-              </p>
-            </div>
+            ) : (
+              <div className="py-16 text-center rounded-2xl bg-white border border-slate-200 p-8 space-y-3 shadow-xs">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center mx-auto text-blue-600">
+                  <FileSpreadsheet className="w-6 h-6" />
+                </div>
+                <p className="text-base font-bold text-slate-900">
+                  {lang === 'ar' ? 'ارفع جدول النطاقات للتحليل والفرز' : 'Upload Spreadsheet to Rank Top Picks'}
+                </p>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  {lang === 'ar'
+                    ? 'اسحب وأفلت ملف Excel (.xlsx) أو CSV أعلاه لاكتشاف أقوى النطاقات الثنائية المطابقة للشروط الصارمة.'
+                    : 'Drop your Excel (.xlsx) or CSV file above to isolate and rank qualified two-word brandable domains.'}
+                </p>
+              </div>
+            )
           ) : filteredAndSortedDomains.length === 0 ? (
             <div className="py-16 text-center rounded-2xl bg-white border border-slate-200 p-8 shadow-xs">
               <Search className="w-10 h-10 text-slate-400 mx-auto mb-3 stroke-1" />

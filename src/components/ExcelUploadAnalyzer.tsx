@@ -322,39 +322,24 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
   };
 
   const handleRunAnalysis = () => {
-    let candidates = validationResult?.qualifiedDomains || [];
-
-    // Safe fallback: if candidates list is empty but detected domains exist
-    if ((!candidates || candidates.length === 0) && sheetInfo?.detectedDomains && sheetInfo.detectedDomains.length > 0) {
-      const cleanKw = targetKeyword.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (searchMode === 'keyword' && cleanKw) {
-        const kwMatches = sheetInfo.detectedDomains.filter((d) => d.toLowerCase().includes(cleanKw));
-        if (kwMatches.length > 0) {
-          candidates = kwMatches;
-        } else {
-          candidates = sheetInfo.detectedDomains;
-        }
-      } else {
-        candidates = sheetInfo.detectedDomains;
-      }
-    }
+    const candidates = validationResult?.qualifiedDomains || [];
 
     if (!candidates || candidates.length === 0) {
       if (searchMode === 'keyword' && targetKeyword.trim()) {
         onErrorToast(
           lang === 'ar'
-            ? `لم يتم العثور على أي دومينات تحتوي على "${targetKeyword.trim()}" في الملف المرفوع.`
+            ? `لم يتم العثور على أي دومين يجمع بين الكلمة المختارة "${targetKeyword.trim()}" وكلمة إنجليزية صحيحة أخرى (كلمتين فقط) في الملف المرفوع.`
             : lang === 'fr'
-            ? `Aucun domaine contenant "${targetKeyword.trim()}" n'a été trouvé dans le fichier.`
-            : `No domains containing "${targetKeyword.trim()}" were found in your uploaded file.`
+            ? `Aucun domaine de 2 mots combinant "${targetKeyword.trim()}" et un mot anglais valide n'a été trouvé dans le fichier.`
+            : `No 2-word domains combining "${targetKeyword.trim()}" and a valid English word were found in your uploaded file.`
         );
       } else {
         onErrorToast(
           lang === 'ar'
-            ? 'لم يتم العثور على أي دومينات صالحة في الملف المرفوع.'
+            ? 'لم يتم العثور على أي دومينات مطابقة للشروط الصارمة في الملف المرفوع.'
             : lang === 'fr'
-            ? 'Aucun domaine valide détecté dans le fichier.'
-            : 'No valid domains detected in the uploaded file.'
+            ? 'Aucun domaine conforme aux filtres stricts dans le fichier.'
+            : 'No domains matching the strict filters were found in your uploaded file.'
         );
       }
       return;
@@ -910,19 +895,15 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
           disabled={
             isLoading ||
             !sheetInfo ||
-            (
-              (!validationResult || validationResult.qualifiedDomains.length === 0) &&
-              rawDomainsWithKeyword.length === 0
-            )
+            !validationResult ||
+            validationResult.qualifiedDomains.length === 0
           }
           onClick={handleRunAnalysis}
           className={`w-full py-3.5 px-6 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 transition-all active:scale-[0.99] border ${
             isLoading ||
             !sheetInfo ||
-            (
-              (!validationResult || validationResult.qualifiedDomains.length === 0) &&
-              rawDomainsWithKeyword.length === 0
-            )
+            !validationResult ||
+            validationResult.qualifiedDomains.length === 0
               ? 'bg-slate-200 text-slate-400 cursor-not-allowed border-slate-300'
               : 'bg-blue-600 hover:bg-blue-500 text-white font-black border-blue-600 shadow-md shadow-blue-200'
           }`}
@@ -937,9 +918,15 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
               <FileCheck className="w-4 h-4 text-white stroke-[2.5]" />
               <span>
                 {sheetInfo
-                  ? t.excelAnalyzer.runAuditBtn(
-                      Math.min(count, (validationResult?.qualifiedDomains?.length || 0) || rawDomainsWithKeyword.length || count)
-                    )
+                  ? validationResult && validationResult.qualifiedDomains.length === 0
+                    ? lang === 'ar'
+                      ? 'لا توجد دومينات مؤهلة (تتكون من كلمتين مع الكلمة المختارة)'
+                      : lang === 'fr'
+                      ? 'Aucun domaine éligible à 2 mots dans le fichier'
+                      : 'No 2-word domains matching keyword in file'
+                    : t.excelAnalyzer.runAuditBtn(
+                        Math.min(count, validationResult?.qualifiedDomains?.length || count)
+                      )
                   : lang === 'ar'
                   ? 'ارفع ملف إكسل لتدقيق واصطياد أفضل الدومينات'
                   : lang === 'fr'

@@ -553,11 +553,9 @@ export function clientEvaluateBatch(
     });
   }
 
-  const baseCandidates = isKeywordMode && matchingKeywordCandidates.length > 0
+  const baseCandidates = isKeywordMode
     ? matchingKeywordCandidates
-    : tldFiltered.length > 0
-    ? tldFiltered
-    : qualifiedDomains;
+    : (tldFiltered.length > 0 ? tldFiltered : qualifiedDomains);
 
   // Filter pool by character length (minLetters to maxLetters)
   const minLen = typeof rules.minLetters === 'number' ? rules.minLetters : 2;
@@ -568,21 +566,23 @@ export function clientEvaluateBatch(
     return name.length >= minLen && name.length <= maxLen;
   });
 
-  // If strict exactlyTwoWords produces at least count items, use them; otherwise use full pool with quality ranking
+  // If strict exactlyTwoWords is active, strictly filter to genuine 2-word domains
   if (rules.exactlyTwoWords) {
-    const twoWordCandidates = pool.filter((d) => {
+    pool = pool.filter((d) => {
       const lastDot = d.lastIndexOf('.');
       const name = lastDot !== -1 ? d.substring(0, lastDot) : d;
-      return clientDecomposeWords(name, cleanKw).length === 2;
+      const decomposed = clientDecomposeWords(name, cleanKw);
+      if (decomposed.length !== 2) return false;
+      if (isKeywordMode && cleanKw && !decomposed.some((w) => w.toLowerCase() === cleanKw)) {
+        return false;
+      }
+      return true;
     });
-    if (twoWordCandidates.length >= count || twoWordCandidates.length >= 3) {
-      pool = twoWordCandidates;
-    }
   }
 
-  // Fallback: If pool is empty, use all qualifiedDomains directly
-  if (pool.length === 0 && qualifiedDomains.length > 0) {
-    pool = [...qualifiedDomains];
+  // If no candidates meet the criteria, return empty array (do NOT fall back to non-matching candidates)
+  if (pool.length === 0) {
+    return [];
   }
 
   const evaluated: (DomainItem & { isNicheMatch?: boolean; isKeywordMatch?: boolean })[] = pool.map((domainStr, idx) => {
@@ -918,6 +918,13 @@ export function validateDomainsAgainstRules(
         discarded.push({ domain: clean, reason });
         continue;
       }
+      if (isKeywordMode && cleanKeyword) {
+        if (!words.some((w) => w.toLowerCase() === cleanKeyword)) {
+          breakdown.keywordMismatch = (breakdown.keywordMismatch || 0) + 1;
+          discarded.push({ domain: clean, reason: `Does not contain keyword "${cleanKeyword}" paired with a valid English word` });
+          continue;
+        }
+      }
     }
 
     // Rule 5: Character Length (2 to 25 characters)
@@ -941,42 +948,9 @@ export function validateDomainsAgainstRules(
     }
   }
 
-  // Safe fallback mechanism respecting strict 2-word rules
-  let finalQualified = [...qualified];
-  let autoRelaxed = false;
-
-  const candidatePool = (isKeywordMode && cleanKeyword && allKeywordDomains.length > 0)
-    ? allKeywordDomains
-    : rawDomains.map((r) => {
-        let d = r.trim().toLowerCase().replace(/https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
-        if (d.endsWith('.c') && !d.endsWith('.co') && !d.endsWith('.cc')) d = d.slice(0, -2) + '.com';
-        return d;
-      }).filter((d) => d.includes('.'));
-
-  if (finalQualified.length < 3 && candidatePool.length > 0) {
-    autoRelaxed = true;
-    // Rank candidatePool by quality metrics
-    const rankedCandidates = [...candidatePool].map((d) => {
-      const q = calculateDomainQualityScore(d, cleanKeyword, options?.contextTopic);
-      return { domain: d, score: q.score, isTwoWords: q.isTwoWords };
-    });
-
-    // If exactlyTwoWords is enforced, ONLY allow 2-word candidates into the qualified set
-    const eligibleCandidates = rules.exactlyTwoWords
-      ? rankedCandidates.filter((item) => item.isTwoWords)
-      : rankedCandidates;
-
-    // Sort by highest score
-    eligibleCandidates.sort((a, b) => b.score - a.score);
-
-    const finalSet = new Set(finalQualified);
-    for (const item of eligibleCandidates) {
-      if (!finalSet.has(item.domain)) {
-        finalSet.add(item.domain);
-        finalQualified.push(item.domain);
-      }
-    }
-  }
+  // Strict qualified list without auto-relaxation to non-compliant candidates
+  const finalQualified = [...qualified];
+  const autoRelaxed = false;
 
   const stats: FilterEvaluationStats = {
     totalUploaded: rawDomains.length,

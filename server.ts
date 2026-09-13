@@ -712,8 +712,8 @@ function evaluateAlgorithmicBatch(
     });
   }
 
-  // Base pool of candidates
-  const pool = isKeywordMode && matchingKeywordCandidates.length > 0
+  // Base pool of candidates: strictly use keyword matches when in keyword mode
+  const pool = isKeywordMode
     ? matchingKeywordCandidates
     : tldFiltered;
 
@@ -722,7 +722,12 @@ function evaluateAlgorithmicBatch(
     ? pool.filter((c) => {
         const lastDot = c.lastIndexOf('.');
         const name = lastDot !== -1 ? c.substring(0, lastDot) : c;
-        return decomposeIntoTwoEnglishWords(name, cleanKw) !== null;
+        const twoWords = decomposeIntoTwoEnglishWords(name, cleanKw);
+        if (!twoWords) return false;
+        if (isKeywordMode && cleanKw && !twoWords.some(w => w.toLowerCase() === cleanKw)) {
+          return false;
+        }
+        return true;
       })
     : pool;
 
@@ -898,7 +903,7 @@ You are evaluating a private portfolio of candidate domains uploaded by a client
 
 CRITICAL MANDATORY INSTRUCTIONS:
 1. You MUST ONLY evaluate, score, and rank domains that appear in the "Candidate Domains" list below.
-2. You are STRICTLY FORBIDDEN from generating, creating, hallucinating, modifying, or suggesting ANY domain name that is not in the Candidate Domains list below.
+2. You are STRICTLY FORBIDDEN from generating, creating, hallucinating, modifying, chopping, shortening, or suggesting ANY domain name that is not in the Candidate Domains list below.
 3. Every single object in your returned JSON array MUST have its "domain" field matching an EXACT domain from the Candidate Domains list.
 4. If a domain is not in Candidate Domains, DO NOT return it under any circumstances.
 5. STRICT 2-WORD ENGLISH RULE: Every selected domain MUST consist of EXACTLY TWO valid, correctly spelled English words (e.g. "cloudnexus", "swiftpulse", "dataforge").
@@ -908,9 +913,11 @@ CRITICAL MANDATORY INSTRUCTIONS:
    - 3 or 4 or more words (e.g. "freedomlaundrycohub.com" has 4 words -> DISQUALIFY; "bestcloudserviceapp.com" has 4 words -> DISQUALIFY)
    - Single English words (e.g. "marketing", "technology", "insurance", "apple", "doctor", "computer")
    Only domains with EXACTLY TWO real English dictionary words are allowed!
-6. For each returned domain, provide the two constituent English words in the "words" field as an array: ["word1", "word2"]. Both word1 and word2 must be real individual English words.
-7. STRICT TLD EXTENSION RULE: The user selected ONLY these extensions: ${normalizedAllowedTlds.length > 0 ? normalizedAllowedTlds.join(", ") : ".com"}. Any domain with another extension must be strictly disqualified.
-${normalizedAllowedTlds.length === 1 && normalizedAllowedTlds[0] === ".com" ? "\n8. CRITICAL TLD ENFORCEMENT: You MUST ONLY evaluate and describe domains using the \".com\" extension. Do NOT mention alternative extensions in descriptions (e.g. no .cc, .tools, .io)." : ""}
+6. CRITICAL EMPTY RESULT RULE: If NO domain in Candidate Domains meets the strict 2-word criteria (keyword + exactly one valid English word), you MUST RETURN AN EMPTY JSON ARRAY: []
+   NEVER modify or truncate a 3-word candidate to make it 2 words (e.g. if candidate is "smartgymfit.com", DO NOT return "smartgym.com").
+7. For each returned domain, provide the two constituent English words in the "words" field as an array: ["word1", "word2"]. Both word1 and word2 must be real individual English words.
+8. STRICT TLD EXTENSION RULE: The user selected ONLY these extensions: ${normalizedAllowedTlds.length > 0 ? normalizedAllowedTlds.join(", ") : ".com"}. Any domain with another extension must be strictly disqualified.
+${normalizedAllowedTlds.length === 1 && normalizedAllowedTlds[0] === ".com" ? "\n9. CRITICAL TLD ENFORCEMENT: You MUST ONLY evaluate and describe domains using the \".com\" extension. Do NOT mention alternative extensions in descriptions (e.g. no .cc, .tools, .io)." : ""}
 
 Candidate Domains:
 ${domainBatch}
@@ -998,6 +1005,7 @@ ${strategyDirective}
   // Format verified candidates into standard DomainItem structures
   const formatted: any[] = [];
   const seen = new Set<string>();
+  const cleanKw = (targetKeyword || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 
   parsed.forEach((item: any, idx: number) => {
     const rawDomain = String(item.domain || "").toLowerCase().trim();
@@ -1007,8 +1015,9 @@ ${strategyDirective}
     seen.add(rawDomain);
 
     const lastDot = rawDomain.lastIndexOf(".");
-    let cleanName = item.name || (lastDot !== -1 ? rawDomain.substring(0, lastDot) : rawDomain);
-    cleanName = cleanName.replace(/https?:\/\//i, "").replace(/^www\./i, "").split("/")[0];
+    // CRITICAL FIX: Domain name MUST be derived exclusively from the candidate domain in the spreadsheet, NEVER from AI hallucinated item.name
+    const rawName = lastDot !== -1 ? rawDomain.substring(0, lastDot) : rawDomain;
+    let cleanName = rawName.replace(/https?:\/\//i, "").replace(/^www\./i, "").split("/")[0];
     if (cleanName.includes(".")) {
       cleanName = cleanName.substring(0, cleanName.lastIndexOf("."));
     }
@@ -1028,12 +1037,23 @@ ${strategyDirective}
     if (rules.exactlyTwoWords) {
       const verifiedTwo = decomposeIntoTwoEnglishWords(cleanName, targetKeyword);
       if (!verifiedTwo) {
-        // Disqualify: does not meet strict 2 English words requirement
+        // Disqualify: does not meet strict 2 English words requirement (e.g. 3+ words or single word)
         return;
       }
       words = verifiedTwo;
     } else {
       words = words || decomposeIntoWords(cleanName, targetKeyword);
+    }
+
+    if (!words || words.length !== 2) {
+      return;
+    }
+
+    // In keyword mode, verify that one of the two words is the mandatory keyword
+    if (searchMode === 'keyword' && cleanKw) {
+      if (!words.some(w => w.toLowerCase() === cleanKw)) {
+        return;
+      }
     }
 
     const isTop = idx < 3;
@@ -1352,10 +1372,9 @@ app.post("/api/analyze-domains", async (req, res) => {
         }
       }
 
-      // If in keyword search mode, enforce keyword presence
+      // If in keyword search mode, enforce keyword presence as one of the two verified words
       if (searchMode === "keyword" && cleanKw) {
-        const words = twoWords || decomposeIntoWords(name, cleanKw);
-        if (!serverMatchKeyword(words, name, cleanKw).matches) {
+        if (!twoWords || !twoWords.some(w => w.toLowerCase() === cleanKw)) {
           continue;
         }
       }
@@ -1367,71 +1386,14 @@ app.post("/api/analyze-domains", async (req, res) => {
       }
     }
 
-    // SAFE FALLBACK: If strict filters yielded fewer than targetCount (or < 3) candidates,
-    // automatically fall back to ranking all keyword-matching (or uploaded) candidate domains by quality metrics
-    if (qualified.length < targetCount && candidateDomains.length > 0) {
-      const allMatches: string[] = [];
-      for (const raw of candidateDomains) {
-        if (!raw || typeof raw !== "string") continue;
-        let clean = raw.trim().toLowerCase().replace(/https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
-        if (!clean || !clean.includes(".")) continue;
-        const lastDot = clean.lastIndexOf(".");
-        const name = clean.substring(0, lastDot);
-        const words = decomposeIntoWords(name, cleanKw);
-
-        if (searchMode === "keyword" && cleanKw) {
-          if (serverMatchKeyword(words, name, cleanKw).matches) {
-            allMatches.push(clean);
-          }
-        } else {
-          allMatches.push(clean);
-        }
-      }
-
-      // Rank allMatches by quality metrics
-      allMatches.sort((a, b) => {
-        const lastDotA = a.lastIndexOf(".");
-        const nameA = lastDotA !== -1 ? a.substring(0, lastDotA) : a;
-        const tldA = lastDotA !== -1 ? a.substring(lastDotA) : ".com";
-        const lastDotB = b.lastIndexOf(".");
-        const nameB = lastDotB !== -1 ? b.substring(0, lastDotB) : b;
-        const tldB = lastDotB !== -1 ? b.substring(lastDotB) : ".com";
-
-        const twoA = decomposeIntoTwoEnglishWords(nameA, cleanKw) !== null;
-        const twoB = decomposeIntoTwoEnglishWords(nameB, cleanKw) !== null;
-        if (twoA && !twoB) return -1;
-        if (!twoA && twoB) return 1;
-
-        let scoreA = 0;
-        let scoreB = 0;
-        if (tldA === ".com") scoreA += 10;
-        if (tldB === ".com") scoreB += 10;
-        if (!nameA.includes("-") && !nameA.includes("_")) scoreA += 5;
-        if (!nameB.includes("-") && !nameB.includes("_")) scoreB += 5;
-        if (!/\d/.test(nameA)) scoreA += 5;
-        if (!/\d/.test(nameB)) scoreB += 5;
-        if (nameA.length >= 6 && nameA.length <= 14) scoreA += 4;
-        if (nameB.length >= 6 && nameB.length <= 14) scoreB += 4;
-
-        return scoreB - scoreA;
-      });
-
-      for (const item of allMatches) {
-        if (!seen.has(item)) {
-          seen.add(item);
-          qualified.push(item);
-        }
-      }
-    }
-
     if (qualified.length === 0) {
       return res.json({
         success: true,
         domains: [],
         totalQualified: 0,
         message: searchMode === "keyword" && cleanKw
-          ? `No uploaded domains containing "${cleanKw}" were found.`
-          : "No uploaded domains found in your file.",
+          ? `No uploaded domains containing keyword "${cleanKw}" paired with a valid English word were found.`
+          : "No uploaded domains matching strict 2-word rules were found in your file.",
         usedFallback: false,
         generatedAt: new Date().toISOString(),
       });
@@ -1487,10 +1449,22 @@ app.post("/api/analyze-domains", async (req, res) => {
     }
 
     // ABSOLUTE STRICT GUARANTEE: Filter out any domain that is NOT in the uploaded spreadsheet list
+    // AND verify strict 2-word requirement and keyword match
     const candidateVerifySet = new Set(qualified.map((d) => d.toLowerCase().trim()));
-    let verifiedStrictDomains = evaluatedDomains.filter((d: any) =>
-      candidateVerifySet.has(String(d.domain || "").toLowerCase().trim())
-    );
+    let verifiedStrictDomains = evaluatedDomains.filter((d: any) => {
+      const domStr = String(d.domain || "").toLowerCase().trim();
+      if (!candidateVerifySet.has(domStr)) return false;
+      const lastDot = domStr.lastIndexOf(".");
+      const name = lastDot !== -1 ? domStr.substring(0, lastDot) : domStr;
+      if (normalizedRules.exactlyTwoWords) {
+        const twoWords = decomposeIntoTwoEnglishWords(name, cleanKw);
+        if (!twoWords) return false;
+        if (searchMode === "keyword" && cleanKw && !twoWords.some(w => w.toLowerCase() === cleanKw)) {
+          return false;
+        }
+      }
+      return true;
+    });
 
     // If any got filtered out, fill with algorithmic evaluation exclusively from qualified spreadsheet domains
     if (verifiedStrictDomains.length < targetCount && qualified.length > verifiedStrictDomains.length) {
@@ -1636,8 +1610,16 @@ app.post("/api/validate-spreadsheet-domains", (req, res) => {
           const isSingle = MASTER_ENGLISH_DICTIONARY.has(cleanSlug);
           const reason = isSingle
             ? "Single English word (rule requires exactly two English words)"
-            : "Does not form two valid English words";
+            : "Does not form two valid English words (3+ words or non-dictionary parts)";
           discarded.push({ domain: clean, reason });
+          continue;
+        }
+      }
+
+      if (isKeywordMode && cleanKw) {
+        if (!twoWords || !twoWords.some(w => w.toLowerCase() === cleanKw)) {
+          breakdown.keywordMismatch = (breakdown.keywordMismatch || 0) + 1;
+          discarded.push({ domain: clean, reason: `Does not contain keyword "${cleanKw}" paired with a valid English word` });
           continue;
         }
       }
@@ -1652,46 +1634,7 @@ app.post("/api/validate-spreadsheet-domains", (req, res) => {
       }
     }
 
-    // SAFE FALLBACK: If strict rules yielded fewer than 3 qualified domains,
-    // automatically fall back to ranking all candidate domains by quality metrics
     let autoRelaxed = false;
-    const candidatePool = (isKeywordMode && cleanKw && allKeywordDomains.length > 0)
-      ? allKeywordDomains
-      : rawDomains.map((r: any) => String(r).trim().toLowerCase().replace(/https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '')).filter((d: string) => d.includes('.'));
-
-    if (qualified.length < 3 && candidatePool.length > 0) {
-      autoRelaxed = true;
-      const sortedPool = [...candidatePool].sort((a, b) => {
-        const lastDotA = a.lastIndexOf(".");
-        const nameA = lastDotA !== -1 ? a.substring(0, lastDotA) : a;
-        const tldA = lastDotA !== -1 ? a.substring(lastDotA) : ".com";
-        const lastDotB = b.lastIndexOf(".");
-        const nameB = lastDotB !== -1 ? b.substring(0, lastDotB) : b;
-        const tldB = lastDotB !== -1 ? b.substring(lastDotB) : ".com";
-
-        const twoA = decomposeIntoTwoEnglishWords(nameA, cleanKw) !== null;
-        const twoB = decomposeIntoTwoEnglishWords(nameB, cleanKw) !== null;
-        if (twoA && !twoB) return -1;
-        if (!twoA && twoB) return 1;
-
-        let scoreA = 0;
-        let scoreB = 0;
-        if (tldA === ".com") scoreA += 10;
-        if (tldB === ".com") scoreB += 10;
-        if (!nameA.includes("-") && !nameA.includes("_")) scoreA += 5;
-        if (!nameB.includes("-") && !nameB.includes("_")) scoreB += 5;
-        if (!/\d/.test(nameA)) scoreA += 5;
-        if (!/\d/.test(nameB)) scoreB += 5;
-        return scoreB - scoreA;
-      });
-
-      for (const d of sortedPool) {
-        if (!seen.has(d)) {
-          seen.add(d);
-          qualified.push(d);
-        }
-      }
-    }
 
     const stats = {
       totalUploaded: rawDomains.length,
@@ -1703,7 +1646,7 @@ app.post("/api/validate-spreadsheet-domains", (req, res) => {
       keywordMatchesTotal,
       keywordMatchesStrict,
       allKeywordDomains,
-      autoRelaxed,
+      autoRelaxed: false,
     };
 
     return res.json({
