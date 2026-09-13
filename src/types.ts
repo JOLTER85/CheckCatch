@@ -109,6 +109,8 @@ export interface DomainArabicBreakdown {
   liquidityData?: {
     monthlySearchVolumeEstimate: number;
     searchVolumeFormatted: string; // e.g. "~14,500 عملية بحث شهرياً"
+    searchVolumeFormattedAr?: string;
+    searchVolumeFormattedEn?: string;
     searchVolumeNoteAr: string; // "تقدير عمليات البحث الشهرية التراكمية على الكلمتين في محركات البحث"
     searchVolumeNoteEn: string;
     comparableSales: ComparableSale[];

@@ -14,10 +14,14 @@ import { clientDecomposeWords } from './spreadsheet';
  */
 interface WordProfile {
   meaning: string;
+  meaningEn?: string;
   strength: string;
+  strengthEn?: string;
   score: number;
   category: string;
+  categoryEn?: string;
   targetIndustry: string;
+  targetIndustryEn?: string;
   partOfSpeechAr?: string;
   partOfSpeechEn?: string;
   metaphorAr?: string;
@@ -621,12 +625,35 @@ const ARABIC_WORD_PROFILES: Record<string, WordProfile> = {
     category: "حيوية ومراقبة حية",
     targetIndustry: "منصات مراقبة العمليات التشغيلية، الرعاية الصحية الرقمية، وتحليلات الأسواق المالية",
   },
+  home: {
+    meaning: "منزل / بيئة استقرار وأتمتة ذكية",
+    meaningEn: "Residential foundation, living sanctuary, and smart living",
+    strength: "كلمة فائقة الشهرة ترتبط فورياً بالمنزل الذكي (Smart Home)، العقارات (PropTech)، وتطبيقات الحياة اليومية.",
+    strengthEn: "Universally recognized high-trust term anchoring smart home automation, PropTech, and consumer convenience.",
+    score: 96,
+    category: "منزل ذكي ومعيشة",
+    categoryEn: "Smart Home & PropTech",
+    targetIndustry: "الأجهزة المنزلية الذكية، تكنولوجيا العقارات (PropTech)، وتطبيقات إدارة المنزل",
+    targetIndustryEn: "Smart Home Automation, PropTech & Real Estate, Home Lifestyle Platforms",
+    partOfSpeechAr: "اسم مكاني / منزل",
+    partOfSpeechEn: "Descriptor",
+    metaphorAr: "الراحة والاستقرار والأتمتة المنزلية",
+    metaphorEn: "Domestic sanctuary and institutional reliability",
+  },
   flow: {
     meaning: "تدفق / سلاسة سير العمل والإنتاجية",
+    meaningEn: "Frictionless workflow, streamlined execution, and momentum",
     strength: "من أنجح الكلمات على الإطلاق في عالم الإنتاجية؛ تدل على الإنجاز السهل دون أي عوائق.",
+    strengthEn: "Elite productivity and tech keyword symbolizing frictionless execution, process automation, and streamlined momentum.",
     score: 98,
     category: "سلاسة وإنتاجية فائقة",
+    categoryEn: "Workflow Automation & Productivity",
     targetIndustry: "أدوات أتمتة الأعمال، منصات إدارة تدفق المهام (Workflows)، وبرمجيات التصميم",
+    targetIndustryEn: "Workflow Automation Tools, Task Management Platforms, Design & Productivity Software",
+    partOfSpeechAr: "رمز وظيفي مختصر",
+    partOfSpeechEn: "Core term",
+    metaphorAr: "السلاسة والانطلاق بلا عوائق",
+    metaphorEn: "Frictionless execution and continuous momentum",
   },
 };
 
@@ -842,12 +869,12 @@ export function analyzeSingleWord(word: string): WordAnalysis {
     const p = ARABIC_WORD_PROFILES[clean];
     return {
       word: clean,
-      meaningEn: `Recognized English dictionary word representing "${clean}"`,
+      meaningEn: p.meaningEn || `Recognized English dictionary word representing "${clean}"`,
       meaningAr: p.meaning,
-      strengthEn: `High-authority keyword with exceptional brand resonance in tech and business sectors.`,
+      strengthEn: p.strengthEn || `High-authority keyword with exceptional brand resonance in tech and business sectors.`,
       strengthAr: p.strength,
       strengthScore: p.score,
-      categoryEn: "Business & Technology",
+      categoryEn: p.categoryEn || "Business & Technology",
       categoryAr: p.category,
       length,
       syllables,
@@ -920,6 +947,85 @@ export function extractDomainTwoWords(domainItem: { name?: string; domain?: stri
   return [raw.slice(0, mid) || 'brand', raw.slice(mid) || 'tech'];
 }
 
+const AR_TO_EN_SECTORS_MAP: Record<string, string> = {
+  "أدوات أتمتة الأعمال": "Business Automation Tools",
+  "منصات إدارة تدفق المهام (Workflows)": "Workflow Orchestration Platforms",
+  "منصات إدارة تدفق المهام": "Workflow Management Platforms",
+  "برمجيات التصميم": "Design & Creative Software",
+  "الأجهزة المنزلية الذكية": "Smart Home Automation",
+  "تكنولوجيا العقارات (PropTech)": "PropTech & Real Estate",
+  "تطبيقات إدارة المنزل": "Home Operations Software",
+  "البنية التحتية السحابية": "Cloud Infrastructure",
+  "منصات قواعد بيانات المتجهات": "Vector Database Infrastructure",
+  "مستودعات البيانات": "Enterprise Data Warehousing",
+  "منصات إدارة العمليات": "Operations Management Platforms",
+  "أدوات الأداء العالي": "High-Performance Developer Tools",
+  "مسرعات الأعمال": "Enterprise Accelerators",
+  "صناديق الاستثمار الجريء": "Venture Capital & Scaleups",
+  "حلول الأمن السيبراني المتقدمة": "Enterprise Cybersecurity",
+  "حلول القيادة المؤسسية": "Executive Leadership Software",
+  "تطبيقات اللياقة البدنية الذكية": "Smart Fitness Applications",
+  "منصات حجز النوادي الرياضية": "Gym & Studio Booking Platforms",
+  "معدات التدريب التفاعلية": "Interactive Training Hardware",
+  "قواعد بيانات الذكاء الاصطناعي": "AI Database Infrastructure",
+  "شركات البحث الدلالي": "Semantic Search Engines",
+  "محركات الجرافيكس ثلاثية الأبعاد": "3D Spatial Graphics",
+  "أنظمة الذكاء الاصطناعي": "Artificial Intelligence Systems",
+  "أجهزة إنترنت الأشياء (IoT)": "IoT & Connected Devices",
+  "الحلول المستقلة": "Autonomous Enterprise Systems",
+  "منصات مراقبة العمليات التشغيلية": "Operations Observability Platforms",
+  "الرعاية الصحية الرقمية": "Digital Health Platforms",
+  "تحليلات الأسواق المالية": "Financial Market Analytics",
+  "روبوتات المساعدة الشخصية بالذكاء الاصطناعي": "AI Assistant Systems",
+  "تطبيقات الصحة النفسية": "Mental Wellness Tech",
+  "تطبيقات الدراسة": "EdTech & Learning Platforms",
+};
+
+const AR_TO_EN_CATEGORIES_MAP: Record<string, string> = {
+  "سلاسة وإنتاجية فائقة": "Workflow Automation & Productivity",
+  "منزل ذكي ومعيشة": "Smart Home & PropTech",
+  "دلالة مكانية وارتقاء": "Spatial Elevation & Infrastructure",
+  "دلالة مكانية وذروة": "Peak Performance & Efficiency",
+  "صدارة ونخبوية": "Market Leadership & Elite Tech",
+  "لياقة وتدريب بدني": "Fitness & Digital Health",
+  "دلالة تقنية ورياضية": "Technical & AI Infrastructure",
+  "ذكاء وأتمتة ابتكارية": "AI & Intelligent Automation",
+  "حيوية ومراقبة حية": "Real-Time Observability & Monitoring",
+  "سحابي وبنية تحتية": "Cloud & Enterprise Infrastructure",
+  "أمان وسيبرانية": "Cybersecurity & Data Protection",
+  "بيانات وحوسبة": "Data Engineering & Analytics",
+};
+
+function translateSectorToEn(sectorAr: string, fallbackWord?: string): string {
+  const trimmed = sectorAr.trim();
+  if (AR_TO_EN_SECTORS_MAP[trimmed]) return AR_TO_EN_SECTORS_MAP[trimmed];
+  for (const [arKey, enVal] of Object.entries(AR_TO_EN_SECTORS_MAP)) {
+    if (trimmed.includes(arKey) || arKey.includes(trimmed)) return enVal;
+  }
+  if (!/[\u0600-\u06FF]/.test(trimmed)) return trimmed;
+
+  if (fallbackWord) {
+    const cleanWord = fallbackWord.toLowerCase();
+    if (['home', 'house', 'nest', 'room', 'living'].includes(cleanWord)) return 'Smart Home & PropTech';
+    if (['flow', 'stream', 'pipe', 'pulse'].includes(cleanWord)) return 'Workflow Automation Platforms';
+    if (['data', 'vector', 'byte', 'code', 'stack'].includes(cleanWord)) return 'Data Infrastructure & Cloud SaaS';
+    if (['pay', 'coin', 'fund', 'cash', 'bank'].includes(cleanWord)) return 'FinTech & Capital Solutions';
+    if (['fit', 'gym', 'health', 'care'].includes(cleanWord)) return 'HealthTech & Connected Fitness';
+  }
+  return 'Enterprise Software & SaaS';
+}
+
+function translateCategoryToEn(categoryAr?: string, word?: string): string {
+  if (!categoryAr) return word ? `${word.charAt(0).toUpperCase() + word.slice(1)} Solutions` : 'Technology & SaaS';
+  const trimmed = categoryAr.trim();
+  if (AR_TO_EN_CATEGORIES_MAP[trimmed]) return AR_TO_EN_CATEGORIES_MAP[trimmed];
+  for (const [arKey, enVal] of Object.entries(AR_TO_EN_CATEGORIES_MAP)) {
+    if (trimmed.includes(arKey) || arKey.includes(trimmed)) return enVal;
+  }
+  if (!/[\u0600-\u06FF]/.test(trimmed)) return trimmed;
+  return word ? `${word.charAt(0).toUpperCase() + word.slice(1)} Technology` : 'Enterprise Software';
+}
+
 /**
  * Generates the complete, professional, data-driven 6-section breakdown for a domain,
  * completely replacing generic marketing copy with precision metrics, syllables,
@@ -937,24 +1043,39 @@ export function generateDomainArabicBreakdown(domainItem: DomainItem): DomainAra
   const pos1Ar = p1?.partOfSpeechAr || (w1.length <= 4 ? "صفة علامية موجزة" : "دلالة وظيفية أساسية");
   const pos2Ar = p2?.partOfSpeechAr || (w2.length <= 4 ? "رمز وظيفي مختصر" : "مصطلح تكنولوجي");
   const structureTypeAr = `نطاق مركب من كلمتين (${pos1Ar} + ${pos2Ar})`;
-  const structureTypeEn = `Two-word compound (${p1?.partOfSpeechEn || 'Descriptor'} + ${p2?.partOfSpeechEn || 'Core term'})`;
+  const pos1En = p1?.partOfSpeechEn || (w1.length <= 4 ? "Descriptor" : "Anchor");
+  const pos2En = p2?.partOfSpeechEn || (w2.length <= 4 ? "Core term" : "Functional noun");
+  const structureTypeEn = `Two-word compound (${pos1En} + ${pos2En})`;
 
   // Specific ideal sectors (curated for the exact keywords)
-  const idealSectorsSet = new Set<string>();
+  const idealSectorsSetAr = new Set<string>();
+  const idealSectorsSetEn = new Set<string>();
+
   if (p1?.targetIndustry) {
-    p1.targetIndustry.split('،').forEach(s => idealSectorsSet.add(s.trim()));
+    p1.targetIndustry.split('،').forEach(s => idealSectorsSetAr.add(s.trim()));
   }
   if (p2?.targetIndustry) {
-    p2.targetIndustry.split('،').forEach(s => idealSectorsSet.add(s.trim()));
+    p2.targetIndustry.split('،').forEach(s => idealSectorsSetAr.add(s.trim()));
   }
-  idealSectorsSet.add("B2B SaaS");
-  idealSectorsSet.add("AI Infrastructure");
-  const idealSectorsAr = Array.from(idealSectorsSet).slice(0, 3);
-  const idealSectorsEn = [
-    idealSectorsAr[0] || "B2B SaaS",
-    idealSectorsAr[1] || "AI Infrastructure",
-    "Enterprise Software",
-  ];
+  idealSectorsSetAr.add("حلول B2B البرمجية");
+  idealSectorsSetAr.add("البرمجيات السحابية المؤسسية");
+  const idealSectorsAr = Array.from(idealSectorsSetAr).slice(0, 3);
+
+  if (p1?.targetIndustryEn) {
+    p1.targetIndustryEn.split(',').forEach(s => idealSectorsSetEn.add(s.trim()));
+  } else if (p1?.targetIndustry) {
+    p1.targetIndustry.split('،').forEach(s => idealSectorsSetEn.add(translateSectorToEn(s, w1)));
+  }
+
+  if (p2?.targetIndustryEn) {
+    p2.targetIndustryEn.split(',').forEach(s => idealSectorsSetEn.add(s.trim()));
+  } else if (p2?.targetIndustry) {
+    p2.targetIndustry.split('،').forEach(s => idealSectorsSetEn.add(translateSectorToEn(s, w2)));
+  }
+
+  idealSectorsSetEn.add("B2B SaaS");
+  idealSectorsSetEn.add("Enterprise Software");
+  const idealSectorsEn = Array.from(idealSectorsSetEn).slice(0, 3);
 
   const brandImpressionAr = p1?.metaphorAr && p2?.metaphorAr
     ? `${p1.metaphorAr} مقترن مع ${p2.metaphorAr}`
@@ -964,7 +1085,7 @@ export function generateDomainArabicBreakdown(domainItem: DomainItem): DomainAra
     : "Strength, direction, and institutional stability";
 
   const cleanSummaryAr = `نطاق مركب من كلمتين (${pos1Ar} + ${pos2Ar}). مثالي لمجالات: (${idealSectorsAr.join('، ')}). الانطباع الأولي: ${brandImpressionAr}.`;
-  const cleanSummaryEn = `Two-word compound domain (${structureTypeEn}). Ideal sectors: (${idealSectorsEn.join(', ')}). Initial brand impression: ${brandImpressionEn}.`;
+  const cleanSummaryEn = `Two-word compound domain (${pos1En} + ${pos2En}). Ideal sectors: (${idealSectorsEn.join(', ')}). Initial brand impression: ${brandImpressionEn}.`;
 
   // 2. Phonetic & Visual Metrics
   const totalLength = (w1 + w2).length;
@@ -981,7 +1102,9 @@ export function generateDomainArabicBreakdown(domainItem: DomainItem): DomainAra
   const metaphor1 = p1?.metaphorAr || `دلالة ${word1Analysis.meaningAr.split('/')[0].trim()}`;
   const metaphor2 = p2?.metaphorAr || `دلالة ${word2Analysis.meaningAr.split('/')[0].trim()}`;
   const metaphorAr = `الدمج يخلق استعارة مجازية تدل على [${metaphor1} + ${metaphor2}].`;
-  const metaphorEn = `The compound forms an intuitive metaphor uniting [${p1?.metaphorEn || w1} + ${p2?.metaphorEn || w2}].`;
+  const metaphor1En = p1?.metaphorEn || `${w1.charAt(0).toUpperCase() + w1.slice(1)} foundation`;
+  const metaphor2En = p2?.metaphorEn || `${w2.charAt(0).toUpperCase() + w2.slice(1)} momentum`;
+  const metaphorEn = `The compound forms an intuitive metaphor uniting [${metaphor1En} + ${metaphor2En}].`;
 
   const hasDoubleLetterCollision = w1.length > 0 && w2.length > 0 && w1.slice(-1) === w2[0];
   const visualFlowAr = hasDoubleLetterCollision
@@ -997,13 +1120,25 @@ export function generateDomainArabicBreakdown(domainItem: DomainItem): DomainAra
 
   if (p2?.targetIndustry) {
     primaryOperatorsAr.push(`شركات ${p2.targetIndustry.split('،')[0].trim()}`);
-    primaryOperatorsEn.push(`Companies operating in ${p2.category}`);
   }
   if (p1?.targetIndustry) {
     primaryOperatorsAr.push(`منصات ${p1.targetIndustry.split('،')[0].trim()}`);
-    primaryOperatorsEn.push(`Platforms focusing on ${p1.category}`);
   }
   primaryOperatorsAr.push("الشركات الناشئة في الحوسبة السحابية وحلول B2B المؤسسية");
+
+  const cat1En = p1?.categoryEn || translateCategoryToEn(p1?.category, w1);
+  const cat2En = p2?.categoryEn || translateCategoryToEn(p2?.category, w2);
+
+  if (p2) {
+    primaryOperatorsEn.push(`Companies operating in ${cat2En}`);
+  } else {
+    primaryOperatorsEn.push(`Companies specializing in modern ${w2} software`);
+  }
+  if (p1) {
+    primaryOperatorsEn.push(`Platforms focusing on ${cat1En}`);
+  } else {
+    primaryOperatorsEn.push(`Platforms delivering digital ${w1} solutions`);
+  }
   primaryOperatorsEn.push("Cloud infrastructure startups and enterprise B2B providers");
 
   const useCaseAr = "شركة برمجية أو ناشئة ممولة (Series A/B) تبحث عن اسم موثوق ورصين لمنتجها الأساسي دون الحاجة إلى اختراع أسماء مبهمة.";
@@ -1014,6 +1149,8 @@ export function generateDomainArabicBreakdown(domainItem: DomainItem): DomainAra
   // Estimate realistic search volume: standard English combinations typically get 8,000 to 26,000 monthly searches
   const baseVolume = 8500 + ((word1Analysis.strengthScore + word2Analysis.strengthScore) * 60) + ((w1.length + w2.length) * 120);
   const monthlySearchVolumeEstimate = Math.round(baseVolume / 100) * 100;
+  const searchVolumeFormattedAr = `~${monthlySearchVolumeEstimate.toLocaleString('ar-EG')} عملية بحث شهرياً`;
+  const searchVolumeFormattedEn = `~${monthlySearchVolumeEstimate.toLocaleString('en-US')} monthly searches`;
   const searchVolumeFormatted = `~${monthlySearchVolumeEstimate.toLocaleString()} عملية بحث شهرياً`;
 
   // 6. Realistic Valuation Split
@@ -1066,6 +1203,8 @@ export function generateDomainArabicBreakdown(domainItem: DomainItem): DomainAra
     liquidityData: {
       monthlySearchVolumeEstimate,
       searchVolumeFormatted,
+      searchVolumeFormattedAr,
+      searchVolumeFormattedEn,
       searchVolumeNoteAr: "تقدير عمليات البحث الشهرية التراكمية على الكلمتين في محركات البحث",
       searchVolumeNoteEn: "Cumulative monthly search volume estimate across search engines",
       comparableSales,

@@ -282,7 +282,9 @@ export const DomainCard: React.FC<DomainCardProps> = ({
                   <span>{t.domainCard.breakdownHeading}</span>
                 </div>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-white text-slate-700 border border-slate-200 font-semibold shadow-xs">
-                  {arabicBreakdown.classification?.structureTypeAr || 'نطاق مركب من كلمتين'}
+                  {lang === 'ar'
+                    ? (arabicBreakdown.classification?.structureTypeAr || 'نطاق مركب من كلمتين')
+                    : (arabicBreakdown.classification?.structureTypeEn || 'Two-word compound')}
                 </span>
               </div>
 
@@ -494,7 +496,9 @@ export const DomainCard: React.FC<DomainCardProps> = ({
                   </div>
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-teal-50 text-teal-800 border border-teal-200">
                     <Search className="w-3 h-3 text-teal-600" />
-                    {arabicBreakdown.liquidityData?.searchVolumeFormatted || '~12,000 بحث/شهر'}
+                    {lang === 'ar'
+                      ? (arabicBreakdown.liquidityData?.searchVolumeFormattedAr || arabicBreakdown.liquidityData?.searchVolumeFormatted || '~12,000 بحث/شهر')
+                      : (arabicBreakdown.liquidityData?.searchVolumeFormattedEn || `~${arabicBreakdown.liquidityData?.monthlySearchVolumeEstimate?.toLocaleString() || '12,000'} monthly searches`)}
                   </span>
                 </div>
 
