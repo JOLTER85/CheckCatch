@@ -93,18 +93,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                 id="nav-about-btn"
                 type="button"
                 onClick={() => onOpenLegal('about')}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-teal-800 hover:bg-teal-50/60 transition-all"
+                className="min-h-[44px] flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-teal-800 hover:bg-teal-50/60 transition-all"
               >
-                <Info className="w-3.5 h-3.5 text-teal-600" />
+                <Info className="w-4 h-4 text-teal-600" />
                 <span>{isAr ? 'عن المنصة' : 'About'}</span>
               </button>
               <button
                 id="nav-contact-btn"
                 type="button"
                 onClick={() => onOpenLegal('contact')}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-teal-800 hover:bg-teal-50/60 transition-all"
+                className="min-h-[44px] flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-teal-800 hover:bg-teal-50/60 transition-all"
               >
-                <Mail className="w-3.5 h-3.5 text-teal-600" />
+                <Mail className="w-4 h-4 text-teal-600" />
                 <span>{isAr ? 'اتصل بنا' : 'Contact'}</span>
               </button>
             </div>
@@ -122,11 +122,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               id="language-switcher-btn"
               type="button"
               onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white hover:bg-teal-50/50 border border-slate-200 hover:border-teal-300 text-slate-700 text-xs font-semibold transition-all shadow-xs active:scale-95"
+              className="min-h-[44px] flex items-center gap-2 px-3 py-2 rounded-xl bg-white hover:bg-teal-50/50 border border-slate-200 hover:border-teal-300 text-slate-700 text-xs font-semibold transition-all shadow-xs active:scale-95"
               aria-label="Select Language"
               aria-expanded={isLangMenuOpen}
             >
-              <Globe className="w-3.5 h-3.5 text-blue-600" />
+              <Globe className="w-4 h-4 text-blue-600" />
               <span className="hidden sm:inline-flex items-center gap-1.5">
                 <span>{currentLangObj.flag}</span>
                 <span>{currentLangObj.nativeName}</span>
@@ -155,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       id={`lang-option-${item.code}`}
                       type="button"
                       onClick={() => handleSelectLang(item.code)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                      className={`min-h-[44px] w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
                         isSelected
                           ? 'bg-gradient-to-r from-teal-50 to-blue-50 text-blue-700 font-bold border border-teal-200'
                           : 'text-slate-700 hover:text-slate-900 hover:bg-teal-50/50'
@@ -177,10 +177,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             id="saved-domains-button"
             onClick={onOpenSaved}
-            className="relative flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-white hover:bg-blue-50/50 border border-slate-200 hover:border-blue-300 text-slate-700 text-xs font-semibold transition-all shadow-xs active:scale-95"
+            className="min-h-[44px] relative flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white hover:bg-blue-50/50 border border-slate-200 hover:border-blue-300 text-slate-700 text-xs font-semibold transition-all shadow-xs active:scale-95"
             title={t.nav.shortlist}
           >
-            <Bookmark className="w-3.5 h-3.5 text-blue-600" />
+            <Bookmark className="w-4 h-4 text-blue-600" />
             <span>{t.nav.shortlist}</span>
             {savedCount > 0 && (
               <span

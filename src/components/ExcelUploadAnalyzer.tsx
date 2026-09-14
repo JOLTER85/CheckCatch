@@ -444,13 +444,13 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                 id="load-sample-spreadsheet-btn"
                 type="button"
                 onClick={handleLoadSample}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold bg-white hover:bg-teal-50 border border-teal-200 text-teal-800 hover:text-teal-900 transition-colors shadow-xs"
+                className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white hover:bg-teal-50 border border-teal-200 text-teal-800 hover:text-teal-900 transition-colors shadow-xs"
               >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-teal-600" />
+                <FileSpreadsheet className="w-4 h-4 text-teal-600" />
                 {t.excelAnalyzer.loadSample}
               </button>
             ) : (
-              <span className="text-[11px] text-teal-800 font-bold px-2.5 py-1 rounded-lg bg-teal-100/70 border border-teal-300">
+              <span className="inline-flex items-center min-h-[44px] text-xs text-teal-800 font-bold px-3 py-2 rounded-xl bg-teal-100/70 border border-teal-300">
                 {lang === 'ar'
                   ? 'انقر للاستبدال'
                   : lang === 'fr'
@@ -549,7 +549,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
         </div>
 
         {/* Dual Mode Buttons */}
-        <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl border border-slate-200 gap-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 p-1 bg-slate-100 rounded-xl border border-slate-200 gap-1.5">
           <button
             id="search-mode-keyword-btn"
             type="button"
@@ -558,13 +558,13 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
               setServerStats(null);
               setServerQualified(null);
             }}
-            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+            className={`min-h-[44px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
               searchMode === 'keyword'
                 ? 'bg-blue-600 text-white shadow-xs border border-blue-600'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white'
             }`}
           >
-            <KeyRound className="w-3.5 h-3.5 text-white" />
+            <KeyRound className="w-4 h-4 text-white shrink-0" />
             <div className="text-left rtl:text-right">
               <div className="leading-tight">{t.controls.searchByWord}</div>
               <div className="text-[10px] opacity-90 font-normal">{t.excelAnalyzer.searchByKeyword}</div>
@@ -579,13 +579,13 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
               setServerStats(null);
               setServerQualified(null);
             }}
-            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+            className={`min-h-[44px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
               searchMode === 'niche'
                 ? 'bg-blue-600 text-white shadow-xs border border-blue-600'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white'
             }`}
           >
-            <Target className="w-3.5 h-3.5 text-white" />
+            <Target className="w-4 h-4 text-white shrink-0" />
             <div className="text-left rtl:text-right">
               <div className="leading-tight">{t.controls.searchByNiche}</div>
               <div className="text-[10px] opacity-90 font-normal">{t.excelAnalyzer.searchByNiche}</div>
@@ -596,7 +596,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
         {/* Dynamic Input based on Active Search Mode (Keyword first, Niche second) */}
         {searchMode === 'keyword' ? (
           <div id="keyword-mode-input-section" className="space-y-2 pt-1">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-1">
               <label htmlFor="target-keyword-input" className="block text-xs font-semibold text-slate-700">
                 {t.excelAnalyzer.targetKeywordLabel}
               </label>
@@ -620,7 +620,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                   setServerQualified(null);
                 }}
                 placeholder={t.excelAnalyzer.targetKeywordPlaceholder}
-                className="w-full rounded-xl bg-white border border-slate-300 px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-mono shadow-xs"
+                className="min-h-[44px] w-full rounded-xl bg-white border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-mono shadow-xs"
               />
             </div>
 
@@ -644,9 +644,9 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                     setServerStats(null);
                     setServerQualified(null);
                   }}
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-md border transition-all ${
+                  className={`min-h-[36px] text-xs font-mono px-2.5 py-1.5 rounded-lg border transition-all flex items-center justify-center ${
                     targetKeyword.toLowerCase() === kw
-                      ? 'bg-blue-600 text-white border-blue-600 font-bold'
+                      ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-xs'
                       : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
                   }`}
                 >
@@ -741,7 +741,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
           </div>
         ) : (
           <div id="niche-mode-input-section" className="space-y-2 pt-1">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-1">
               <label htmlFor="target-context-input" className="block text-xs font-semibold text-slate-700">
                 {t.excelAnalyzer.contextTopicLabel}
               </label>
@@ -761,7 +761,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                 aria-label={t.excelAnalyzer.contextTopicLabel || 'Target Niche or Industry Concept'}
                 onChange={(e) => setContextTopic(e.target.value)}
                 placeholder={t.excelAnalyzer.contextTopicPlaceholder}
-                className="w-full rounded-xl bg-white border border-slate-300 px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-xs"
+                className="min-h-[44px] w-full rounded-xl bg-white border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-xs"
               />
             </div>
 
@@ -773,9 +773,9 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                   key={niche}
                   type="button"
                   onClick={() => setContextTopic(niche)}
-                  className={`text-[10px] px-2 py-0.5 rounded-md border transition-all ${
+                  className={`min-h-[36px] text-xs px-3 py-1.5 rounded-lg border transition-all flex items-center justify-center ${
                     contextTopic.toLowerCase().includes(niche.toLowerCase().split(' ')[0])
-                      ? 'bg-blue-600 text-white border-blue-600 font-semibold'
+                      ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-xs'
                       : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
                   }`}
                 >

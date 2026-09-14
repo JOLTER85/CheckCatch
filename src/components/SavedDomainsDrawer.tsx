@@ -60,7 +60,7 @@ export const SavedDomainsDrawer: React.FC<SavedDomainsDrawerProps> = ({
     >
       <div
         id="saved-domains-modal"
-        className="w-full max-w-md bg-white border-l border-slate-200 h-full flex flex-col shadow-2xl p-6 overflow-hidden animate-in slide-in-from-right duration-300"
+        className="w-full sm:max-w-md bg-white border-l border-slate-200 h-full flex flex-col shadow-2xl p-4 sm:p-6 overflow-hidden animate-in slide-in-from-right duration-300"
       >
         <div className="flex items-center justify-between pb-4 border-b border-slate-200">
           <div className="flex items-center gap-2">
@@ -71,7 +71,8 @@ export const SavedDomainsDrawer: React.FC<SavedDomainsDrawerProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+            aria-label="Close saved domains drawer"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -89,28 +90,28 @@ export const SavedDomainsDrawer: React.FC<SavedDomainsDrawerProps> = ({
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between py-3 border-b border-slate-100 text-xs">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 py-3 border-b border-slate-100 text-xs">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={onCopyAll}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors font-medium border border-slate-200"
+                  className="min-h-[44px] flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors font-medium border border-slate-200"
                 >
-                  <Copy className="w-3.5 h-3.5 text-slate-500" />
+                  <Copy className="w-4 h-4 text-slate-500" />
                   <span>{t.savedDrawer.copyAll}</span>
                 </button>
                 <button
                   onClick={exportCsv}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors font-medium border border-slate-200"
+                  className="min-h-[44px] flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors font-medium border border-slate-200"
                 >
-                  <Download className="w-3.5 h-3.5 text-slate-500" />
+                  <Download className="w-4 h-4 text-slate-500" />
                   <span>{t.savedDrawer.exportCsv}</span>
                 </button>
               </div>
               <button
                 onClick={onClearAll}
-                className="text-rose-600 hover:text-rose-700 font-medium flex items-center gap-1 transition-colors"
+                className="min-h-[44px] px-2 text-rose-600 hover:text-rose-700 font-medium flex items-center gap-1 transition-colors"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-4 h-4" />
                 <span>{t.savedDrawer.clearAll}</span>
               </button>
             </div>
@@ -121,26 +122,26 @@ export const SavedDomainsDrawer: React.FC<SavedDomainsDrawerProps> = ({
                 return (
                   <div
                     key={item.id}
-                    className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start justify-between gap-2 shadow-xs"
+                    className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start justify-between gap-2 shadow-xs"
                   >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-sm text-slate-900" dir="ltr">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono font-bold text-sm text-slate-900 break-all" dir="ltr">
                           {item.domain}
                         </span>
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300">
                           {item.relevanceScore}%
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-700 mt-1 line-clamp-1 font-medium">
+                      <p className="text-xs text-slate-700 mt-1 font-medium leading-relaxed">
                         {item.pitch}
                       </p>
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-3 mt-2 flex-wrap">
                         <button
                           onClick={() => onCopyDomain(item.domain)}
-                          className="text-[11px] font-bold text-emerald-800 hover:text-emerald-900 flex items-center gap-1"
+                          className="min-h-[40px] text-xs font-bold text-emerald-800 hover:text-emerald-900 flex items-center gap-1.5"
                         >
-                          <Copy className="w-3 h-3 text-emerald-800" />
+                          <Copy className="w-3.5 h-3.5 text-emerald-800" />
                           <span>{t.domainCard.copy}</span>
                         </button>
                         <span className="text-slate-300">•</span>
@@ -148,20 +149,21 @@ export const SavedDomainsDrawer: React.FC<SavedDomainsDrawerProps> = ({
                           href={registrars[0].url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                          className="min-h-[40px] text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1.5"
                         >
                           <span>{t.domainCard.register}</span>
-                          <ExternalLink className="w-3 h-3" />
+                          <ExternalLink className="w-3.5 h-3.5" />
                         </a>
                       </div>
                     </div>
 
                     <button
                       onClick={() => onRemove(item.id)}
-                      className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                      className="min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-rose-600 transition-colors shrink-0"
                       title="Remove"
+                      aria-label={`Remove ${item.domain}`}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 );

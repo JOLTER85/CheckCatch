@@ -563,11 +563,11 @@ export default function App() {
               )}
 
               {/* TLD quick filter tabs */}
-              <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200/80 text-xs">
+              <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200/80 text-xs flex-wrap">
                 <button
                   type="button"
                   onClick={() => setActiveTldFilter('all')}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                  className={`min-h-[38px] px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center justify-center ${
                     activeTldFilter === 'all'
                       ? 'bg-blue-600 text-white font-bold shadow-xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-white'
@@ -580,7 +580,7 @@ export default function App() {
                     key={tld}
                     type="button"
                     onClick={() => setActiveTldFilter(tld)}
-                    className={`px-2 py-1 rounded-lg font-mono text-xs transition-all ${
+                    className={`min-h-[38px] px-2.5 py-1.5 rounded-lg font-mono text-xs transition-all flex items-center justify-center ${
                       activeTldFilter === tld
                         ? 'bg-blue-600 text-white font-bold shadow-xs'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-white'
@@ -592,10 +592,10 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
               {/* In-results Search */}
-              <div className="relative flex-1 sm:w-48">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <div className="relative flex-1 sm:w-48 min-w-[140px]">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   id="results-search-input"
                   type="text"
@@ -603,19 +603,19 @@ export default function App() {
                   aria-label={t.results.searchPlaceholder || (lang === 'ar' ? 'بحث في النتائج' : 'Search generated results')}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t.results.searchPlaceholder}
-                  className="w-full bg-slate-50/90 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all shadow-xs"
+                  className="min-h-[44px] w-full bg-slate-50/90 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all shadow-xs"
                 />
               </div>
 
               {/* Sort selector */}
-              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
-                <ArrowUpDown className="w-3.5 h-3.5 text-teal-600" />
+              <div className="min-h-[44px] flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 shadow-xs">
+                <ArrowUpDown className="w-4 h-4 text-teal-600 shrink-0" />
                 <select
                   id="sort-select"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
                   aria-label={lang === 'ar' ? 'ترتيب النطاقات حسب' : 'Sort domains by'}
-                  className="bg-transparent text-xs font-semibold text-slate-800 focus:outline-none cursor-pointer"
+                  className="bg-transparent text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none cursor-pointer py-1"
                 >
                   <option value="match" className="bg-white text-slate-800">
                     {t.results.sortMatch}
@@ -637,7 +637,8 @@ export default function App() {
                 id="copy-all-btn"
                 type="button"
                 onClick={handleCopyAllGenerated}
-                className="p-2 rounded-xl bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-300 text-slate-700 hover:text-teal-900 transition-colors shadow-xs"
+                aria-label={lang === 'ar' ? 'نسخ جميع الدومينات' : 'Copy all domains'}
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-300 text-slate-700 hover:text-teal-900 transition-colors shadow-xs"
                 title={lang === 'ar' ? 'نسخ جميع الدومينات' : 'Copy all domains'}
               >
                 <Copy className="w-4 h-4 text-teal-700" />
@@ -649,12 +650,12 @@ export default function App() {
                   id="export-dropdown-btn"
                   type="button"
                   onClick={() => setShowExportMenu(!showExportMenu)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-50 to-blue-50 hover:from-teal-100 hover:to-blue-100 text-teal-900 border border-teal-200 text-xs font-bold transition-all shadow-xs"
+                  className="min-h-[44px] flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-teal-50 to-blue-50 hover:from-teal-100 hover:to-blue-100 text-teal-900 border border-teal-200 text-xs font-bold transition-all shadow-xs"
                   title="Export Picks"
                 >
-                  <Download className="w-3.5 h-3.5 text-teal-700" />
+                  <Download className="w-4 h-4 text-teal-700" />
                   <span>{t.results.exportBtn}</span>
-                  <ChevronDown className="w-3 h-3 text-teal-600" />
+                  <ChevronDown className="w-3.5 h-3.5 text-teal-600" />
                 </button>
 
                 {showExportMenu && (
@@ -666,9 +667,9 @@ export default function App() {
                       id="export-excel-action-btn"
                       type="button"
                       onClick={handleExportExcel}
-                      className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-800 hover:text-teal-800 hover:bg-teal-50 transition-colors text-left"
+                      className="min-h-[44px] w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold text-slate-800 hover:text-teal-800 hover:bg-teal-50 transition-colors text-left"
                     >
-                      <FileSpreadsheet className="w-4 h-4 text-teal-600" />
+                      <FileSpreadsheet className="w-4 h-4 text-teal-600 shrink-0" />
                       <div>
                         <div>{t.results.exportExcel}</div>
                         <div className="text-[10px] text-slate-500 font-normal">
@@ -680,9 +681,9 @@ export default function App() {
                       id="export-csv-action-btn"
                       type="button"
                       onClick={handleExportCsvAdvanced}
-                      className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-800 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
+                      className="min-h-[44px] w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold text-slate-800 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
                     >
-                      <Download className="w-4 h-4 text-blue-600" />
+                      <Download className="w-4 h-4 text-blue-600 shrink-0" />
                       <div>
                         <div>{t.results.exportCsv}</div>
                         <div className="text-[10px] text-slate-500 font-normal">
@@ -699,26 +700,27 @@ export default function App() {
                 id="toggle-expand-all-breakdowns-btn"
                 type="button"
                 onClick={() => setExpandAllBreakdowns(!expandAllBreakdowns)}
-                className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                className={`min-h-[44px] px-3 py-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs ${
                   expandAllBreakdowns
                     ? 'bg-teal-50 text-teal-800 border-teal-300'
                     : 'bg-slate-50 text-slate-700 hover:text-slate-900 border-slate-200 hover:bg-slate-100'
                 }`}
                 title={expandAllBreakdowns ? t.results.collapseAllAnalysis : t.results.expandAllAnalysis}
               >
-                <BookOpen className="w-3.5 h-3.5 text-teal-600" />
+                <BookOpen className="w-4 h-4 text-teal-600" />
                 <span className="hidden sm:inline">
                   {expandAllBreakdowns ? t.results.collapseAllAnalysis : t.results.expandAllAnalysis}
                 </span>
               </button>
 
               {/* View Mode Toggle: Cards vs Table */}
-              <div className="flex items-center bg-slate-100 border border-slate-200 rounded-xl p-0.5">
+              <div className="min-h-[44px] flex items-center bg-slate-100 border border-slate-200 rounded-xl p-0.5">
                 <button
                   id="view-mode-card-btn"
                   type="button"
                   onClick={() => setViewMode('card')}
-                  className={`p-1.5 rounded-lg transition-colors ${
+                  aria-label={t.results.cardView}
+                  className={`min-h-[40px] min-w-[40px] flex items-center justify-center p-2 rounded-lg transition-colors ${
                     viewMode === 'card'
                       ? 'bg-white text-blue-600 shadow-xs border border-slate-200 font-bold'
                       : 'text-slate-600 hover:text-slate-900'
@@ -731,7 +733,8 @@ export default function App() {
                   id="view-mode-table-btn"
                   type="button"
                   onClick={() => setViewMode('table')}
-                  className={`p-1.5 rounded-lg transition-colors ${
+                  aria-label={t.results.tableView}
+                  className={`min-h-[40px] min-w-[40px] flex items-center justify-center p-2 rounded-lg transition-colors ${
                     viewMode === 'table'
                       ? 'bg-white text-blue-600 shadow-xs border border-slate-200 font-bold'
                       : 'text-slate-600 hover:text-slate-900'

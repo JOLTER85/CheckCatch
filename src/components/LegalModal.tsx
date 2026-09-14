@@ -106,7 +106,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
               aria-label="Close modal"
             >
               <X className="w-5 h-5" />
@@ -114,7 +114,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
           </div>
 
           {/* Body Content */}
-          <div className="p-6 overflow-y-auto space-y-6 text-slate-700 text-sm leading-relaxed">
+          <div className="p-4 sm:p-6 overflow-y-auto space-y-6 text-slate-700 text-sm leading-relaxed">
             {/* ABOUT US CONTENT */}
             {type === 'about' && (
               isAr ? (
@@ -592,7 +592,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
             </span>
             <button
               onClick={onClose}
-              className="px-4 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold transition-colors"
+              className="min-h-[44px] px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold transition-colors flex items-center justify-center"
             >
               {isAr ? 'إغلاق النافذة' : 'Close'}
             </button>

@@ -107,7 +107,7 @@ export const DomainCard: React.FC<DomainCardProps> = ({
   return (
     <div
       id={`domain-card-${domain.id}`}
-      className={`group relative rounded-2xl p-5 transition-all duration-200 border flex flex-col justify-between ${
+      className={`group relative rounded-2xl p-4 sm:p-5 transition-all duration-200 border flex flex-col justify-between ${
         isSelected
           ? 'bg-white border-teal-500 shadow-lg shadow-teal-500/10 ring-2 ring-teal-500/30'
           : isTopPick
@@ -117,9 +117,9 @@ export const DomainCard: React.FC<DomainCardProps> = ({
     >
       {/* Selected Best Banner */}
       {isSelected && (
-        <div className="mb-3 px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-200 flex items-center justify-between text-xs font-bold text-teal-900 shadow-xs animate-fadeIn">
+        <div className="mb-3 px-3 py-2 rounded-xl bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-200 flex items-center justify-between text-xs font-bold text-teal-900 shadow-xs animate-fadeIn flex-wrap gap-1">
           <div className="flex items-center gap-1.5">
-            <Crown className="w-4 h-4 fill-teal-600 text-teal-600" />
+            <Crown className="w-4 h-4 fill-teal-600 text-teal-600 shrink-0" />
             <span>
               {lang === 'ar'
                 ? 'أفضل ترشيح مختار • تم التحقق من القيمة الاستثمارية'
@@ -136,13 +136,13 @@ export const DomainCard: React.FC<DomainCardProps> = ({
 
       {/* Top Badges Bar */}
       <div>
-        <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
           <div className="flex items-center gap-1.5 flex-wrap">
             {/* Selected Best Domain Badge */}
             {isSelected ? (
               <span
                 id={`badge-selected-best-${domain.id}`}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-teal-600 to-blue-600 text-white shadow-xs"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-teal-600 to-blue-600 text-white shadow-xs"
               >
                 <Crown className="w-3.5 h-3.5 fill-white text-white" />
                 {t.domainCard.bestDomainBadge}
@@ -150,7 +150,7 @@ export const DomainCard: React.FC<DomainCardProps> = ({
             ) : isTopPick ? (
               <span
                 id={`badge-top-pick-${domain.id}`}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-50 text-teal-800 border border-teal-300 shadow-xs"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-teal-50 text-emerald-800 border border-teal-300 shadow-xs"
               >
                 <Target className="w-3.5 h-3.5 text-teal-600" />
                 {domain.topPickBadge || (rank === 1 ? 'Top Pick #1' : `Top Pick #${rank}`)}
@@ -161,7 +161,7 @@ export const DomainCard: React.FC<DomainCardProps> = ({
             <span
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold border ${
                 isPremium
-                  ? 'bg-teal-50 text-teal-800 border-teal-300'
+                  ? 'bg-teal-50 text-emerald-800 border-teal-300'
                   : isBrandable
                   ? 'bg-blue-50 text-blue-800 border-blue-300'
                   : 'bg-slate-100 text-slate-700 border-slate-200'
@@ -190,7 +190,7 @@ export const DomainCard: React.FC<DomainCardProps> = ({
                   onSelectAsBest(domain);
                   setIsBreakdownOpen(true);
                 }}
-                className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1.5 ${
+                className={`min-h-[44px] text-xs font-semibold px-3 py-2 rounded-xl border transition-all flex items-center gap-1.5 ${
                   isSelected
                     ? 'bg-teal-50 text-teal-800 border-teal-300 shadow-xs font-bold'
                     : 'bg-slate-50 hover:bg-teal-50 text-slate-700 hover:text-teal-900 border-slate-200 hover:border-teal-300'
@@ -198,7 +198,7 @@ export const DomainCard: React.FC<DomainCardProps> = ({
                 title={isSelected ? t.domainCard.selectedBest : t.domainCard.selectBest}
               >
                 <Crown
-                  className={`w-3.5 h-3.5 ${
+                  className={`w-4 h-4 ${
                     isSelected ? 'fill-teal-600 text-teal-600' : 'text-slate-400'
                   }`}
                 />
@@ -212,7 +212,7 @@ export const DomainCard: React.FC<DomainCardProps> = ({
               id={`save-btn-${domain.id}`}
               type="button"
               onClick={() => onToggleSave(domain)}
-              className={`p-1.5 rounded-lg border transition-colors ${
+              className={`min-h-[44px] min-w-[44px] p-2.5 rounded-xl border transition-colors flex items-center justify-center ${
                 isSaved
                   ? 'bg-amber-50 text-amber-600 border-amber-300'
                   : 'text-slate-400 hover:text-slate-700 bg-slate-50 border-slate-200 hover:border-slate-300'
@@ -230,7 +230,7 @@ export const DomainCard: React.FC<DomainCardProps> = ({
         {/* Main Domain Heading */}
         <div className="mb-3">
           <div className="flex items-baseline gap-1.5 flex-wrap" dir="ltr">
-            <span className="font-mono text-xl sm:text-2xl font-bold tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors">
+            <span className="font-mono text-xl sm:text-2xl font-bold tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors break-all">
               {domain.name}
             </span>
             <span
@@ -254,16 +254,16 @@ export const DomainCard: React.FC<DomainCardProps> = ({
             id={`toggle-arabic-analysis-${domain.id}`}
             type="button"
             onClick={() => setIsBreakdownOpen(!isBreakdownOpen)}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-800 transition-colors"
+            className="min-h-[44px] w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-800 transition-colors"
           >
             <div className="flex items-center gap-2">
-              <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+              <BookOpen className="w-4 h-4 text-blue-600 shrink-0" />
               <span>{t.domainCard.breakdownToggle}</span>
             </div>
             <div className="flex items-center gap-1 text-[11px] text-slate-500">
               <span>{isBreakdownOpen ? t.domainCard.breakdownHide : t.domainCard.breakdownToggle}</span>
               <ChevronDown
-                className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                className={`w-4 h-4 transition-transform duration-200 ${
                   isBreakdownOpen ? 'rotate-180' : ''
                 }`}
               />
@@ -615,31 +615,31 @@ export const DomainCard: React.FC<DomainCardProps> = ({
           <button
             type="button"
             onClick={() => setShowRegistrars(!showRegistrars)}
-            className="w-full text-xs font-semibold py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-between transition-colors shadow-xs"
+            className="w-full min-h-[44px] text-xs font-semibold py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-between transition-colors shadow-xs"
           >
             <span className="flex items-center gap-1.5">
-              <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+              <ExternalLink className="w-4 h-4 text-slate-500 shrink-0" />
               {t.domainCard.registrars}
             </span>
             <ChevronDown
-              className={`w-3.5 h-3.5 text-slate-500 transition-transform ${
+              className={`w-4 h-4 text-slate-500 transition-transform ${
                 showRegistrars ? 'rotate-180' : ''
               }`}
             />
           </button>
 
           {showRegistrars && (
-            <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-2 rounded-xl bg-slate-50 border border-slate-200 text-[11px]">
+            <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200 text-xs">
               {registrars.map((reg) => (
                 <a
                   key={reg.name}
                   href={reg.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-1.5 rounded-lg bg-white hover:bg-blue-50 border border-slate-200 text-slate-800 hover:text-blue-700 text-center font-medium truncate transition-colors flex items-center justify-center gap-1 shadow-xs"
+                  className="min-h-[44px] p-2 rounded-lg bg-white hover:bg-blue-50 border border-slate-200 text-slate-800 hover:text-blue-700 text-center font-medium truncate transition-colors flex items-center justify-center gap-1 shadow-xs"
                 >
                   <span>{reg.name}</span>
-                  <ExternalLink className="w-2.5 h-2.5 text-slate-400" />
+                  <ExternalLink className="w-3 h-3 text-slate-400 shrink-0" />
                 </a>
               ))}
             </div>
@@ -648,20 +648,20 @@ export const DomainCard: React.FC<DomainCardProps> = ({
       </div>
 
       {/* Card Footer Actions: Copy Domain */}
-      <div className="pt-3 mt-3 border-t border-slate-200 flex items-center justify-between gap-2">
+      <div className="pt-3 mt-3 border-t border-slate-200 flex items-center justify-between gap-2.5">
         <button
           type="button"
           onClick={handleCopy}
-          className="flex-1 py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+          className="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-xs"
         >
           {copied ? (
             <>
-              <Check className="w-3.5 h-3.5 text-emerald-800" />
+              <Check className="w-4 h-4 text-emerald-800 shrink-0" />
               <span className="text-emerald-800 font-bold">{t.domainCard.copied}</span>
             </>
           ) : (
             <>
-              <Copy className="w-3.5 h-3.5 text-slate-500" />
+              <Copy className="w-4 h-4 text-slate-500 shrink-0" />
               <span>{t.domainCard.copy}</span>
             </>
           )}
@@ -671,10 +671,10 @@ export const DomainCard: React.FC<DomainCardProps> = ({
           href={registrars[0]?.url || `https://www.namecheap.com/domains/registration/results/?domain=${domain.domain}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+          className="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-xs"
         >
           <span>Namecheap</span>
-          <ExternalLink className="w-3 h-3 text-white" />
+          <ExternalLink className="w-3.5 h-3.5 text-white shrink-0" />
         </a>
       </div>
     </div>
