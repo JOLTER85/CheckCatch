@@ -84,16 +84,32 @@ const POPULAR_NICHES: Record<Language, string[]> = {
 };
 
 const POPULAR_KEYWORDS = [
-  'cloud',
-  'pay',
-  'data',
-  'ai',
-  'flow',
-  'sync',
-  'vault',
-  'hub',
-  'pulse',
-  'smart',
+  'AI',
+  'Tech',
+  'App',
+  'Data',
+  'Cloud',
+  'Smart',
+  'Bot',
+  'Lab',
+  'My',
+  'Pro',
+  'Hub',
+  'Go',
+  'Now',
+  'Best',
+  'Group',
+  'Pay',
+  'Capital',
+  'Invest',
+  'Coin',
+  'Fund',
+  'Health',
+  'Care',
+  'Home',
+  'Shop',
+  'Store',
+  'Bet',
 ];
 
 export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
@@ -645,7 +661,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                     setServerQualified(null);
                   }}
                   className={`min-h-[36px] text-xs font-mono px-2.5 py-1.5 rounded-lg border transition-all flex items-center justify-center ${
-                    targetKeyword.toLowerCase() === kw
+                    targetKeyword.trim().toLowerCase() === kw.toLowerCase()
                       ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-xs'
                       : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
                   }`}

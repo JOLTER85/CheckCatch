@@ -37,7 +37,7 @@ interface DomainCardProps {
   lang?: Language;
 }
 
-export const DomainCard: React.FC<DomainCardProps> = ({
+const DomainCardComponent: React.FC<DomainCardProps> = ({
   domain,
   rank,
   isSaved,
@@ -680,3 +680,5 @@ export const DomainCard: React.FC<DomainCardProps> = ({
     </div>
   );
 };
+
+export const DomainCard = React.memo(DomainCardComponent);

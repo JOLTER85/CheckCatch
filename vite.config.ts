@@ -13,6 +13,29 @@ export default defineConfig(() => {
     },
     build: {
       sourcemap: true,
+      cssCodeSplit: true,
+      minify: 'esbuild',
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('xlsx')) {
+                return 'vendor-xlsx';
+              }
+              if (id.includes('lucide-react')) {
+                return 'vendor-lucide';
+              }
+              if (id.includes('motion')) {
+                return 'vendor-motion';
+              }
+              if (id.includes('react') || id.includes('react-dom')) {
+                return 'vendor-react';
+              }
+            }
+          },
+        },
+      },
+      chunkSizeWarningLimit: 1000,
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.

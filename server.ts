@@ -1,4 +1,5 @@
 import express from "express";
+import compression from "compression";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
@@ -9,6 +10,9 @@ dotenv.config();
 
 const app = express();
 const PORT = 3000;
+
+// Enable Gzip/Brotli response compression for API payloads and static assets
+app.use(compression());
 
 app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ extended: true, limit: "25mb" }));
@@ -1697,8 +1701,22 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
+    // Serve static assets with high performance Cache-Control headers
+    app.use(
+      express.static(distPath, {
+        maxAge: "1y",
+        immutable: true,
+        setHeaders: (res, filePath) => {
+          if (filePath.endsWith(".html")) {
+            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+          } else {
+            res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+          }
+        },
+      })
+    );
     app.get("*", (req, res) => {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.sendFile(path.join(distPath, "index.html"));
     });
   }

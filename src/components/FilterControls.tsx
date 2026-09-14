@@ -14,8 +14,24 @@ import {
   Sparkles,
   Type,
 } from 'lucide-react';
-import { ExcelUploadAnalyzer } from './ExcelUploadAnalyzer';
 import { Language, translations } from '../utils/translations';
+
+const ExcelUploadAnalyzer = React.lazy(() =>
+  import('./ExcelUploadAnalyzer').then((m) => ({ default: m.ExcelUploadAnalyzer }))
+);
+
+const ExcelAnalyzerSkeleton: React.FC<{ lang: Language }> = ({ lang }) => (
+  <div className="min-h-[290px] rounded-2xl border-2 border-dashed border-teal-200/80 bg-gradient-to-b from-teal-50/30 to-blue-50/20 p-6 sm:p-8 flex flex-col items-center justify-center text-center space-y-4 animate-pulse">
+    <div className="w-14 h-14 rounded-2xl bg-teal-100/70 flex items-center justify-center shadow-xs">
+      <FileSpreadsheet className="w-7 h-7 text-teal-600/70" />
+    </div>
+    <div className="space-y-2 max-w-md w-full flex flex-col items-center">
+      <div className="h-4 bg-teal-200/60 rounded-full w-48"></div>
+      <div className="h-3 bg-slate-200/60 rounded-full w-64"></div>
+    </div>
+    <div className="h-10 bg-teal-100/60 rounded-xl w-40 mt-2"></div>
+  </div>
+);
 
 interface FilterControlsProps {
   mode: AppMode;
@@ -164,17 +180,19 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
 
       <div className="space-y-6">
         {/* Excel / CSV Spreadsheet Analyzer Component (Direct primary dropzone) */}
-        <ExcelUploadAnalyzer
-          rules={rules}
-          count={count}
-          isLoading={isLoading}
-          onAnalyze={onAnalyzeUploaded}
-          evaluationStats={evaluationStats}
-          setEvaluationStats={setEvaluationStats}
-          onErrorToast={onErrorToast}
-          onSuccessToast={onSuccessToast}
-          lang={lang}
-        />
+        <React.Suspense fallback={<ExcelAnalyzerSkeleton lang={lang} />}>
+          <ExcelUploadAnalyzer
+            rules={rules}
+            count={count}
+            isLoading={isLoading}
+            onAnalyze={onAnalyzeUploaded}
+            evaluationStats={evaluationStats}
+            setEvaluationStats={setEvaluationStats}
+            onErrorToast={onErrorToast}
+            onSuccessToast={onSuccessToast}
+            lang={lang}
+          />
+        </React.Suspense>
 
         {/* Target Domain Output Count (Top 3, Top 5, Top 10, Custom 1 to 25) */}
         <div>

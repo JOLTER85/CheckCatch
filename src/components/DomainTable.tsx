@@ -37,7 +37,7 @@ interface DomainTableProps {
   lang?: Language;
 }
 
-export const DomainTable: React.FC<DomainTableProps> = ({
+const DomainTableComponent: React.FC<DomainTableProps> = ({
   domains,
   savedDomainIds,
   selectedBestDomainId,
@@ -858,3 +858,5 @@ export const DomainTable: React.FC<DomainTableProps> = ({
     </div>
   );
 };
+
+export const DomainTable = React.memo(DomainTableComponent);

@@ -1,13 +1,20 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { Navbar } from './components/Navbar';
 import { FilterControls } from './components/FilterControls';
 import { DomainCard } from './components/DomainCard';
 import { DomainTable } from './components/DomainTable';
-import { SavedDomainsDrawer } from './components/SavedDomainsDrawer';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { CheckCatchLogo } from './components/CheckCatchLogo';
 import { Footer } from './components/Footer';
-import { LegalModal, LegalModalType } from './components/LegalModal';
+import type { LegalModalType } from './components/LegalModal';
+
+// Code Splitting & Lazy Loading for modals and drawers
+const SavedDomainsDrawer = React.lazy(() =>
+  import('./components/SavedDomainsDrawer').then((m) => ({ default: m.SavedDomainsDrawer }))
+);
+const LegalModal = React.lazy(() =>
+  import('./components/LegalModal').then((m) => ({ default: m.LegalModal }))
+);
 import {
   DomainItem,
   FilterRules,
@@ -353,14 +360,23 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleCopyDomain = (domain: string) => {
+  const handleCopyDomain = useCallback((domain: string) => {
     navigator.clipboard.writeText(domain);
     showToast(
       lang === 'ar'
         ? `تم نسخ "${domain}" إلى الحافظة!`
         : `Copied "${domain}" to clipboard!`
     );
-  };
+  }, [lang]);
+
+  const handleSelectAsBest = useCallback((dom: DomainItem) => {
+    setSelectedBestDomainId(dom.id);
+    showToast(
+      lang === 'ar'
+        ? `تم اختيار "${dom.domain}" كأفضل دومين`
+        : `Selected "${dom.domain}" as best match`
+    );
+  }, [lang]);
 
   const handleCopyAllGenerated = () => {
     if (domains.length === 0) return;
@@ -407,26 +423,29 @@ export default function App() {
     setShowExportMenu(false);
   };
 
-  const handleToggleSave = (item: DomainItem) => {
-    const exists = savedDomains.some((s) => s.id === item.id);
-    if (exists) {
-      setSavedDomains((prev) => prev.filter((s) => s.id !== item.id));
-      showToast(
-        lang === 'ar'
-          ? `تمت إزالة "${item.domain}" من المحفوظات`
-          : `Removed "${item.domain}" from shortlist`,
-        'info'
-      );
-    } else {
-      const newSaved: SavedDomain = { ...item, savedAt: Date.now() };
-      setSavedDomains((prev) => [newSaved, ...prev]);
-      showToast(
-        lang === 'ar'
-          ? `تم حفظ "${item.domain}" في المفضلة!`
-          : `Saved "${item.domain}" to shortlist!`
-      );
-    }
-  };
+  const handleToggleSave = useCallback((item: DomainItem) => {
+    setSavedDomains((prev) => {
+      const exists = prev.some((s) => s.id === item.id);
+      if (exists) {
+        const next = prev.filter((s) => s.id !== item.id);
+        showToast(
+          lang === 'ar'
+            ? `تمت إزالة "${item.domain}" من المحفوظات`
+            : `Removed "${item.domain}" from shortlist`,
+          'info'
+        );
+        return next;
+      } else {
+        const newSaved: SavedDomain = { ...item, savedAt: Date.now() };
+        showToast(
+          lang === 'ar'
+            ? `تم حفظ "${item.domain}" في المفضلة!`
+            : `Saved "${item.domain}" to shortlist!`
+        );
+        return [newSaved, ...prev];
+      }
+    });
+  }, [lang]);
 
   const savedDomainIds = useMemo(() => new Set(savedDomains.map((s) => s.id)), [savedDomains]);
 
@@ -749,19 +768,46 @@ export default function App() {
 
           {/* Render Cards or Table */}
           {isLoading && domains.length === 0 ? (
-            <div className="py-20 flex flex-col items-center justify-center text-center space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center animate-pulse">
-                <Sparkles className="w-7 h-7 text-blue-600 animate-spin" />
+            <div className="space-y-6">
+              <div className="py-6 flex flex-col items-center justify-center text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center animate-pulse shadow-xs">
+                  <Sparkles className="w-6 h-6 text-teal-600 animate-spin" />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-slate-900">
+                    {lang === 'ar' ? 'جاري فحص وانتقاء النطاقات وتثمينها...' : 'Evaluating & Curating Two-Word Domains...'}
+                  </p>
+                  <p className="text-xs text-slate-500 max-w-sm mt-1">
+                    {lang === 'ar'
+                      ? 'تطبيق القواعد الصارمة، فحص الكلمات وتثمين القيمة الاستثمارية'
+                      : 'Applying 2-word rules, semantic checks, and calculating valuations'}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-base font-bold text-slate-900">
-                  {lang === 'ar' ? 'جاري فحص وانتقاء النطاقات وتثمينها...' : 'Evaluating & Curating Two-Word Domains...'}
-                </p>
-                <p className="text-xs text-slate-500 max-w-sm mt-1">
-                  {lang === 'ar'
-                    ? 'تطبيق القواعد الصارمة، فحص الكلمات وتثمين القيمة الاستثمارية'
-                    : 'Applying 2-word rules, semantic checks, and calculating valuations'}
-                </p>
+
+              {/* CLS-Proof Skeleton Cards Grid with exact pre-allocated dimensions */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3].map((n) => (
+                  <div
+                    key={`skeleton-card-${n}`}
+                    className="min-h-[420px] rounded-2xl bg-white/90 border border-slate-200/80 p-5 flex flex-col justify-between animate-pulse shadow-xs space-y-4"
+                  >
+                    <div className="space-y-3.5">
+                      <div className="flex items-center justify-between">
+                        <div className="h-6 w-24 bg-teal-100/70 rounded-lg"></div>
+                        <div className="h-6 w-16 bg-slate-100 rounded-lg"></div>
+                      </div>
+                      <div className="h-7 w-48 bg-slate-200/80 rounded-lg"></div>
+                      <div className="flex gap-2">
+                        <div className="h-5 w-16 bg-slate-100 rounded-md"></div>
+                        <div className="h-5 w-16 bg-slate-100 rounded-md"></div>
+                      </div>
+                      <div className="h-20 w-full bg-slate-50/80 rounded-xl border border-slate-100"></div>
+                      <div className="h-12 w-full bg-teal-50/40 rounded-xl border border-teal-100/50"></div>
+                    </div>
+                    <div className="h-11 w-full bg-slate-100 rounded-xl"></div>
+                  </div>
+                ))}
               </div>
             </div>
           ) : mode === 'analyzer' && spreadsheetDomains.length === 0 ? (
@@ -826,14 +872,7 @@ export default function App() {
                   isSaved={savedDomainIds.has(item.id)}
                   isSelected={selectedBestDomainId ? selectedBestDomainId === item.id : index === 0}
                   forceOpenBreakdown={expandAllBreakdowns}
-                  onSelectAsBest={(dom) => {
-                    setSelectedBestDomainId(dom.id);
-                    showToast(
-                      lang === 'ar'
-                        ? `تم اختيار "${dom.domain}" كأفضل دومين`
-                        : `Selected "${dom.domain}" as best match`
-                    );
-                  }}
+                  onSelectAsBest={handleSelectAsBest}
                   onToggleSave={handleToggleSave}
                   onCopyDomain={handleCopyDomain}
                   lang={lang}
@@ -846,14 +885,7 @@ export default function App() {
               savedDomainIds={savedDomainIds}
               selectedBestDomainId={selectedBestDomainId || (filteredAndSortedDomains[0]?.id ?? null)}
               forceOpenBreakdown={expandAllBreakdowns}
-              onSelectAsBest={(dom) => {
-                setSelectedBestDomainId(dom.id);
-                showToast(
-                  lang === 'ar'
-                    ? `تم اختيار "${dom.domain}" كأفضل دومين`
-                    : `Selected "${dom.domain}" as best match`
-                );
-              }}
+              onSelectAsBest={handleSelectAsBest}
               onToggleSave={handleToggleSave}
               onCopyDomain={handleCopyDomain}
               lang={lang}
@@ -869,45 +901,53 @@ export default function App() {
         lastGeneratedAt={lastGeneratedAt}
       />
 
-      {/* Legal & Informational Pages Modal */}
-      <LegalModal
-        type={legalModalType}
-        onClose={closeLegalModal}
-        lang={lang}
-      />
+      {/* Legal & Informational Pages Modal (Code-Split Lazy Loaded) */}
+      {legalModalType && (
+        <Suspense fallback={null}>
+          <LegalModal
+            type={legalModalType}
+            onClose={closeLegalModal}
+            lang={lang}
+          />
+        </Suspense>
+      )}
 
-      {/* Saved Domains Drawer */}
-      <SavedDomainsDrawer
-        isOpen={isSavedDrawerOpen}
-        onClose={() => setIsSavedDrawerOpen(false)}
-        savedDomains={savedDomains}
-        onRemove={(id) => {
-          setSavedDomains((prev) => prev.filter((s) => s.id !== id));
-          showToast(
-            lang === 'ar' ? 'تمت الإزالة من المحفوظات' : 'Removed from shortlist',
-            'info'
-          );
-        }}
-        onClearAll={() => {
-          setSavedDomains([]);
-          showToast(
-            lang === 'ar' ? 'تم مسح جميع المحفوظات' : 'Cleared all shortlisted domains',
-            'info'
-          );
-        }}
-        onCopyDomain={handleCopyDomain}
-        onCopyAll={() => {
-          if (savedDomains.length === 0) return;
-          const all = savedDomains.map((s) => s.domain).join('\n');
-          navigator.clipboard.writeText(all);
-          showToast(
-            lang === 'ar'
-              ? `تم نسخ ${savedDomains.length} دومينات محفوظة!`
-              : `Copied ${savedDomains.length} shortlisted domains!`
-          );
-        }}
-        lang={lang}
-      />
+      {/* Saved Domains Drawer (Code-Split Lazy Loaded) */}
+      {isSavedDrawerOpen && (
+        <Suspense fallback={null}>
+          <SavedDomainsDrawer
+            isOpen={isSavedDrawerOpen}
+            onClose={() => setIsSavedDrawerOpen(false)}
+            savedDomains={savedDomains}
+            onRemove={(id) => {
+              setSavedDomains((prev) => prev.filter((s) => s.id !== id));
+              showToast(
+                lang === 'ar' ? 'تمت الإزالة من المحفوظات' : 'Removed from shortlist',
+                'info'
+              );
+            }}
+            onClearAll={() => {
+              setSavedDomains([]);
+              showToast(
+                lang === 'ar' ? 'تم مسح جميع المحفوظات' : 'Cleared all shortlisted domains',
+                'info'
+              );
+            }}
+            onCopyDomain={handleCopyDomain}
+            onCopyAll={() => {
+              if (savedDomains.length === 0) return;
+              const all = savedDomains.map((s) => s.domain).join('\n');
+              navigator.clipboard.writeText(all);
+              showToast(
+                lang === 'ar'
+                  ? `تم نسخ ${savedDomains.length} دومينات محفوظة!`
+                  : `Copied ${savedDomains.length} shortlisted domains!`
+              );
+            }}
+            lang={lang}
+          />
+        </Suspense>
+      )}
 
       {/* Toast Notifications */}
       <ToastContainer
