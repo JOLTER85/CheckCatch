@@ -20,7 +20,7 @@ app.use((req, res, next) => {
   res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:;"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://*.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: https://www.googletagmanager.com; connect-src 'self' https: https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; frame-src 'self' https://www.googletagmanager.com;"
   );
 
   // In production environments (when not viewed in dev iframe preview), enforce frame isolation & opener policies
