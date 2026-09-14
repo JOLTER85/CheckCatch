@@ -38,6 +38,7 @@ const EXAMPLE_DOMAINS = [
 ];
 
 export const SingleDomainVerifier: React.FC<SingleDomainVerifierProps> = ({
+  lang = 'en',
   onSaveDomain,
   onShowToast,
 }) => {
@@ -100,10 +101,10 @@ export const SingleDomainVerifier: React.FC<SingleDomainVerifierProps> = ({
     <div id="single-domain-verifier" className="w-full max-w-5xl mx-auto space-y-6">
       {/* Hero Header & Brand Presentation */}
       <div className="text-center space-y-3 pt-2">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-300 text-emerald-800 shadow-xs">
-          <span className="font-mono font-bold tracking-tight text-emerald-700">CheckCatch.com</span>
-          <span className="text-emerald-400">•</span>
-          <span className="text-slate-700">Two-Word Domain Verification & Valuation Engine</span>
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-300 text-emerald-900 shadow-xs">
+          <span className="font-mono font-bold tracking-tight text-emerald-900">CheckCatch.com</span>
+          <span className="text-emerald-800 font-bold">•</span>
+          <span className="text-slate-800 font-medium">Two-Word Domain Verification & Valuation Engine</span>
         </div>
 
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 leading-tight">
@@ -133,6 +134,7 @@ export const SingleDomainVerifier: React.FC<SingleDomainVerifierProps> = ({
                 id="hero-domain-search-input"
                 type="text"
                 value={domainInput}
+                aria-label={lang === 'ar' ? 'اسم الدومين المراد فحصه وتقييمه' : 'Domain name to verify and value'}
                 onChange={(e) => setDomainInput(e.target.value)}
                 placeholder="Type or paste domain (e.g. CheckCatch.com, CloudVault.com, BrandName.com)..."
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 py-3.5 text-sm sm:text-base text-slate-900 placeholder-slate-400 font-mono focus:outline-none focus:border-blue-500 transition-all"
@@ -202,8 +204,8 @@ export const SingleDomainVerifier: React.FC<SingleDomainVerifierProps> = ({
               <div
                 className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-inner ${
                   result.isValidTwoWord
-                    ? 'bg-emerald-100 border-emerald-300 text-emerald-700'
-                    : 'bg-rose-100 border-rose-300 text-rose-700'
+                    ? 'bg-emerald-100 border-emerald-300 text-emerald-800'
+                    : 'bg-rose-100 border-rose-300 text-rose-800'
                 }`}
               >
                 {result.isValidTwoWord ? (
@@ -245,7 +247,7 @@ export const SingleDomainVerifier: React.FC<SingleDomainVerifierProps> = ({
                 onClick={handleCopy}
                 className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-800" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
                 <span>{copied ? 'Copied!' : 'Copy'}</span>
               </button>
 
@@ -269,14 +271,14 @@ export const SingleDomainVerifier: React.FC<SingleDomainVerifierProps> = ({
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-slate-500 font-medium">Estimated Market Value</span>
-                <TrendingUp className="w-4 h-4 text-emerald-600" />
+                <TrendingUp className="w-4 h-4 text-emerald-800" />
               </div>
               <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono tracking-tight">
                 {result.estimatedValueFormatted}
                 <span className="text-xs text-slate-500 font-normal ml-1.5 font-sans">USD</span>
               </div>
-              <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <div className="flex items-center gap-1.5 text-[11px] text-emerald-800 font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
                 <span>Tier: {result.valuationTier}</span>
               </div>
             </div>
@@ -444,7 +446,7 @@ export const SingleDomainVerifier: React.FC<SingleDomainVerifierProps> = ({
                 }`}
               >
                 {result.validationChecks.hasTwoEnglishWords ? (
-                  <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-600" />
+                  <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-800" />
                 ) : (
                   <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
                 )}
@@ -459,7 +461,7 @@ export const SingleDomainVerifier: React.FC<SingleDomainVerifierProps> = ({
                 }`}
               >
                 {result.validationChecks.hasNoNumbers ? (
-                  <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-600" />
+                  <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-800" />
                 ) : (
                   <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
                 )}
@@ -474,7 +476,7 @@ export const SingleDomainVerifier: React.FC<SingleDomainVerifierProps> = ({
                 }`}
               >
                 {result.validationChecks.hasNoDashes ? (
-                  <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-600" />
+                  <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-800" />
                 ) : (
                   <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
                 )}
@@ -489,7 +491,7 @@ export const SingleDomainVerifier: React.FC<SingleDomainVerifierProps> = ({
                 }`}
               >
                 {result.validationChecks.isCleanAlphabetical ? (
-                  <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-600" />
+                  <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-800" />
                 ) : (
                   <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
                 )}
@@ -511,7 +513,7 @@ export const SingleDomainVerifier: React.FC<SingleDomainVerifierProps> = ({
                 <span className="text-xs font-bold text-slate-700">
                   Catch & Register with Verified Registrars:
                 </span>
-                <span className="text-[11px] text-emerald-700 font-semibold font-mono">Live Search Links</span>
+                <span className="text-[11px] text-emerald-800 font-bold font-mono">Live Search Links</span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">

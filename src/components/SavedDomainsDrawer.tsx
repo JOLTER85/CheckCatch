@@ -128,19 +128,19 @@ export const SavedDomainsDrawer: React.FC<SavedDomainsDrawerProps> = ({
                         <span className="font-mono font-bold text-sm text-slate-900" dir="ltr">
                           {item.domain}
                         </span>
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300">
                           {item.relevanceScore}%
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-600 mt-1 line-clamp-1 font-normal">
+                      <p className="text-[11px] text-slate-700 mt-1 line-clamp-1 font-medium">
                         {item.pitch}
                       </p>
                       <div className="flex items-center gap-2 mt-2">
                         <button
                           onClick={() => onCopyDomain(item.domain)}
-                          className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
+                          className="text-[11px] font-bold text-emerald-800 hover:text-emerald-900 flex items-center gap-1"
                         >
-                          <Copy className="w-3 h-3 text-emerald-600" />
+                          <Copy className="w-3 h-3 text-emerald-800" />
                           <span>{t.domainCard.copy}</span>
                         </button>
                         <span className="text-slate-300">•</span>

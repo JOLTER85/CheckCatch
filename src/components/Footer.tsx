@@ -12,8 +12,6 @@ import {
   MessageCircle,
   ExternalLink,
   ShieldCheck,
-  Search,
-  Sparkles
 } from 'lucide-react';
 import { Language, translations } from '../utils/translations';
 import { LegalModalType } from './LegalModal';
@@ -33,7 +31,7 @@ export const Footer: React.FC<FooterProps> = ({
   const isAr = lang === 'ar';
 
   return (
-    <footer id="main-footer" className="border-t border-slate-200 py-10 bg-white text-xs text-slate-600 mt-auto shadow-xs">
+    <footer id="main-footer" className="border-t border-slate-200 py-10 bg-white text-xs text-slate-800 mt-auto shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         
         {/* Top Tier: Brand, Elevator Pitch, Fast Links, Socials */}
@@ -45,21 +43,21 @@ export const Footer: React.FC<FooterProps> = ({
                 <CheckCatchLogo className="w-full h-full" />
               </div>
               <span className="font-mono font-bold text-lg text-slate-900 tracking-tight">
-                CheckCatch<span className="text-teal-700">.com</span>
+                CheckCatch<span className="text-teal-800">.com</span>
               </span>
             </div>
-            <p className="text-xs text-slate-500 leading-relaxed max-w-sm">
+            <p className="text-xs text-slate-800 leading-relaxed max-w-sm font-medium">
               {t.footer.description}
             </p>
-            <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
-              <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+            <div className="flex items-center gap-2 text-[11px] text-slate-800 font-semibold">
+              <ShieldCheck className="w-3.5 h-3.5 text-teal-800" />
               <span>{isAr ? 'فحص دقيق بمعايير القاموس واختبار الراديو' : 'Rigorous 2-word dictionary & radio-test audits'}</span>
             </div>
           </div>
 
           {/* Legal & Informational Links (4 columns) */}
           <div className="md:col-span-4 space-y-3">
-            <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider block">
+            <span className="text-[11px] font-bold text-slate-900 uppercase tracking-wider block">
               {isAr ? 'الصفحات القانونية والمعلوماتية' : 'Legal & Platform Information'}
             </span>
             <ul className="grid grid-cols-2 gap-2 text-xs">
@@ -68,9 +66,9 @@ export const Footer: React.FC<FooterProps> = ({
                   id="footer-about-btn"
                   type="button"
                   onClick={() => onOpenLegal('about')}
-                  className="flex items-center gap-1.5 text-slate-600 hover:text-teal-700 hover:underline transition-colors text-left"
+                  className="flex items-center gap-1.5 text-slate-800 font-semibold hover:text-teal-800 hover:underline transition-colors text-left"
                 >
-                  <Info className="w-3.5 h-3.5 text-teal-600" />
+                  <Info className="w-3.5 h-3.5 text-teal-800" />
                   <span>{isAr ? 'عن CheckCatch' : 'About Us'}</span>
                 </button>
               </li>
@@ -79,9 +77,9 @@ export const Footer: React.FC<FooterProps> = ({
                   id="footer-contact-btn"
                   type="button"
                   onClick={() => onOpenLegal('contact')}
-                  className="flex items-center gap-1.5 text-slate-600 hover:text-teal-700 hover:underline transition-colors text-left"
+                  className="flex items-center gap-1.5 text-slate-800 font-semibold hover:text-teal-800 hover:underline transition-colors text-left"
                 >
-                  <Mail className="w-3.5 h-3.5 text-teal-600" />
+                  <Mail className="w-3.5 h-3.5 text-teal-800" />
                   <span>{isAr ? 'اتصل بنا' : 'Contact Us'}</span>
                 </button>
               </li>
@@ -90,9 +88,9 @@ export const Footer: React.FC<FooterProps> = ({
                   id="footer-privacy-btn"
                   type="button"
                   onClick={() => onOpenLegal('privacy')}
-                  className="flex items-center gap-1.5 text-slate-600 hover:text-teal-700 hover:underline transition-colors text-left"
+                  className="flex items-center gap-1.5 text-slate-800 font-semibold hover:text-teal-800 hover:underline transition-colors text-left"
                 >
-                  <Shield className="w-3.5 h-3.5 text-teal-600" />
+                  <Shield className="w-3.5 h-3.5 text-teal-800" />
                   <span>{isAr ? 'سياسة الخصوصية' : 'Privacy Policy'}</span>
                 </button>
               </li>
@@ -101,26 +99,26 @@ export const Footer: React.FC<FooterProps> = ({
                   id="footer-terms-btn"
                   type="button"
                   onClick={() => onOpenLegal('terms')}
-                  className="flex items-center gap-1.5 text-slate-600 hover:text-teal-700 hover:underline transition-colors text-left"
+                  className="flex items-center gap-1.5 text-slate-800 font-semibold hover:text-teal-800 hover:underline transition-colors text-left"
                 >
-                  <FileText className="w-3.5 h-3.5 text-teal-600" />
+                  <FileText className="w-3.5 h-3.5 text-teal-800" />
                   <span>{isAr ? 'شروط الخدمة' : 'Terms of Service'}</span>
                 </button>
               </li>
             </ul>
 
-            <div className="pt-2 text-[11px] text-slate-400">
+            <div className="pt-2 text-[11px] text-slate-800 font-semibold">
               {isAr ? (
-                <span>البريد الإلكتروني المباشر: <code className="text-slate-600">support@checkcatch.com</code></span>
+                <span>البريد الإلكتروني المباشر: <code className="text-slate-950 font-bold bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">support@checkcatch.com</code></span>
               ) : (
-                <span>Support Inquiries: <code className="text-slate-600">support@checkcatch.com</code></span>
+                <span>Support Inquiries: <code className="text-slate-950 font-bold bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">support@checkcatch.com</code></span>
               )}
             </div>
           </div>
 
           {/* Social Channels & Instant Inquiries (3 columns) */}
           <div className="md:col-span-3 space-y-3">
-            <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider block">
+            <span className="text-[11px] font-bold text-slate-900 uppercase tracking-wider block">
               {t.footer.socials.connect}
             </span>
             <div className="flex flex-col gap-2">
@@ -131,22 +129,22 @@ export const Footer: React.FC<FooterProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={t.footer.socials.whatsapp}
-                className="group flex items-center justify-between px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-300/80 hover:border-emerald-400 hover:bg-emerald-100/70 text-emerald-900 transition-all shadow-xs"
+                className="group flex items-center justify-between px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-300 hover:border-emerald-400 hover:bg-emerald-100 text-emerald-950 transition-all shadow-xs"
               >
                 <div className="flex items-center gap-2">
-                  <div className="relative w-5 h-5 rounded-lg flex items-center justify-center bg-white text-emerald-600 shadow-xs">
+                  <div className="relative w-5 h-5 rounded-lg flex items-center justify-center bg-white text-emerald-900 shadow-xs">
                     <MessageCircle className="w-3.5 h-3.5" />
-                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 animate-ping opacity-75" />
-                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-600 animate-ping opacity-75" />
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-700" />
                   </div>
                   <div className="flex flex-col items-start text-left">
-                    <span className="text-xs font-bold leading-tight">{t.footer.socials.whatsapp}</span>
-                    <span className="text-[9px] text-emerald-700 font-semibold leading-tight">
+                    <span className="text-xs font-bold leading-tight text-emerald-950">{t.footer.socials.whatsapp}</span>
+                    <span className="text-[9px] text-emerald-900 font-bold leading-tight">
                       {t.footer.socials.whatsappOnline}
                     </span>
                   </div>
                 </div>
-                <ExternalLink className="w-3 h-3 text-emerald-700 opacity-60 group-hover:opacity-100" />
+                <ExternalLink className="w-3 h-3 text-emerald-900 opacity-90 group-hover:opacity-100" />
               </a>
 
               {/* Instagram & Facebook row */}
@@ -157,9 +155,9 @@ export const Footer: React.FC<FooterProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={t.footer.socials.instagram}
-                  className="group flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-pink-400 hover:bg-pink-50 text-slate-700 hover:text-pink-700 transition-all shadow-xs text-xs font-semibold"
+                  className="group flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-300 hover:border-pink-500 hover:bg-pink-50 text-slate-900 hover:text-pink-800 transition-all shadow-xs text-xs font-bold"
                 >
-                  <Instagram className="w-3.5 h-3.5 text-pink-600" />
+                  <Instagram className="w-3.5 h-3.5 text-pink-700" />
                   <span>{t.footer.socials.instagram}</span>
                 </a>
 
@@ -169,9 +167,9 @@ export const Footer: React.FC<FooterProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={t.footer.socials.facebook}
-                  className="group flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-700 hover:text-blue-700 transition-all shadow-xs text-xs font-semibold"
+                  className="group flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-300 hover:border-blue-500 hover:bg-blue-50 text-slate-900 hover:text-blue-800 transition-all shadow-xs text-xs font-bold"
                 >
-                  <Facebook className="w-3.5 h-3.5 text-blue-600" />
+                  <Facebook className="w-3.5 h-3.5 text-blue-700" />
                   <span>{t.footer.socials.facebook}</span>
                 </a>
               </div>
@@ -180,7 +178,7 @@ export const Footer: React.FC<FooterProps> = ({
         </div>
 
         {/* Bottom Bar: Copyright & Verified Registrars */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-500 text-[11px]">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-800 text-xs font-medium">
           <div>
             <span>© {new Date().getFullYear()} CheckCatch.com. {t.footer.rights}</span>
           </div>
@@ -188,7 +186,7 @@ export const Footer: React.FC<FooterProps> = ({
             <span>{t.footer.verifiedNotice}</span>
             {lastGeneratedAt && (
               <>
-                <span className="text-slate-300">•</span>
+                <span className="text-slate-400">•</span>
                 <span>
                   {isAr ? 'آخر فحص:' : 'Updated:'}{' '}
                   {new Date(lastGeneratedAt).toLocaleTimeString()}

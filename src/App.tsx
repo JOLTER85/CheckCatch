@@ -600,6 +600,7 @@ export default function App() {
                   id="results-search-input"
                   type="text"
                   value={searchQuery}
+                  aria-label={t.results.searchPlaceholder || (lang === 'ar' ? 'بحث في النتائج' : 'Search generated results')}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t.results.searchPlaceholder}
                   className="w-full bg-slate-50/90 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all shadow-xs"
@@ -613,7 +614,7 @@ export default function App() {
                   id="sort-select"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  aria-label="Sort domains by"
+                  aria-label={lang === 'ar' ? 'ترتيب النطاقات حسب' : 'Sort domains by'}
                   className="bg-transparent text-xs font-semibold text-slate-800 focus:outline-none cursor-pointer"
                 >
                   <option value="match" className="bg-white text-slate-800">

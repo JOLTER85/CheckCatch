@@ -53,6 +53,17 @@ const POPULAR_TLDS = [
   { ext: '.xyz', label: '.xyz (Modern Web)' },
 ];
 
+export const tldColors: Record<string, string> = {
+  '.com': 'bg-emerald-50 text-emerald-800 border-emerald-300',
+  '.ai': 'bg-purple-50 text-purple-800 border-purple-300',
+  '.io': 'bg-cyan-50 text-cyan-800 border-cyan-300',
+  '.co': 'bg-blue-50 text-blue-800 border-blue-300',
+  '.net': 'bg-amber-50 text-amber-800 border-amber-300',
+  '.org': 'bg-indigo-50 text-indigo-800 border-indigo-300',
+  '.tech': 'bg-teal-50 text-teal-800 border-teal-300',
+  '.xyz': 'bg-pink-50 text-pink-800 border-pink-300',
+};
+
 const PRESET_TOPICS = [
   'AI tools, SaaS, finance, cloud',
   'DevOps, automation, infrastructure',
@@ -270,11 +281,16 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
                 </button>
 
                 <input
+                  id="slider-domain-count"
                   type="range"
                   min={1}
                   max={25}
                   step={1}
                   value={count}
+                  aria-label={lang === 'ar' ? 'عدد النطاقات المراد توليدها' : 'Number of domains to generate'}
+                  aria-valuemin={1}
+                  aria-valuemax={25}
+                  aria-valuenow={count}
                   onChange={(e) => setCount(Number(e.target.value))}
                   className="flex-1 accent-blue-600 cursor-pointer h-2 bg-slate-200 rounded-lg appearance-none"
                 />
@@ -306,7 +322,7 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
             <label className="text-xs font-semibold text-slate-700">
               {t.controls.rulesHeading}
             </label>
-            <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            <span className="text-[11px] text-emerald-900 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300">
               CheckCatch Rules
             </span>
           </div>
@@ -333,7 +349,7 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
               </div>
               <div className="text-xs">
                 <div className="font-semibold text-slate-900 flex items-center gap-1.5">
-                  <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
+                  <BookOpen className="w-3.5 h-3.5 text-emerald-800" />
                   {t.controls.ruleTwoWordsTitle}
                 </div>
                 <div className="text-[11px] text-slate-500 mt-0.5">
@@ -423,7 +439,7 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
               </div>
               <div className="text-xs">
                 <div className="font-semibold text-emerald-800 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                  <Clock className="w-3.5 h-3.5 text-emerald-800" />
                   {lang === 'ar' ? 'مزادات تنتهي اليوم' : 'Ending Today / Auctions'}
                 </div>
                 <div className="text-[11px] text-slate-500 mt-0.5">
@@ -516,7 +532,7 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
               {/* Min Length Slider */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-600">
+                  <span className="text-slate-800 font-semibold">
                     {lang === 'ar' ? 'الحد الأدنى للحروف:' : 'Minimum Length:'}
                   </span>
                   <span className="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
@@ -546,6 +562,10 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
                     max={25}
                     step={1}
                     value={rules.minLetters ?? 2}
+                    aria-label={lang === 'ar' ? 'الحد الأدنى لعدد الحروف' : 'Minimum character length'}
+                    aria-valuemin={2}
+                    aria-valuemax={25}
+                    aria-valuenow={rules.minLetters ?? 2}
                     onChange={(e) => {
                       const val = Number(e.target.value);
                       setRules((prev) => ({
@@ -577,7 +597,7 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
               {/* Max Length Slider */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-600">
+                  <span className="text-slate-800 font-semibold">
                     {lang === 'ar' ? 'الحد الأقصى للحروف:' : 'Maximum Length:'}
                   </span>
                   <span className="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
@@ -607,6 +627,10 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
                     max={25}
                     step={1}
                     value={rules.maxLetters ?? 25}
+                    aria-label={lang === 'ar' ? 'الحد الأقصى لعدد الحروف' : 'Maximum character length'}
+                    aria-valuemin={2}
+                    aria-valuemax={25}
+                    aria-valuenow={rules.maxLetters ?? 25}
                     onChange={(e) => {
                       const val = Number(e.target.value);
                       setRules((prev) => ({
@@ -646,7 +670,7 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
                 {t.controls.tldHeading} ({rules.tlds.length})
               </label>
               {rules.tlds.length === 1 && rules.tlds.includes('.com') && (
-                <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                <span className="text-[10px] font-bold text-emerald-900 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300">
                   {lang === 'ar' ? 'تم اختيار .com فقط (الافتراضي)' : '.com Only (Default)'}
                 </span>
               )}
@@ -657,8 +681,8 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
                 onClick={selectComOnly}
                 className={`font-semibold transition-colors ${
                   rules.tlds.length === 1 && rules.tlds.includes('.com')
-                    ? 'text-emerald-700 underline font-bold'
-                    : 'text-slate-500 hover:text-emerald-700'
+                    ? 'text-emerald-900 underline font-bold'
+                    : 'text-slate-700 hover:text-emerald-900 font-medium'
                 }`}
               >
                 {t.controls.tldComOnly}
@@ -667,7 +691,7 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
               <button
                 type="button"
                 onClick={selectTopTldsOnly}
-                className="text-slate-500 hover:text-slate-800 font-medium"
+                className="text-slate-700 hover:text-slate-950 font-medium"
               >
                 {t.controls.coreTlds}
               </button>
@@ -675,7 +699,7 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
               <button
                 type="button"
                 onClick={selectAllTlds}
-                className="text-slate-500 hover:text-slate-800"
+                className="text-slate-700 hover:text-slate-950 font-medium"
               >
                 {t.controls.selectAll}
               </button>
@@ -686,24 +710,25 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
             {POPULAR_TLDS.map((tldItem) => {
               const isChecked = rules.tlds.includes(tldItem.ext);
               const isCom = tldItem.ext === '.com';
+              const activeTldClass = tldColors[tldItem.ext] || 'bg-blue-50 border-blue-300 text-blue-950';
               return (
                 <button
                   key={tldItem.ext}
                   id={`tld-checkbox-${tldItem.ext.replace('.', '')}`}
                   type="button"
+                  aria-label={`Filter by ${tldItem.ext}`}
+                  aria-pressed={isChecked}
                   onClick={() => toggleTld(tldItem.ext)}
                   className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${
                     isChecked
-                      ? isCom
-                        ? 'bg-emerald-50 border-emerald-300 text-emerald-900 shadow-xs'
-                        : 'bg-blue-50 border-blue-300 text-blue-900 shadow-xs'
-                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300'
+                      ? `${activeTldClass} shadow-xs font-bold`
+                      : 'bg-slate-50 border-slate-200 text-slate-800 hover:text-slate-950 hover:border-slate-300'
                   }`}
                 >
                   <div className="flex items-center gap-1.5">
                     <span className="font-mono text-sm font-bold">{tldItem.ext}</span>
                     {isCom && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 font-sans font-bold">
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 font-sans font-bold">
                         {lang === 'ar' ? 'الأول' : '1st'}
                       </span>
                     )}
@@ -712,8 +737,8 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
                     className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
                       isChecked
                         ? isCom
-                          ? 'bg-emerald-600 border-emerald-600 text-white'
-                          : 'bg-blue-600 border-blue-600 text-white'
+                          ? 'bg-emerald-800 border-emerald-800 text-white'
+                          : 'bg-slate-900 border-slate-900 text-white'
                         : 'border-slate-300 bg-white'
                     }`}
                   >

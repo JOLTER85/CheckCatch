@@ -13,6 +13,25 @@ const PORT = 3000;
 app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 
+// Security & best practices response headers
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:;"
+  );
+
+  // In production environments (when not viewed in dev iframe preview), enforce frame isolation & opener policies
+  const isEmbed = req.headers["sec-fetch-dest"] === "iframe" || process.env.NODE_ENV !== "production";
+  if (!isEmbed) {
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  }
+  next();
+});
+
 // Fast timeout wrapper to prevent API endpoints from hanging when upstream AI models have latency
 function withTimeout<T>(promise: Promise<T>, ms: number, label = "Operation"): Promise<T> {
   return Promise.race([

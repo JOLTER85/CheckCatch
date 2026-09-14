@@ -233,7 +233,7 @@ export const DomainTable: React.FC<DomainTableProps> = ({
                   {/* Relevance Score */}
                   <td className="py-3.5 px-4 align-top">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-emerald-700 font-mono">
+                      <span className="font-bold text-emerald-800 font-mono">
                         {item.relevanceScore}%
                       </span>
                       <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
@@ -249,18 +249,18 @@ export const DomainTable: React.FC<DomainTableProps> = ({
                   <td className="py-3.5 px-4 align-top">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] text-slate-700 font-medium">
-                        <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
+                        <ShieldCheck className="w-2.5 h-2.5 text-emerald-800" />
                         {t.table.wordsBadge(item.wordsCount)}
                       </span>
                       {!item.hasDashes && (
                         <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] text-slate-700 font-medium">
-                          <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
+                          <ShieldCheck className="w-2.5 h-2.5 text-emerald-800" />
                           {t.table.noDashes}
                         </span>
                       )}
                       {!item.hasNumbers && (
                         <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] text-slate-700 font-medium">
-                          <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
+                          <ShieldCheck className="w-2.5 h-2.5 text-emerald-800" />
                           {t.table.noNumbers}
                         </span>
                       )}
@@ -306,14 +306,15 @@ export const DomainTable: React.FC<DomainTableProps> = ({
                         id={`table-copy-${item.id}`}
                         type="button"
                         onClick={() => handleCopy(item)}
+                        aria-label={`Copy domain ${item.domain}`}
                         className={`p-1.5 rounded-lg border transition-all ${
                           isCopied
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300 font-bold'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold'
                             : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700 hover:text-slate-900'
                         }`}
                         title="Copy Domain"
                       >
-                        {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                        {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-800" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
 
                       {/* Check Availability */}
@@ -322,6 +323,7 @@ export const DomainTable: React.FC<DomainTableProps> = ({
                         href={registrars[0].url}
                         target="_blank"
                         rel="noopener noreferrer"
+                        aria-label={`Check availability of ${item.domain} on registrar`}
                         className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-xs transition-colors"
                         title="Check Availability on Registrar"
                       >
@@ -334,6 +336,7 @@ export const DomainTable: React.FC<DomainTableProps> = ({
                         id={`table-save-${item.id}`}
                         type="button"
                         onClick={() => onToggleSave(item)}
+                        aria-label={isSaved ? `Remove ${item.domain} from shortlist` : `Save ${item.domain} to shortlist`}
                         className={`p-1.5 rounded-lg border transition-colors ${
                           isSaved
                             ? 'bg-amber-50 text-amber-600 border-amber-300'
@@ -414,11 +417,11 @@ export const DomainTable: React.FC<DomainTableProps> = ({
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
-                              <Radio className="w-3.5 h-3.5 text-emerald-600" />
+                              <Radio className="w-3.5 h-3.5 text-emerald-800" />
                               <span>{t.domainCard.phoneticVisualTitle}</span>
                             </div>
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              <CheckCircle2 className="w-3 h-3 text-emerald-800" />
                               {lang === 'ar'
                                 ? (arabicBreakdown.metrics?.radioTest.ratingAr || 'ناجح بامتياز (10/10)')
                                 : (arabicBreakdown.metrics?.radioTest.ratingEn || 'Passed (10/10)')}
@@ -455,22 +458,22 @@ export const DomainTable: React.FC<DomainTableProps> = ({
                                 >
                                   {t.domainCard.word1}: {arabicBreakdown.word1.word}
                                 </span>
-                                <span className="text-[11px] text-slate-500 font-semibold">
-                                  {t.domainCard.scoreLabel}: <strong className="text-emerald-700">
+                                <span className="text-[11px] text-slate-700 font-bold">
+                                  {t.domainCard.scoreLabel}: <strong className="text-emerald-800">
                                     {arabicBreakdown.word1.strengthScore}%
                                   </strong>
                                 </span>
                               </div>
-                              <div className="text-xs text-slate-800">
-                                <span className="text-slate-500">{t.domainCard.dictionaryMeaning}: </span>
-                                <strong className="text-slate-900">
+                              <div className="text-xs text-slate-800 font-medium">
+                                <span className="text-slate-700 font-medium">{t.domainCard.dictionaryMeaning}: </span>
+                                <strong className="text-slate-900 font-bold">
                                   {lang === 'ar'
                                     ? arabicBreakdown.word1.meaningAr
                                     : arabicBreakdown.word1.meaningEn || arabicBreakdown.word1.meaningAr}
                                 </strong>
                               </div>
-                              <div className="text-xs text-slate-700 leading-relaxed bg-white p-2 rounded border border-slate-200">
-                                <span className="text-emerald-700 font-bold block mb-0.5">
+                              <div className="text-xs text-slate-800 leading-relaxed bg-white p-2 rounded border border-slate-200 font-medium">
+                                <span className="text-emerald-800 font-bold block mb-0.5">
                                   ⚡ {t.domainCard.commercialStrength}:
                                 </span>
                                 {lang === 'ar'
@@ -488,22 +491,22 @@ export const DomainTable: React.FC<DomainTableProps> = ({
                                 >
                                   {t.domainCard.word2}: {arabicBreakdown.word2.word}
                                 </span>
-                                <span className="text-[11px] text-slate-500 font-semibold">
-                                  {t.domainCard.scoreLabel}: <strong className="text-blue-700">
+                                <span className="text-[11px] text-slate-700 font-bold">
+                                  {t.domainCard.scoreLabel}: <strong className="text-blue-800">
                                     {arabicBreakdown.word2.strengthScore}%
                                   </strong>
                                 </span>
                               </div>
-                              <div className="text-xs text-slate-800">
-                                <span className="text-slate-500">{t.domainCard.dictionaryMeaning}: </span>
-                                <strong className="text-slate-900">
+                              <div className="text-xs text-slate-800 font-medium">
+                                <span className="text-slate-700 font-medium">{t.domainCard.dictionaryMeaning}: </span>
+                                <strong className="text-slate-900 font-bold">
                                   {lang === 'ar'
                                     ? arabicBreakdown.word2.meaningAr
                                     : arabicBreakdown.word2.meaningEn || arabicBreakdown.word2.meaningAr}
                                 </strong>
                               </div>
-                              <div className="text-xs text-slate-700 leading-relaxed bg-white p-2 rounded border border-slate-200">
-                                <span className="text-blue-700 font-bold block mb-0.5">
+                              <div className="text-xs text-slate-800 leading-relaxed bg-white p-2 rounded border border-slate-200 font-medium">
+                                <span className="text-blue-800 font-bold block mb-0.5">
                                   ⚡ {t.domainCard.commercialStrength}:
                                 </span>
                                 {lang === 'ar'
@@ -587,7 +590,7 @@ export const DomainTable: React.FC<DomainTableProps> = ({
                                     ({comp.year})
                                   </span>
                                 </div>
-                                <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                <span className="font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                                   {comp.priceFormatted}
                                 </span>
                               </div>

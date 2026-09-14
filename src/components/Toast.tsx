@@ -33,7 +33,7 @@ export const ToastContainer: React.FC<ToastProps> = ({ toasts, onDismiss }) => {
                 : 'bg-white border-blue-300 text-blue-800 shadow-blue-500/10'
             }`}
           >
-            {isSuccess && <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />}
+            {isSuccess && <CheckCircle2 className="w-4 h-4 text-emerald-800 shrink-0" />}
             {isError && <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
             {!isSuccess && !isError && <Info className="w-4 h-4 text-blue-600 shrink-0" />}
             <span className="flex-1 text-slate-800">{toast.message}</span>

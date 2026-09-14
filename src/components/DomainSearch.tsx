@@ -260,6 +260,11 @@ Return ONLY a valid JSON array of 3 brandable 2-word .com domains in this format
             id="domain-search-keyword-input"
             type="text"
             value={keyword}
+            aria-label={
+              lang === 'ar'
+                ? 'كلمة البحث المفتاحية لتوليد النطاقات'
+                : 'Domain search keyword'
+            }
             onChange={(e) => setKeyword(e.target.value)}
             placeholder={
               lang === 'ar'

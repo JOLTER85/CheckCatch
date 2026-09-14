@@ -388,6 +388,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
           ref={fileInputRef}
           type="file"
           accept=".xlsx,.xls,.csv"
+          aria-label={t.excelAnalyzer.uploadPrompt || 'Upload Excel or CSV spreadsheet file'}
           onChange={handleFileInputChange}
           className="hidden"
         />
@@ -612,6 +613,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                 id="target-keyword-input"
                 type="text"
                 value={targetKeyword}
+                aria-label={t.excelAnalyzer.targetKeywordLabel || 'Target Keyword'}
                 onChange={(e) => {
                   setTargetKeyword(e.target.value);
                   setServerStats(null);
@@ -659,7 +661,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {rawDomainsWithKeyword.length > 0 ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-800 shrink-0" />
                     ) : (
                       <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                     )}
@@ -756,6 +758,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                 id="target-context-input"
                 type="text"
                 value={contextTopic}
+                aria-label={t.excelAnalyzer.contextTopicLabel || 'Target Niche or Industry Concept'}
                 onChange={(e) => setContextTopic(e.target.value)}
                 placeholder={t.excelAnalyzer.contextTopicPlaceholder}
                 className="w-full rounded-xl bg-white border border-slate-300 px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-xs"
@@ -874,8 +877,8 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
               </span>
             )}
             {validationResult.stats.failedCount === 0 && (
-              <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+              <span className="text-emerald-800 font-bold flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-800" />
                 {lang === 'ar'
                   ? 'جميع دومينات الملف مطابقة للشروط الصارمة بالكامل!'
                   : lang === 'fr'

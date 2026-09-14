@@ -95,7 +95,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
                   {type === 'privacy' && (isAr ? 'سياسة الخصوصية وأمن البيانات' : 'Privacy & Data Security Policy')}
                   {type === 'terms' && (isAr ? 'شروط الخدمة والاستخدام' : 'Terms of Service & Disclaimer')}
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-700 font-medium">
                   {type === 'about' && (isAr ? 'منصة الذكاء الاصطناعي لفحص وتثمين الدومينات الثنائية' : 'Two-word domain discovery, semantic valuation & dropcatching suite')}
                   {type === 'contact' && (isAr ? 'نسعد بالإجابة على استفساراتك حول الدومينات والاستحواذ' : 'Reach our domain desk for portfolio audits and acquisitions')}
                   {type === 'privacy' && (isAr ? 'التزام صارم بحماية خصوصيتك ومعايير GDPR' : 'GDPR compliance, zero portfolio hoarding, and client-side safety')}
@@ -171,7 +171,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                  <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-xs text-slate-700 font-medium">
                     <span>CheckCatch.com — صُمم لخدمة رواد الأعمال، مستثمري النطاقات، ووكالات التسويق الرقمي.</span>
                   </div>
                 </div>
@@ -229,7 +229,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                  <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-xs text-slate-700 font-medium">
                     <span>Built for founders, domain investors, venture scouts, and digital brand consultants worldwide.</span>
                   </div>
                 </div>
@@ -242,7 +242,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col justify-between">
                     <div>
-                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                      <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-1">
                         {isAr ? 'البريد الإلكتروني المباشر' : 'Official Support Desk'}
                       </span>
                       <p className="font-mono font-bold text-xs text-slate-900 select-all">support@checkcatch.com</p>
@@ -252,21 +252,21 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
                       onClick={handleCopySupportEmail}
                       className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 hover:text-teal-800"
                     >
-                      {copiedEmail ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedEmail ? <Check className="w-3.5 h-3.5 text-emerald-800" /> : <Copy className="w-3.5 h-3.5" />}
                       {copiedEmail ? (isAr ? 'تم نسخ البريد!' : 'Copied!') : (isAr ? 'نسخ البريد الإلكتروني' : 'Copy Email Address')}
                     </button>
                   </div>
 
                   <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col justify-between">
                     <div>
-                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                      <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-1">
                         {isAr ? 'وقت الاستجابة' : 'Response SLA'}
                       </span>
-                      <p className="text-xs font-semibold text-slate-800">
+                      <p className="text-xs font-semibold text-slate-900">
                         {isAr ? 'خلال 24 ساعة كحد أقصى' : 'Within 24 business hours'}
                       </p>
                     </div>
-                    <span className="text-[11px] text-slate-500 mt-2">
+                    <span className="text-[11px] text-slate-700 font-medium mt-2">
                       {isAr ? 'دعم استفسارات المزادات وتدقيق الملفات' : 'Priority for valuation & enterprise audits'}
                     </span>
                   </div>
@@ -284,7 +284,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
                       href="https://wa.me/?text=Hello%20CheckCatch%2C%20I%20have%20an%20inquiry%20regarding%20domain%20valuation"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-800"
+                      className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-emerald-800 hover:text-emerald-950"
                     >
                       {isAr ? 'فتح المحادثة' : 'Open WhatsApp'} <ExternalLink className="w-3 h-3" />
                     </a>
@@ -293,7 +293,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
 
                 {isSubmitted ? (
                   <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-2">
-                    <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+                    <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto">
                       <CheckCircle2 className="w-6 h-6" />
                     </div>
                     <h4 className="font-bold text-slate-900 text-base">
@@ -319,26 +319,30 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
                   <form onSubmit={handleContactSubmit} className="space-y-3.5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        <label htmlFor="contact-full-name" className="block text-xs font-semibold text-slate-700 mb-1">
                           {isAr ? 'الاسم الكامل *' : 'Full Name *'}
                         </label>
                         <input
+                          id="contact-full-name"
                           type="text"
                           required
                           value={formData.name}
+                          aria-label={isAr ? 'الاسم الكامل' : 'Full Name'}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                           placeholder={isAr ? 'مثال: أحمد المنصور' : 'e.g. Sarah Jenkins'}
                           className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        <label htmlFor="contact-email-address" className="block text-xs font-semibold text-slate-700 mb-1">
                           {isAr ? 'البريد الإلكتروني *' : 'Email Address *'}
                         </label>
                         <input
+                          id="contact-email-address"
                           type="email"
                           required
                           value={formData.email}
+                          aria-label={isAr ? 'البريد الإلكتروني' : 'Email Address'}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                           placeholder={isAr ? 'name@example.com' : 'founder@startup.com'}
                           className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
@@ -347,12 +351,14 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      <label htmlFor="contact-subject-input" className="block text-xs font-semibold text-slate-700 mb-1">
                         {isAr ? 'موضوع الاستفسار' : 'Inquiry Subject'}
                       </label>
                       <input
+                        id="contact-subject-input"
                         type="text"
                         value={formData.subject}
+                        aria-label={isAr ? 'موضوع الاستفسار' : 'Inquiry Subject'}
                         onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                         placeholder={isAr ? 'استفسار عن دومين، تدقيق ملف إكسل، أو شراكة' : 'Portfolio audit, valuation query, or acquisition assistance'}
                         className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
@@ -360,13 +366,15 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      <label htmlFor="contact-message-textarea" className="block text-xs font-semibold text-slate-700 mb-1">
                         {isAr ? 'نص الرسالة أو تفاصيل النطاق *' : 'Message or Domain Details *'}
                       </label>
                       <textarea
+                        id="contact-message-textarea"
                         required
                         rows={4}
                         value={formData.message}
+                        aria-label={isAr ? 'نص الرسالة أو تفاصيل النطاق' : 'Message or Domain Details'}
                         onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                         placeholder={isAr ? 'أدخل تفاصيل استفسارك أو قائمة النطاقات التي تود الحصول على تقييم متخصص لها...' : 'Please describe your domain requirements, target niche, or questions regarding our evaluation algorithms...'}
                         className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
@@ -374,7 +382,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
                     </div>
 
                     <div className="flex items-center justify-between pt-2">
-                      <span className="text-[11px] text-slate-400">
+                      <span className="text-[11px] text-slate-700 font-medium">
                         {isAr ? '* جميع الحقول المشار إليها بإلزامية محمية ومباشرة.' : '* Your email is strictly kept private and never shared.'}
                       </span>
                       <button
@@ -440,7 +448,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
                     </p>
                   </section>
 
-                  <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-400">
+                  <div className="pt-2 border-t border-slate-200 text-[11px] text-slate-700 font-medium">
                     آخر تحديث: سبتمبر 2026 • ساري المفعول لجميع مستخدمي المنصة.
                   </div>
                 </div>
@@ -482,7 +490,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
                     </p>
                   </section>
 
-                  <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-400">
+                  <div className="pt-2 border-t border-slate-200 text-[11px] text-slate-700 font-medium">
                     Effective Date: September 2026 • Governs all CheckCatch.com services globally.
                   </div>
                 </div>
@@ -528,7 +536,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
                     </p>
                   </section>
 
-                  <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-400">
+                  <div className="pt-2 border-t border-slate-200 text-[11px] text-slate-700 font-medium">
                     آخر مراجعة: سبتمبر 2026 • الشروط خاضعة للوائح المعمول بها لحماية التجارة الإلكترونية.
                   </div>
                 </div>
@@ -569,7 +577,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
                     </p>
                   </section>
 
-                  <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-400">
+                  <div className="pt-2 border-t border-slate-200 text-[11px] text-slate-700 font-medium">
                     Last Revised: September 2026 • Governed under standard web service protocols.
                   </div>
                 </div>
@@ -579,8 +587,8 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, lang }) =
 
           {/* Footer of Modal */}
           <div className="px-6 py-3.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-xs">
-            <span className="text-slate-500 font-mono text-[11px]">
-              CheckCatch<span className="text-teal-700">.com</span>
+            <span className="text-slate-800 font-mono text-[11px] font-semibold">
+              CheckCatch<span className="text-teal-800">.com</span>
             </span>
             <button
               onClick={onClose}
