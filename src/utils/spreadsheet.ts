@@ -557,13 +557,25 @@ export function clientEvaluateBatch(
     ? matchingKeywordCandidates
     : (tldFiltered.length > 0 ? tldFiltered : qualifiedDomains);
 
-  // Filter pool by character length (minLetters to maxLetters)
+  // Filter pool by character length (minLetters to maxLetters), dashes, and numbers
   const minLen = typeof rules.minLetters === 'number' ? rules.minLetters : 2;
   const maxLen = typeof rules.maxLetters === 'number' ? rules.maxLetters : 25;
   let pool = baseCandidates.filter((d) => {
     const lastDot = d.lastIndexOf('.');
     const name = lastDot !== -1 ? d.substring(0, lastDot) : d;
-    return name.length >= minLen && name.length <= maxLen;
+    const cleanName = name.replace(/https?:\/\//i, '').replace(/^www\./i, '').split('/')[0];
+    
+    // Strict No Dashes Rule
+    if (rules.noDashes && (cleanName.includes('-') || cleanName.includes('_') || d.includes('-'))) {
+      return false;
+    }
+    // Strict No Numbers Rule
+    if (rules.noNumbers && /\d/.test(cleanName)) {
+      return false;
+    }
+    
+    const letterCount = cleanName.replace(/[^a-z0-9]/gi, '').length;
+    return letterCount >= minLen && letterCount <= maxLen;
   });
 
   // If strict exactlyTwoWords is active, strictly filter to genuine 2-word domains
@@ -872,8 +884,18 @@ export function validateDomainsAgainstRules(
       }
     }
 
-    // If relaxKeywordFilters is true in keyword mode, accept domains matching the selected TLD
+    // If relaxKeywordFilters is true in keyword mode, accept domains matching the selected TLD (while strictly maintaining Zero Hyphens and Zero Numbers)
     if (isKeywordMode && cleanKeyword && relax) {
+      if (rules.noDashes && (name.includes('-') || name.includes('_') || clean.includes('-'))) {
+        breakdown.dashes++;
+        discarded.push({ domain: clean, reason: 'Contains hyphen (-) symbol' });
+        continue;
+      }
+      if (rules.noNumbers && /\d/.test(name)) {
+        breakdown.numbers++;
+        discarded.push({ domain: clean, reason: 'Contains numeric digit (0-9)' });
+        continue;
+      }
       if (normalizedTlds.length > 0 && !normalizedTlds.includes(tld)) {
         breakdown.tlds++;
         discarded.push({ domain: clean, reason: `TLD "${tld}" not in selected list (${normalizedTlds.join(', ')})` });

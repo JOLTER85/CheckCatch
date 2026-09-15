@@ -453,6 +453,42 @@ export default function App() {
   const filteredAndSortedDomains = useMemo(() => {
     let list = [...domains];
 
+    // Strict Rule 1: Zero Hyphens / No Dashes
+    if (rules.noDashes) {
+      list = list.filter(
+        (d) =>
+          !d.hasDashes &&
+          !d.name.includes('-') &&
+          !d.domain.includes('-') &&
+          !d.name.includes('_')
+      );
+    }
+
+    // Strict Rule 2: Zero Digits / No Numbers
+    if (rules.noNumbers) {
+      list = list.filter(
+        (d) =>
+          !d.hasNumbers &&
+          !/\d/.test(d.name) &&
+          !/\d/.test(d.domain.split('.')[0])
+      );
+    }
+
+    // Strict Rule 3: Exactly 2 English Words
+    if (rules.exactlyTwoWords) {
+      list = list.filter(
+        (d) => d.wordsCount === 2 && Array.isArray(d.words) && d.words.length === 2
+      );
+    }
+
+    // Strict Rule 4: Character Length bounds
+    if (typeof rules.minLetters === 'number' && rules.minLetters > 0) {
+      list = list.filter((d) => d.name.replace(/[^a-z0-9]/gi, '').length >= rules.minLetters);
+    }
+    if (typeof rules.maxLetters === 'number' && rules.maxLetters > 0) {
+      list = list.filter((d) => d.name.replace(/[^a-z0-9]/gi, '').length <= rules.maxLetters);
+    }
+
     // Search query filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();

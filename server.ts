@@ -801,6 +801,8 @@ async function evaluateAlgorithmicBatch(
     noNumbers: boolean;
     tlds: string[];
     auctionMode: boolean;
+    minLetters?: number;
+    maxLetters?: number;
   },
   contextTopic?: string,
   searchMode: 'niche' | 'keyword' = 'niche',
@@ -838,19 +840,42 @@ async function evaluateAlgorithmicBatch(
     ? matchingKeywordCandidates
     : tldFiltered;
 
+  // Strictly filter candidates by rules (No dashes, No numbers, Min/Max length)
+  const ruleFilteredCandidates = pool.filter((c) => {
+    const lastDot = c.lastIndexOf('.');
+    const name = lastDot !== -1 ? c.substring(0, lastDot) : c;
+    const cleanName = name.replace(/https?:\/\//i, "").replace(/^www\./i, "").split("/")[0].toLowerCase();
+    
+    // Strict Zero Hyphens check
+    if (rules.noDashes && (cleanName.includes("-") || cleanName.includes("_") || c.includes("-"))) {
+      return false;
+    }
+    // Strict Zero Numbers check
+    if (rules.noNumbers && /\d/.test(cleanName)) {
+      return false;
+    }
+    const letterCount = cleanName.replace(/[^a-z0-9]/gi, "").length;
+    if (letterCount < (rules.minLetters || 2) || letterCount > (rules.maxLetters || 25)) {
+      return false;
+    }
+    return true;
+  });
+
   // If exactlyTwoWords rule is active, strictly filter to genuine 2-word domains
   const filteredCandidates = rules.exactlyTwoWords
-    ? pool.filter((c) => {
+    ? ruleFilteredCandidates.filter((c) => {
         const lastDot = c.lastIndexOf('.');
         const name = lastDot !== -1 ? c.substring(0, lastDot) : c;
-        const twoWords = decomposeIntoTwoEnglishWords(name, cleanKw);
+        const cleanName = name.replace(/[^a-z0-9-]/gi, "");
+        if (rules.noDashes && cleanName.includes("-")) return false;
+        const twoWords = decomposeIntoTwoEnglishWords(cleanName, cleanKw);
         if (!twoWords) return false;
         if (isKeywordMode && cleanKw && !twoWords.some(w => w.toLowerCase() === cleanKw)) {
           return false;
         }
         return true;
       })
-    : pool;
+    : ruleFilteredCandidates;
 
   // Parallel processing using Promise.all in non-blocking chunks
   const evaluated = await mapInParallelChunks(
@@ -988,6 +1013,8 @@ async function evaluateUploadedWithGemini(
     noNumbers: boolean;
     tlds: string[];
     auctionMode: boolean;
+    minLetters?: number;
+    maxLetters?: number;
   },
   contextTopic?: string,
   searchMode: 'niche' | 'keyword' = 'niche',
@@ -1011,13 +1038,31 @@ async function evaluateUploadedWithGemini(
     ? rules.tlds.map((t) => (t.toLowerCase().startsWith(".") ? t.toLowerCase() : `.${t.toLowerCase()}`))
     : [];
 
-  const validCandidates = normalizedAllowedTlds.length > 0
-    ? candidates.filter((c) => {
-        const lastDot = c.lastIndexOf(".");
-        const tld = lastDot !== -1 ? c.substring(lastDot).toLowerCase() : ".com";
-        return normalizedAllowedTlds.includes(tld);
-      })
-    : candidates;
+  const validCandidates = candidates.filter((c) => {
+    const lastDot = c.lastIndexOf(".");
+    const name = lastDot !== -1 ? c.substring(0, lastDot) : c;
+    const cleanName = name.replace(/https?:\/\//i, "").replace(/^www\./i, "").split("/")[0].toLowerCase();
+    const tld = lastDot !== -1 ? c.substring(lastDot).toLowerCase() : ".com";
+
+    // Strict Zero Hyphens check
+    if (rules.noDashes && (cleanName.includes("-") || cleanName.includes("_") || c.includes("-"))) {
+      return false;
+    }
+    // Strict Zero Numbers check
+    if (rules.noNumbers && /\d/.test(cleanName)) {
+      return false;
+    }
+    // Strict Letter Count check
+    const letterCount = cleanName.replace(/[^a-z0-9]/gi, "").length;
+    if (letterCount < (rules.minLetters || 2) || letterCount > (rules.maxLetters || 25)) {
+      return false;
+    }
+    // Strict TLD check
+    if (normalizedAllowedTlds.length > 0 && !normalizedAllowedTlds.includes(tld)) {
+      return false;
+    }
+    return true;
+  });
 
   const candidateSet = new Set(validCandidates.map((c) => c.toLowerCase().trim()));
   // Provide up to 40 candidates in prompt
@@ -1180,6 +1225,20 @@ ${strategyDirective}
       return;
     }
     if (!tld.startsWith(".")) tld = `.${tld}`;
+
+    // Strict Zero Hyphens check
+    if (rules.noDashes && (cleanName.includes("-") || cleanName.includes("_") || rawDomain.includes("-"))) {
+      return;
+    }
+    // Strict Zero Numbers check
+    if (rules.noNumbers && (/\d/.test(cleanName) || /\d/.test(rawDomain.split('.')[0]))) {
+      return;
+    }
+    // Strict Letter Count check
+    const letterCount = cleanName.replace(/[^a-z0-9]/gi, "").length;
+    if (letterCount < (rules.minLetters || 2) || letterCount > (rules.maxLetters || 25)) {
+      return;
+    }
 
     // Strict 2-word English check: verify against 275k dictionary
     let words = Array.isArray(item.words) && item.words.length === 2 ? item.words : null;
@@ -1635,13 +1694,28 @@ app.post("/api/analyze-domains", async (req, res) => {
     }
 
     // ABSOLUTE STRICT GUARANTEE: Filter out any domain that is NOT in the uploaded spreadsheet list
-    // AND verify strict 2-word requirement and keyword match
+    // AND verify strict 2-word requirement, zero hyphens, zero digits, and keyword match
     const candidateVerifySet = new Set(qualified.map((d) => d.toLowerCase().trim()));
     let verifiedStrictDomains = evaluatedDomains.filter((d: any) => {
       const domStr = String(d.domain || "").toLowerCase().trim();
       if (!candidateVerifySet.has(domStr)) return false;
       const lastDot = domStr.lastIndexOf(".");
       const name = lastDot !== -1 ? domStr.substring(0, lastDot) : domStr;
+      
+      // Strict Zero Hyphens check
+      if (normalizedRules.noDashes && (name.includes("-") || name.includes("_") || domStr.includes("-") || d.hasDashes)) {
+        return false;
+      }
+      // Strict Zero Numbers check
+      if (normalizedRules.noNumbers && (/\d/.test(name) || d.hasNumbers)) {
+        return false;
+      }
+      // Strict Length check
+      const letterCount = name.replace(/[^a-z0-9]/gi, "").length;
+      if (letterCount < normalizedRules.minLetters || letterCount > normalizedRules.maxLetters) {
+        return false;
+      }
+
       if (normalizedRules.exactlyTwoWords) {
         const twoWords = decomposeIntoTwoEnglishWords(name, cleanKw);
         if (!twoWords) return false;
@@ -1759,8 +1833,18 @@ app.post("/api/validate-spreadsheet-domains", async (req, res) => {
         }
       }
 
-      // If relaxKeywordFilters is active, accept keyword-matching domains that match the selected TLD
+      // If relaxKeywordFilters is active, accept keyword-matching domains that match the selected TLD (while strictly maintaining Zero Hyphens and Zero Numbers)
       if (isKeywordMode && cleanKw && relaxKeywordFilters) {
+        if (normalizedRules.noDashes && (name.includes("-") || name.includes("_") || clean.includes("-"))) {
+          breakdown.dashes++;
+          discarded.push({ domain: clean, reason: "Contains hyphen (-)" });
+          return;
+        }
+        if (normalizedRules.noNumbers && /\d/.test(name)) {
+          breakdown.numbers++;
+          discarded.push({ domain: clean, reason: "Contains numeric digit" });
+          return;
+        }
         if (normalizedRules.tlds.length > 0 && !normalizedRules.tlds.includes(tld)) {
           breakdown.tlds++;
           discarded.push({ domain: clean, reason: `TLD "${tld}" not in selected list` });
