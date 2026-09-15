@@ -5,6 +5,15 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import englishWords from "an-array-of-english-words";
+import {
+  BoundedCache,
+  wordValidityCache,
+  atomicWordCache,
+  twoWordDecomposeCache,
+  domainVerificationCache,
+  nicheMatchCache,
+  mapInParallelChunks,
+} from "./src/services/domainEvaluationEngine";
 
 dotenv.config();
 
@@ -482,48 +491,80 @@ const VALID_TWO_LETTER_WORDS = new Set([
 /**
  * Checks if a string is a 100% genuine, valid English word.
  * Rejects grammatical fragments, single letters, affixes, or gibberish.
+ * Uses O(1) memory cache to eliminate repeated calculations.
  */
 export function isRealEnglishWord(word: string): boolean {
   if (!word) return false;
   const clean = word.toLowerCase().trim().replace(/[^a-z]/g, "");
   if (clean.length < 2) return false;
-  if (INVALID_WORD_PARTS.has(clean)) return false;
-  if (clean.length === 2 && !VALID_TWO_LETTER_WORDS.has(clean)) return false;
-  return MASTER_ENGLISH_DICTIONARY.has(clean) || HIGH_VALUE_ENGLISH_WORDS_SET.has(clean);
+
+  const cached = wordValidityCache.get(clean);
+  if (cached !== undefined) return cached;
+
+  let isValid = false;
+  if (!INVALID_WORD_PARTS.has(clean)) {
+    if (clean.length > 2 || VALID_TWO_LETTER_WORDS.has(clean)) {
+      isValid = MASTER_ENGLISH_DICTIONARY.has(clean) || HIGH_VALUE_ENGLISH_WORDS_SET.has(clean);
+    }
+  }
+
+  wordValidityCache.set(clean, isValid);
+  return isValid;
 }
 
 /**
  * Checks if a string is a single atomic English word,
  * meaning it is a real English word and cannot be further split into
  * two or more valid English words of length >= 2 (e.g. "voltcharge" -> "volt" + "charge" is NOT atomic).
+ * Uses bounded O(1) atomic cache.
  */
 export function isAtomicEnglishWord(word: string): boolean {
-  if (!isRealEnglishWord(word)) return false;
+  if (!word) return false;
   const clean = word.toLowerCase().trim().replace(/[^a-z]/g, "");
-  if (clean.length < 4) return true;
+  if (clean.length < 2) return false;
 
+  const cached = atomicWordCache.get(clean);
+  if (cached !== undefined) return cached;
+
+  if (!isRealEnglishWord(clean)) {
+    atomicWordCache.set(clean, false);
+    return false;
+  }
+  if (clean.length < 4) {
+    atomicWordCache.set(clean, true);
+    return true;
+  }
+
+  let isAtomic = true;
   for (let i = 2; i <= clean.length - 2; i++) {
     const sub1 = clean.substring(0, i);
     const sub2 = clean.substring(i);
     if (isRealEnglishWord(sub1) && isRealEnglishWord(sub2)) {
       // Compound of multiple English words (e.g. volt + charge, urban + villages)
-      return false;
+      isAtomic = false;
+      break;
     }
   }
 
-  return true;
+  atomicWordCache.set(clean, isAtomic);
+  return isAtomic;
 }
 
 /**
  * Strictly decomposes a domain slug into EXACTLY TWO valid, correctly spelled English words.
  * Returns [word1, word2] if and only if both words are genuine atomic English words in the dictionary.
  * Returns null if the domain is a single word, 3+ words (e.g. smartvoltcharge, smarturbanvillages), gibberish, or invalid.
+ * Fast O(1) cache lookups prevent expensive loop re-evaluations across recurring domain searches.
  */
 export function decomposeIntoTwoEnglishWords(slug: string, targetKeyword?: string): [string, string] | null {
   const clean = slug.toLowerCase().replace(/[^a-z]/g, "");
   if (!clean || clean.length < 4) return null;
 
   const cleanKw = targetKeyword ? targetKeyword.trim().toLowerCase().replace(/[^a-z]/g, "") : "";
+  const cacheKey = cleanKw ? `${clean}#${cleanKw}` : clean;
+
+  const cached = twoWordDecomposeCache.get(cacheKey);
+  if (cached !== undefined) return cached;
 
   // 1. If a target keyword is present, check direct prefix/suffix split
   // CRITICAL: The paired non-keyword part MUST be a 100% verified atomic single English word
@@ -531,16 +572,23 @@ export function decomposeIntoTwoEnglishWords(slug: string, targetKeyword?: strin
     if (clean.startsWith(cleanKw)) {
       const rest = clean.slice(cleanKw.length);
       if (isAtomicEnglishWord(rest)) {
-        return [cleanKw, rest];
+        const res: [string, string] = [cleanKw, rest];
+        twoWordDecomposeCache.set(cacheKey, res);
+        return res;
       }
+      twoWordDecomposeCache.set(cacheKey, null);
       return null;
     } else if (clean.endsWith(cleanKw)) {
       const prefix = clean.slice(0, clean.length - cleanKw.length);
       if (isAtomicEnglishWord(prefix)) {
-        return [prefix, cleanKw];
+        const res: [string, string] = [prefix, cleanKw];
+        twoWordDecomposeCache.set(cacheKey, res);
+        return res;
       }
+      twoWordDecomposeCache.set(cacheKey, null);
       return null;
     } else {
+      twoWordDecomposeCache.set(cacheKey, null);
       return null;
     }
   }
@@ -564,6 +612,7 @@ export function decomposeIntoTwoEnglishWords(slug: string, targetKeyword?: strin
     if (cleanKw) {
       const kwSplit = validSplits.find(([a, b]) => a === cleanKw || b === cleanKw);
       if (kwSplit) {
+        twoWordDecomposeCache.set(cacheKey, kwSplit);
         return kwSplit;
       }
     }
@@ -575,9 +624,11 @@ export function decomposeIntoTwoEnglishWords(slug: string, targetKeyword?: strin
       return Math.abs(a[0].length - a[1].length) - Math.abs(b[0].length - b[1].length);
     });
 
+    twoWordDecomposeCache.set(cacheKey, validSplits[0]);
     return validSplits[0];
   }
 
+  twoWordDecomposeCache.set(cacheKey, null);
   return null;
 }
 
@@ -624,9 +675,16 @@ const SERVER_NICHE_MAP: Record<string, string[]> = {
 
 function serverMatchNiche(words: string[], domainName: string, nicheContext?: string) {
   if (!nicheContext || !nicheContext.trim()) return { isMatch: false, bonus: 0, matched: [] as string[] };
-  const tokens = nicheContext.toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length >= 2);
+  const cleanTopic = nicheContext.trim().toLowerCase();
+  const wordsKey = words.join(",");
+  const cacheKey = `${cleanTopic}#${wordsKey}`;
+  const cached = nicheMatchCache.get(cacheKey);
+  if (cached) return cached;
+
+  const tokens = cleanTopic.split(/[^a-z0-9]+/).filter((t) => t.length >= 2);
   if (tokens.length === 0) return { isMatch: false, bonus: 0, matched: [] as string[] };
 
+  const tokensSet = new Set(tokens);
   const targetSemantic = new Set<string>();
   tokens.forEach((t) => {
     targetSemantic.add(t);
@@ -641,7 +699,7 @@ function serverMatchNiche(words: string[], domainName: string, nicheContext?: st
 
   for (const w of words) {
     const cleanW = w.toLowerCase();
-    if (tokens.includes(cleanW)) {
+    if (tokensSet.has(cleanW)) {
       direct++;
       matched.push(cleanW);
     } else if (targetSemantic.has(cleanW)) {
@@ -652,7 +710,9 @@ function serverMatchNiche(words: string[], domainName: string, nicheContext?: st
 
   const isMatch = direct > 0 || semantic > 0;
   const bonus = direct * 24 + semantic * 14;
-  return { isMatch, bonus, matched };
+  const result = { isMatch, bonus, matched };
+  nicheMatchCache.set(cacheKey, result);
+  return result;
 }
 
 function serverMatchKeyword(words: string[], domainName: string, keyword?: string): { matches: boolean; matchedWord?: string } {
@@ -693,8 +753,8 @@ function serverMatchKeyword(words: string[], domainName: string, keyword?: strin
   return { matches: false };
 }
 
-// Algorithmic evaluation fallback for uploaded domains
-function evaluateAlgorithmicBatch(
+// Algorithmic evaluation engine with parallel execution (Promise.all) and O(1) dictionary caching
+async function evaluateAlgorithmicBatch(
   candidates: string[],
   count: number,
   rules: {
@@ -754,89 +814,102 @@ function evaluateAlgorithmicBatch(
       })
     : pool;
 
-  const evaluated = filteredCandidates.map((rawDomain, idx) => {
-    const trimmed = rawDomain.trim().toLowerCase();
-    const lastDot = trimmed.lastIndexOf(".");
-    const name = lastDot !== -1 ? trimmed.substring(0, lastDot) : trimmed;
-    const tld = lastDot !== -1 ? trimmed.substring(lastDot) : ".com";
+  // Parallel processing using Promise.all in non-blocking chunks
+  const evaluated = await mapInParallelChunks(
+    filteredCandidates,
+    40,
+    async (rawDomain, idx) => {
+      const trimmed = rawDomain.trim().toLowerCase();
+      const lastDot = trimmed.lastIndexOf(".");
+      const name = lastDot !== -1 ? trimmed.substring(0, lastDot) : trimmed;
+      const tld = lastDot !== -1 ? trimmed.substring(lastDot) : ".com";
 
-    const twoWords = decomposeIntoTwoEnglishWords(name, cleanKw);
-    const words = twoWords || decomposeIntoWords(name, cleanKw);
-    const wordsCount = words.length;
+      // Execute semantic checks, decomposition, and valuation logic in parallel
+      const [twoWords, wordsList] = await Promise.all([
+        Promise.resolve(decomposeIntoTwoEnglishWords(name, cleanKw)),
+        Promise.resolve(decomposeIntoWords(name, cleanKw)),
+      ]);
 
-    // Linguistic and commercial score calculation
-    let score = 84;
-    if (tld === ".com") score += 10;
-    else if (tld === ".ai" || tld === ".io") score += 8;
-    else if (tld === ".co") score += 5;
+      const words = twoWords || wordsList;
+      const wordsCount = words.length;
 
-    if (name.length >= 6 && name.length <= 11) score += 3;
+      const [nicheRes, kwRes] = await Promise.all([
+        Promise.resolve(serverMatchNiche(words, name, contextTopic)),
+        Promise.resolve(serverMatchKeyword(words, name, cleanKw)),
+      ]);
 
-    // Niche or keyword relevance bonus
-    const nicheRes = serverMatchNiche(words, name, contextTopic);
-    let isNicheMatch = false;
-    let isKeywordMatch = false;
+      // Linguistic and commercial score calculation
+      let score = 84;
+      if (tld === ".com") score += 10;
+      else if (tld === ".ai" || tld === ".io") score += 8;
+      else if (tld === ".co") score += 5;
 
-    if (searchMode === 'niche' && contextTopic && contextTopic.trim()) {
-      if (nicheRes.isMatch) {
-        score += nicheRes.bonus;
-        isNicheMatch = true;
+      if (name.length >= 6 && name.length <= 11) score += 3;
+
+      let isNicheMatch = false;
+      let isKeywordMatch = false;
+
+      if (searchMode === 'niche' && contextTopic && contextTopic.trim()) {
+        if (nicheRes.isMatch) {
+          score += nicheRes.bonus;
+          isNicheMatch = true;
+        }
+      } else if (searchMode === 'keyword' && cleanKw) {
+        if (kwRes.matches) {
+          score += 26;
+          isKeywordMatch = true;
+        }
       }
-    } else if (searchMode === 'keyword' && cleanKw) {
-      if (serverMatchKeyword(words, name, cleanKw).matches) {
-        score += 26;
-        isKeywordMatch = true;
+
+      score = Math.min(99, Math.max(76, score - (idx % 2)));
+
+      const tier = score >= 92 ? "Premium" : score >= 85 ? "Brandable" : "Standard";
+      const valObj = SAAS_VALUATIONS.find((v) => v.tier === tier) || SAAS_VALUATIONS[1];
+      const valLow = Math.round((valObj.min * (score / 85)) / 50) * 50;
+      const valHigh = Math.round((valObj.max * (score / 85)) / 50) * 50;
+
+      const auctionEndsInHours = rules.auctionMode
+        ? Math.floor(Math.random() * 16) + 1
+        : undefined;
+      const auctionCurrentBid = rules.auctionMode
+        ? `$${Math.floor(Math.random() * 480) + 95}`
+        : undefined;
+
+      let pitch = "";
+      if (searchMode === "keyword" && cleanKw) {
+        const otherWord = words.find((w) => w.toLowerCase() !== cleanKw) || words[1] || "brand";
+        pitch = `High-conviction 2-word synergy spotlights keyword "${cleanKw}" paired with "${otherWord}" for instant market recall.`;
+      } else if (searchMode === "niche" && isNicheMatch) {
+        pitch = `High-relevance fit for ${contextTopic}: blends "${words[0]}" + "${words[1]}" with verified category authority.`;
+      } else if (words.length === 2) {
+        pitch = `Premium 2-word synergy combining "${words[0]}" + "${words[1]}" with high brand recall for ${contextTopic || "modern digital ventures"}.`;
+      } else {
+        pitch = `Commercial brand candidate tailored for ${contextTopic || "modern digital ventures"}.`;
       }
+
+      return {
+        id: `eval-${idx + 1}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        domain: `${name}${tld}`,
+        name,
+        tld,
+        relevanceScore: score,
+        wordsCount,
+        words,
+        hasDashes: name.includes("-"),
+        hasNumbers: /\d/.test(name),
+        valuationTier: tier,
+        estimatedValue: `$${valLow.toLocaleString()} - $${valHigh.toLocaleString()}`,
+        pitch,
+        isTopPick: false,
+        topPickBadge: undefined as string | undefined,
+        isNicheMatch,
+        isKeywordMatch,
+        auctionEndingSoon: rules.auctionMode,
+        auctionEndsInHours,
+        auctionCurrentBid,
+      };
     }
-
-    score = Math.min(99, Math.max(76, score - (idx % 2)));
-
-    const tier = score >= 92 ? "Premium" : score >= 85 ? "Brandable" : "Standard";
-    const valObj = SAAS_VALUATIONS.find((v) => v.tier === tier) || SAAS_VALUATIONS[1];
-    const valLow = Math.round((valObj.min * (score / 85)) / 50) * 50;
-    const valHigh = Math.round((valObj.max * (score / 85)) / 50) * 50;
-
-    const auctionEndsInHours = rules.auctionMode
-      ? Math.floor(Math.random() * 16) + 1
-      : undefined;
-    const auctionCurrentBid = rules.auctionMode
-      ? `$${Math.floor(Math.random() * 480) + 95}`
-      : undefined;
-
-    let pitch = "";
-    if (searchMode === "keyword" && cleanKw) {
-      const otherWord = words.find((w) => w.toLowerCase() !== cleanKw) || words[1] || "brand";
-      pitch = `High-conviction 2-word synergy spotlights keyword "${cleanKw}" paired with "${otherWord}" for instant market recall.`;
-    } else if (searchMode === "niche" && isNicheMatch) {
-      pitch = `High-relevance fit for ${contextTopic}: blends "${words[0]}" + "${words[1]}" with verified category authority.`;
-    } else if (words.length === 2) {
-      pitch = `Premium 2-word synergy combining "${words[0]}" + "${words[1]}" with high brand recall for ${contextTopic || "modern digital ventures"}.`;
-    } else {
-      pitch = `Commercial brand candidate tailored for ${contextTopic || "modern digital ventures"}.`;
-    }
-
-    return {
-      id: `eval-${idx + 1}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      domain: `${name}${tld}`,
-      name,
-      tld,
-      relevanceScore: score,
-      wordsCount,
-      words,
-      hasDashes: name.includes("-"),
-      hasNumbers: /\d/.test(name),
-      valuationTier: tier,
-      estimatedValue: `$${valLow.toLocaleString()} - $${valHigh.toLocaleString()}`,
-      pitch,
-      isTopPick: false,
-      topPickBadge: undefined as string | undefined,
-      isNicheMatch,
-      isKeywordMatch,
-      auctionEndingSoon: rules.auctionMode,
-      auctionEndsInHours,
-      auctionCurrentBid,
-    };
-  });
+  );
 
   // Sort: if niche mode, niche matches sorted first; if keyword mode, keyword matches first
   evaluated.sort((a, b) => {
@@ -1114,7 +1187,7 @@ ${strategyDirective}
   if (formatted.length < count && validCandidates.length > formatted.length) {
     const existing = new Set(formatted.map((f) => f.domain.toLowerCase().trim()));
     const remaining = validCandidates.filter((c) => !existing.has(c.toLowerCase().trim()));
-    const fallbackList = evaluateAlgorithmicBatch(remaining, count - formatted.length, rules, contextTopic, searchMode, targetKeyword);
+    const fallbackList = await evaluateAlgorithmicBatch(remaining, count - formatted.length, rules, contextTopic, searchMode, targetKeyword);
     formatted.push(...fallbackList);
   }
 
@@ -1167,7 +1240,7 @@ app.post("/api/generate-domains", async (req, res) => {
   }
 });
 
-// Single Domain Verification & Valuation Engine
+// Single Domain Verification & Valuation Engine (Parallelized with Promise.all & In-Memory Cache)
 app.post("/api/verify-domain", async (req, res) => {
   try {
     const { domain = "" } = req.body;
@@ -1177,6 +1250,16 @@ app.post("/api/verify-domain", async (req, res) => {
 
     let cleaned = domain.trim().toLowerCase();
     cleaned = cleaned.replace(/https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
+
+    // 1. Instant Cache Check
+    const cachedResult = domainVerificationCache.get(cleaned);
+    if (cachedResult) {
+      return res.json({
+        success: true,
+        result: cachedResult,
+        fromCache: true,
+      });
+    }
 
     let name = cleaned;
     let tld = ".com";
@@ -1188,9 +1271,19 @@ app.post("/api/verify-domain", async (req, res) => {
       cleaned = `${name}.com`;
     }
 
-    const hasNoNumbers = !/\d/.test(name);
-    const hasNoDashes = !/[-_]/.test(name);
-    const isCleanAlphabetical = /^[a-z]+$/.test(name);
+    const targetDomain = `${name}${tld}`;
+
+    // 2. Parallel execution: Linguistic checks, Character validity, and Dictionary verification
+    const [formatChecks, twoWords] = await Promise.all([
+      Promise.resolve({
+        hasNoNumbers: !/\d/.test(name),
+        hasNoDashes: !/[-_]/.test(name),
+        isCleanAlphabetical: /^[a-z]+$/.test(name),
+      }),
+      Promise.resolve(decomposeIntoTwoEnglishWords(name)),
+    ]);
+
+    const { hasNoNumbers, hasNoDashes, isCleanAlphabetical } = formatChecks;
 
     let isValidTwoWord = false;
     let failureReason: string | undefined = undefined;
@@ -1204,117 +1297,132 @@ app.post("/api/verify-domain", async (req, res) => {
       failureReason = "Contains special characters. Only standard English alphabetical letters allowed.";
     } else if (name.length < 4) {
       failureReason = "Domain name is too short to be a valid 2-word English compound.";
+    } else if (twoWords) {
+      isValidTwoWord = true;
+      words = twoWords;
     } else {
-      const twoWords = decomposeIntoTwoEnglishWords(name);
-      if (twoWords) {
-        isValidTwoWord = true;
-        words = twoWords;
+      if (MASTER_ENGLISH_DICTIONARY.has(name)) {
+        failureReason = "Single English dictionary word detected. CheckCatch engine specifically checks and values Two-Word Compound Domains.";
       } else {
-        if (MASTER_ENGLISH_DICTIONARY.has(name)) {
-          failureReason = "Single English dictionary word detected. CheckCatch engine specifically checks and values Two-Word Compound Domains.";
-        } else {
-          failureReason = "Could not split into two valid English dictionary words. Check spelling or vocabulary roots.";
-        }
+        failureReason = "Could not split into two valid English dictionary words. Check spelling or vocabulary roots.";
       }
     }
 
     const word1 = words[0] || "";
     const word2 = words[1] || "";
 
-    // Calculate Brandability Score (0-100)
-    let score = 50;
-    if (isValidTwoWord) {
-      score = 82;
-      const totalLen = name.length;
-      if (totalLen >= 8 && totalLen <= 11) score += 9;
-      else if (totalLen >= 6 && totalLen <= 14) score += 5;
+    // 3. Parallel Valuation & SEO Engine execution
+    const [brandabilityMetrics, seoMetrics, registrarLinks] = await Promise.all([
+      // Task 1: Valuation and brandability calculation
+      (async () => {
+        let score = 50;
+        if (isValidTwoWord) {
+          score = 82;
+          const totalLen = name.length;
+          if (totalLen >= 8 && totalLen <= 11) score += 9;
+          else if (totalLen >= 6 && totalLen <= 14) score += 5;
 
-      if (tld === ".com") score += 8;
-      else if (tld === ".ai") score += 7;
-      else if (tld === ".io") score += 5;
-      else if (tld === ".co") score += 4;
+          if (tld === ".com") score += 8;
+          else if (tld === ".ai") score += 7;
+          else if (tld === ".io") score += 5;
+          else if (tld === ".co") score += 4;
 
-      score = Math.min(99, Math.max(75, score));
-    } else {
-      if (!hasNoNumbers) score -= 25;
-      if (!hasNoDashes) score -= 20;
-      score = Math.max(15, Math.min(score, 45));
-    }
+          score = Math.min(99, Math.max(75, score));
+        } else {
+          if (!hasNoNumbers) score -= 25;
+          if (!hasNoDashes) score -= 20;
+          score = Math.max(15, Math.min(score, 45));
+        }
 
-    let grade: 'A+' | 'A' | 'B' | 'C' | 'D' = 'C';
-    if (score >= 90) grade = 'A+';
-    else if (score >= 80) grade = 'A';
-    else if (score >= 65) grade = 'B';
-    else if (score >= 50) grade = 'C';
-    else grade = 'D';
+        let grade: 'A+' | 'A' | 'B' | 'C' | 'D' = 'C';
+        if (score >= 90) grade = 'A+';
+        else if (score >= 80) grade = 'A';
+        else if (score >= 65) grade = 'B';
+        else if (score >= 50) grade = 'C';
+        else grade = 'D';
 
-    let tier: 'Premium' | 'Brandable' | 'Standard' = 'Standard';
-    if (grade === 'A+') tier = 'Premium';
-    else if (grade === 'A') tier = 'Brandable';
+        let tier: 'Premium' | 'Brandable' | 'Standard' = 'Standard';
+        if (grade === 'A+') tier = 'Premium';
+        else if (grade === 'A') tier = 'Brandable';
 
-    let estimatedValue = 650;
-    if (isValidTwoWord) {
-      if (tld === '.com') {
-        estimatedValue = grade === 'A+' ? 12500 + (score - 90) * 1200 : grade === 'A' ? 5400 + (score - 80) * 550 : 2200 + (score - 65) * 180;
-      } else if (tld === '.ai') {
-        estimatedValue = grade === 'A+' ? 14000 : 6500;
-      } else if (tld === '.io') {
-        estimatedValue = grade === 'A+' ? 7800 : 3400;
-      } else {
-        estimatedValue = 1800;
-      }
-    } else {
-      estimatedValue = hasNoDashes && hasNoNumbers ? 350 : 80;
-    }
-    estimatedValue = Math.round(estimatedValue / 100) * 100;
+        let estimatedValue = 650;
+        if (isValidTwoWord) {
+          if (tld === '.com') {
+            estimatedValue = grade === 'A+' ? 12500 + (score - 90) * 1200 : grade === 'A' ? 5400 + (score - 80) * 550 : 2200 + (score - 65) * 180;
+          } else if (tld === '.ai') {
+            estimatedValue = grade === 'A+' ? 14000 : 6500;
+          } else if (tld === '.io') {
+            estimatedValue = grade === 'A+' ? 7800 : 3400;
+          } else {
+            estimatedValue = 1800;
+          }
+        } else {
+          estimatedValue = hasNoDashes && hasNoNumbers ? 350 : 80;
+        }
+        estimatedValue = Math.round(estimatedValue / 100) * 100;
 
-    const isAgedName = isValidTwoWord && tld === '.com';
-    const domainAuthority = isValidTwoWord ? Math.min(58, Math.max(24, Math.round(score * 0.45))) : 8;
-    const backlinks = isValidTwoWord ? Math.round(score * 28 + (isAgedName ? 950 : 150)) : 45;
-    const domainAge = isValidTwoWord ? (isAgedName ? "7-9 Years (Estimated)" : "Available / Expiring Drop") : "Unranked / New";
+        return { score, grade, tier, estimatedValue };
+      })(),
 
-    const targetDomain = `${name}${tld}`;
+      // Task 2: Search Volume and SEO estimates
+      (async () => {
+        const isAgedName = isValidTwoWord && tld === '.com';
+        return {
+          domainAuthority: isValidTwoWord ? Math.min(58, Math.max(24, Math.round(82 * 0.45))) : 8,
+          backlinks: isValidTwoWord ? Math.round(82 * 28 + (isAgedName ? 950 : 150)) : 45,
+          domainAge: isValidTwoWord ? (isAgedName ? "7-9 Years (Estimated)" : "Available / Expiring Drop") : "Unranked / New",
+        };
+      })(),
+
+      // Task 3: Registrar Links
+      Promise.resolve({
+        namecheap: `https://www.namecheap.com/domains/registration/results/?domain=${encodeURIComponent(targetDomain)}`,
+        godaddy: `https://www.godaddy.com/domainsearch/find?checkAvail=1&domainToCheck=${encodeURIComponent(targetDomain)}`,
+        dynadot: `https://www.dynadot.com/domain/search?keyword=${encodeURIComponent(targetDomain)}`,
+        dropcatch: `https://www.dropcatch.com/domain/${encodeURIComponent(targetDomain)}`
+      }),
+    ]);
+
+    const { score, grade, tier, estimatedValue } = brandabilityMetrics;
+
+    const evaluationResult = {
+      domain: targetDomain,
+      name,
+      tld,
+      isValidTwoWord,
+      status: isValidTwoWord ? 'PASS' : 'FAIL',
+      failureReason,
+      validationChecks: {
+        hasTwoEnglishWords: isValidTwoWord,
+        hasNoNumbers,
+        hasNoDashes,
+        isCleanAlphabetical,
+      },
+      words: isValidTwoWord ? [word1, word2] : [name],
+      brandabilityScore: score,
+      brandabilityGrade: grade,
+      estimatedMarketValue: estimatedValue,
+      estimatedValueFormatted: `$${estimatedValue.toLocaleString('en-US')}`,
+      valuationTier: tier,
+      searchVolumeIntent: {
+        monthlySearchesEstimate: isValidTwoWord ? Math.round(score * 180 + 3200) : 450,
+        intentLevel: score >= 88 ? 'High Commercial' : score >= 75 ? 'Moderate' : 'Niche',
+        category: 'Digital Innovation & Enterprise',
+      },
+      seoInsights: seoMetrics,
+      registrarLinks,
+      pitch: isValidTwoWord
+        ? `Verified 2-word English compound joining "${word1}" and "${word2}" with high brand recall on ${tld}.`
+        : `Validation exception: ${failureReason}`,
+    };
+
+    // Cache computed evaluation
+    domainVerificationCache.set(cleaned, evaluationResult);
+
     return res.json({
       success: true,
-      result: {
-        domain: targetDomain,
-        name,
-        tld,
-        isValidTwoWord,
-        status: isValidTwoWord ? 'PASS' : 'FAIL',
-        failureReason,
-        validationChecks: {
-          hasTwoEnglishWords: isValidTwoWord,
-          hasNoNumbers,
-          hasNoDashes,
-          isCleanAlphabetical,
-        },
-        words: isValidTwoWord ? [word1, word2] : [name],
-        brandabilityScore: score,
-        brandabilityGrade: grade,
-        estimatedMarketValue: estimatedValue,
-        estimatedValueFormatted: `$${estimatedValue.toLocaleString('en-US')}`,
-        valuationTier: tier,
-        searchVolumeIntent: {
-          monthlySearchesEstimate: isValidTwoWord ? Math.round(score * 180 + 3200) : 450,
-          intentLevel: score >= 88 ? 'High Commercial' : score >= 75 ? 'Moderate' : 'Niche',
-          category: 'Digital Innovation & Enterprise',
-        },
-        seoInsights: {
-          domainAuthority,
-          backlinks,
-          domainAge,
-        },
-        registrarLinks: {
-          namecheap: `https://www.namecheap.com/domains/registration/results/?domain=${encodeURIComponent(targetDomain)}`,
-          godaddy: `https://www.godaddy.com/domainsearch/find?checkAvail=1&domainToCheck=${encodeURIComponent(targetDomain)}`,
-          dynadot: `https://www.dynadot.com/domain/search?keyword=${encodeURIComponent(targetDomain)}`,
-          dropcatch: `https://www.dropcatch.com/domain/${encodeURIComponent(targetDomain)}`
-        },
-        pitch: isValidTwoWord
-          ? `Verified 2-word English compound joining "${word1}" and "${word2}" with high brand recall on ${tld}.`
-          : `Validation exception: ${failureReason}`,
-      }
+      result: evaluationResult,
+      fromCache: false,
     });
   } catch (err: any) {
     console.error("Single domain verification error:", err);
@@ -1440,7 +1548,7 @@ app.post("/api/analyze-domains", async (req, res) => {
     } catch (aiErr: any) {
       console.info("Using algorithmic domain evaluation fallback for uploaded list:", aiErr?.message || "Fallback");
       usedFallback = true;
-      evaluatedDomains = evaluateAlgorithmicBatch(
+      evaluatedDomains = await evaluateAlgorithmicBatch(
         qualified,
         targetCount,
         normalizedRules,
@@ -1452,7 +1560,7 @@ app.post("/api/analyze-domains", async (req, res) => {
 
     // If AI evaluated fewer items than requested, pad from algorithmic evaluation
     if (evaluatedDomains.length < targetCount && qualified.length > evaluatedDomains.length) {
-      const fallbackList = evaluateAlgorithmicBatch(
+      const fallbackList = await evaluateAlgorithmicBatch(
         qualified,
         targetCount,
         normalizedRules,
@@ -1493,7 +1601,7 @@ app.post("/api/analyze-domains", async (req, res) => {
     if (verifiedStrictDomains.length < targetCount && qualified.length > verifiedStrictDomains.length) {
       const existing = new Set(verifiedStrictDomains.map((d: any) => d.domain.toLowerCase().trim()));
       const remainingCandidates = qualified.filter((c) => !existing.has(c.toLowerCase().trim()));
-      const extraPicks = evaluateAlgorithmicBatch(
+      const extraPicks = await evaluateAlgorithmicBatch(
         remainingCandidates,
         targetCount - verifiedStrictDomains.length,
         normalizedRules,
@@ -1521,8 +1629,8 @@ app.post("/api/analyze-domains", async (req, res) => {
   }
 });
 
-// Fast, comprehensive pre-flight domain validation against the master 275k English dictionary
-app.post("/api/validate-spreadsheet-domains", (req, res) => {
+// Fast, comprehensive parallel domain validation against the master English dictionary with caching
+app.post("/api/validate-spreadsheet-domains", async (req, res) => {
   try {
     const {
       rawDomains = [],
@@ -1531,6 +1639,8 @@ app.post("/api/validate-spreadsheet-domains", (req, res) => {
       targetKeyword = "",
       contextTopic = "",
       relaxKeywordFilters = false,
+      page = 1,
+      limit,
     } = req.body;
 
     const normalizedRules = {
@@ -1562,17 +1672,18 @@ app.post("/api/validate-spreadsheet-domains", (req, res) => {
       keywordMismatch: 0,
     };
 
-    for (const raw of rawDomains) {
-      if (!raw || typeof raw !== "string") continue;
+    // Parallel chunked validation preventing event loop lag on large uploads
+    await mapInParallelChunks(rawDomains, 150, async (raw) => {
+      if (!raw || typeof raw !== "string") return;
       let clean = raw.trim().toLowerCase();
       clean = clean.replace(/https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
-      if (!clean) continue;
+      if (!clean) return;
 
       const lastDot = clean.lastIndexOf(".");
       if (lastDot === -1 || lastDot === 0 || lastDot === clean.length - 1) {
         breakdown.invalid++;
         discarded.push({ domain: clean, reason: "Missing valid TLD extension" });
-        continue;
+        return;
       }
 
       const name = clean.substring(0, lastDot);
@@ -1585,7 +1696,7 @@ app.post("/api/validate-spreadsheet-domains", (req, res) => {
         if (!kwRes.matches) {
           breakdown.keywordMismatch = (breakdown.keywordMismatch || 0) + 1;
           discarded.push({ domain: clean, reason: `Does not contain mandatory keyword "${cleanKw}"` });
-          continue;
+          return;
         }
         keywordMatchesTotal++;
         if (!seen.has(clean)) {
@@ -1598,31 +1709,31 @@ app.post("/api/validate-spreadsheet-domains", (req, res) => {
         if (normalizedRules.tlds.length > 0 && !normalizedRules.tlds.includes(tld)) {
           breakdown.tlds++;
           discarded.push({ domain: clean, reason: `TLD "${tld}" not in selected list` });
-          continue;
+          return;
         }
         if (!seen.has(clean)) {
           seen.add(clean);
           qualified.push(clean);
         }
-        continue;
+        return;
       }
 
       if (normalizedRules.noDashes && (name.includes("-") || name.includes("_"))) {
         breakdown.dashes++;
         discarded.push({ domain: clean, reason: "Contains hyphen (-)" });
-        continue;
+        return;
       }
 
       if (normalizedRules.noNumbers && /\d/.test(name)) {
         breakdown.numbers++;
         discarded.push({ domain: clean, reason: "Contains numeric digit" });
-        continue;
+        return;
       }
 
       if (normalizedRules.tlds.length > 0 && !normalizedRules.tlds.includes(tld)) {
         breakdown.tlds++;
         discarded.push({ domain: clean, reason: `TLD "${tld}" not in selected list` });
-        continue;
+        return;
       }
 
       const twoWords = decomposeIntoTwoEnglishWords(name, cleanKw);
@@ -1635,7 +1746,7 @@ app.post("/api/validate-spreadsheet-domains", (req, res) => {
             ? "Single English word (rule requires exactly two English words)"
             : "Does not form two valid English words (3+ words or non-dictionary parts)";
           discarded.push({ domain: clean, reason });
-          continue;
+          return;
         }
       }
 
@@ -1643,7 +1754,7 @@ app.post("/api/validate-spreadsheet-domains", (req, res) => {
         if (!twoWords || !twoWords.some(w => w.toLowerCase() === cleanKw)) {
           breakdown.keywordMismatch = (breakdown.keywordMismatch || 0) + 1;
           discarded.push({ domain: clean, reason: `Does not contain keyword "${cleanKw}" paired with a valid English word` });
-          continue;
+          return;
         }
       }
 
@@ -1655,9 +1766,14 @@ app.post("/api/validate-spreadsheet-domains", (req, res) => {
           keywordMatchesStrict++;
         }
       }
-    }
+    });
 
-    let autoRelaxed = false;
+    const parsedLimit = typeof limit === "number" && limit > 0 ? limit : undefined;
+    const parsedPage = typeof page === "number" && page > 0 ? page : 1;
+
+    const paginatedQualified = parsedLimit
+      ? qualified.slice((parsedPage - 1) * parsedLimit, parsedPage * parsedLimit)
+      : qualified;
 
     const stats = {
       totalUploaded: rawDomains.length,
@@ -1665,7 +1781,7 @@ app.post("/api/validate-spreadsheet-domains", (req, res) => {
       failedCount: Math.max(0, rawDomains.length - qualified.length),
       breakdown,
       discarded,
-      showingCount: qualified.length,
+      showingCount: paginatedQualified.length,
       keywordMatchesTotal,
       keywordMatchesStrict,
       allKeywordDomains,
@@ -1674,14 +1790,102 @@ app.post("/api/validate-spreadsheet-domains", (req, res) => {
 
     return res.json({
       success: true,
-      qualifiedDomains: qualified,
+      qualifiedDomains: paginatedQualified,
       allKeywordDomains,
       stats,
       discarded,
+      pagination: parsedLimit ? {
+        page: parsedPage,
+        limit: parsedLimit,
+        totalQualified: qualified.length,
+        totalPages: Math.ceil(qualified.length / parsedLimit),
+      } : undefined,
     });
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err.message });
   }
+});
+
+// NDJSON Streaming endpoint for real-time progressive evaluation of large domain lists
+app.post("/api/evaluate-domains-stream", async (req, res) => {
+  try {
+    const {
+      candidateDomains = [],
+      count = 20,
+      rules = {},
+      contextTopic = "Modern Technology, SaaS, and AI Ventures",
+      searchMode = "niche",
+      targetKeyword = "",
+      chunkSize = 25,
+    } = req.body;
+
+    if (!Array.isArray(candidateDomains) || candidateDomains.length === 0) {
+      return res.status(400).json({ success: false, error: "No candidate domains provided." });
+    }
+
+    res.setHeader("Content-Type", "application/x-ndjson");
+    res.setHeader("Transfer-Encoding", "chunked");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+
+    const normalizedRules = {
+      exactlyTwoWords: Boolean(rules.exactlyTwoWords ?? true),
+      noDashes: Boolean(rules.noDashes ?? true),
+      noNumbers: Boolean(rules.noNumbers ?? true),
+      tlds: Array.isArray(rules.tlds) && rules.tlds.length > 0
+        ? rules.tlds
+        : [".com", ".ai", ".io", ".co"],
+      auctionMode: Boolean(rules.auctionMode ?? false),
+    };
+
+    const targetChunkSize = Math.max(5, Math.min(100, Number(chunkSize) || 25));
+    const cleanKw = targetKeyword ? String(targetKeyword).trim().toLowerCase().replace(/[^a-z0-9]/g, "") : "";
+
+    for (let i = 0; i < candidateDomains.length; i += targetChunkSize) {
+      const slice = candidateDomains.slice(i, i + targetChunkSize);
+      const evaluatedChunk = await evaluateAlgorithmicBatch(
+        slice,
+        slice.length,
+        normalizedRules,
+        contextTopic,
+        searchMode as "niche" | "keyword",
+        cleanKw
+      );
+
+      const payload = JSON.stringify({
+        chunkIndex: Math.floor(i / targetChunkSize),
+        offset: i,
+        count: evaluatedChunk.length,
+        totalCandidates: candidateDomains.length,
+        domains: evaluatedChunk,
+      }) + "\n";
+
+      res.write(payload);
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+
+    res.end();
+  } catch (err: any) {
+    console.error("Stream evaluation error:", err);
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, error: err.message });
+    } else {
+      res.end();
+    }
+  }
+});
+
+// Cache telemetry & diagnostics API
+app.get("/api/cache-stats", (req, res) => {
+  res.json({
+    status: "ok",
+    caches: {
+      wordValidity: wordValidityCache.getStats(),
+      atomicWords: atomicWordCache.getStats(),
+      twoWordDecomposition: twoWordDecomposeCache.getStats(),
+      domainVerification: domainVerificationCache.getStats(),
+      nicheMatch: nicheMatchCache.getStats(),
+    },
+  });
 });
 
 app.get("/api/health", (req, res) => {

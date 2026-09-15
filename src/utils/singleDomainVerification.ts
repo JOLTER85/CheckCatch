@@ -88,29 +88,55 @@ const GRAMMATICAL_PARTS: Record<string, { pos: string; meaning: string; category
   shift: { pos: "Verb / Noun", meaning: "Strategic pivot, evolutionary change, and dynamic transition", category: "Transformation" }
 };
 
+// Client-side bounded LRU-style caches for instant evaluations
+const clientDecomposeCache = new Map<string, { words: string[]; valid: boolean; reason?: string }>();
+const clientVerificationCache = new Map<string, SingleDomainVerificationResult>();
+const MAX_CLIENT_CACHE = 5000;
+
+function setClientCache<K, V>(map: Map<K, V>, key: K, value: V) {
+  if (map.size >= MAX_CLIENT_CACHE) {
+    const firstKey = map.keys().next().value;
+    if (firstKey !== undefined) map.delete(firstKey);
+  }
+  map.set(key, value);
+}
+
 /**
  * Decomposes domain slug into 2 English words if strictly valid
+ * Uses in-memory cache for O(1) instantaneous lookups
  */
 export function decomposeTwoWordsStrict(slug: string): { words: string[]; valid: boolean; reason?: string } {
   const clean = slug.toLowerCase().trim();
 
+  if (clientDecomposeCache.has(clean)) {
+    return clientDecomposeCache.get(clean)!;
+  }
+
   if (!clean || clean.length < 4) {
-    return { words: [clean], valid: false, reason: "Domain name is too short to contain 2 valid English words." };
+    const res = { words: [clean], valid: false, reason: "Domain name is too short to contain 2 valid English words." };
+    setClientCache(clientDecomposeCache, clean, res);
+    return res;
   }
 
   // Check for numbers
   if (/\d/.test(clean)) {
-    return { words: [clean], valid: false, reason: "Contains numbers/digits. CheckCatch requires 100% alphabetical English words." };
+    const res = { words: [clean], valid: false, reason: "Contains numbers/digits. CheckCatch requires 100% alphabetical English words." };
+    setClientCache(clientDecomposeCache, clean, res);
+    return res;
   }
 
   // Check for hyphens or underscores
   if (/[-_]/.test(clean)) {
-    return { words: [clean], valid: false, reason: "Contains hyphens or symbols. Strict 2-word verification requires continuous letters." };
+    const res = { words: [clean], valid: false, reason: "Contains hyphens or symbols. Strict 2-word verification requires continuous letters." };
+    setClientCache(clientDecomposeCache, clean, res);
+    return res;
   }
 
   // Check for non-alphabetical
   if (/[^a-z]/.test(clean)) {
-    return { words: [clean], valid: false, reason: "Contains special characters. Only standard English alphabetical letters allowed." };
+    const res = { words: [clean], valid: false, reason: "Contains special characters. Only standard English alphabetical letters allowed." };
+    setClientCache(clientDecomposeCache, clean, res);
+    return res;
   }
 
   // Look for clean split points into 2 dictionary words
@@ -128,18 +154,22 @@ export function decomposeTwoWordsStrict(slug: string): { words: string[]; valid:
   if (validSplits.length === 0) {
     // Check if it's a known single dictionary word
     if (COMPREHENSIVE_ENGLISH_WORDS.has(clean)) {
-      return {
+      const res = {
         words: [clean],
         valid: false,
         reason: "Single English word detected. CheckCatch engine specifically checks and values Two-Word Compound Domains."
       };
+      setClientCache(clientDecomposeCache, clean, res);
+      return res;
     }
 
-    return {
+    const res = {
       words: [clean],
       valid: false,
       reason: "Could not split into two valid English dictionary words. Check spelling or vocabulary roots."
     };
+    setClientCache(clientDecomposeCache, clean, res);
+    return res;
   }
 
   // If multiple splits, pick the most balanced word lengths
@@ -149,7 +179,9 @@ export function decomposeTwoWordsStrict(slug: string): { words: string[]; valid:
     return balanceA - balanceB;
   });
 
-  return { words: validSplits[0], valid: true };
+  const res = { words: validSplits[0], valid: true };
+  setClientCache(clientDecomposeCache, clean, res);
+  return res;
 }
 
 /**
@@ -158,6 +190,10 @@ export function decomposeTwoWordsStrict(slug: string): { words: string[]; valid:
 export function verifyAndValueDomain(rawInput: string): SingleDomainVerificationResult {
   let cleaned = (rawInput || '').trim().toLowerCase();
   cleaned = cleaned.replace(/https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+
+  if (clientVerificationCache.has(cleaned)) {
+    return clientVerificationCache.get(cleaned)!;
+  }
 
   let name = cleaned;
   let tld = '.com';
@@ -295,7 +331,7 @@ export function verifyAndValueDomain(rawInput: string): SingleDomainVerification
     ? `Exceptional two-word English pairing uniting "${word1}" (${w1Meta.pos}) and "${word2}" (${w2Meta.pos}). Delivers immediate brand authority, natural recall, and strong commercial intent on ${tld}.`
     : `Domain evaluation detected rule exceptions: ${decomposition.reason || 'Not a clean two-word dictionary compound'}.`;
 
-  return {
+  const finalResult: SingleDomainVerificationResult = {
     domain: targetDomain,
     name,
     tld,
@@ -344,4 +380,7 @@ export function verifyAndValueDomain(rawInput: string): SingleDomainVerification
     pitch,
     pitchAr: arabicAnalysis?.combinedPowerAr,
   };
+
+  setClientCache(clientVerificationCache, cleaned, finalResult);
+  return finalResult;
 }
