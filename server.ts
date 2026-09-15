@@ -30,18 +30,6 @@ app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
-  res.setHeader(
-    "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://*.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: https://www.googletagmanager.com; connect-src 'self' https: https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; frame-src 'self' https://www.googletagmanager.com;"
-  );
-
-  // In production environments (when not viewed in dev iframe preview), enforce frame isolation & opener policies
-  const isEmbed = req.headers["sec-fetch-dest"] === "iframe" || process.env.NODE_ENV !== "production";
-  if (!isEmbed) {
-    res.setHeader("X-Frame-Options", "DENY");
-    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
-  }
   next();
 });
 
@@ -1966,7 +1954,10 @@ app.get("/api/health", (req, res) => {
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        allowedHosts: true,
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);

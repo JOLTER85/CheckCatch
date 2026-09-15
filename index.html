@@ -86,24 +86,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <script>
-      (function() {
-        try {
-          var desc = Object.getOwnPropertyDescriptor(window, 'fetch') || Object.getOwnPropertyDescriptor(Window.prototype, 'fetch');
-          var currentFetch = window.fetch ? window.fetch.bind(window) : undefined;
-          if (desc && !desc.writable && !desc.set) {
-            Object.defineProperty(window, 'fetch', {
-              get: function() { return currentFetch; },
-              set: function(val) { currentFetch = val; },
-              configurable: true,
-              enumerable: true
-            });
-          }
-        } catch (e) {
-          // Safeguard fail-silent
-        }
-      })();
-    </script>
   </head>
   <body class="bg-slate-50 text-slate-900 antialiased selection:bg-blue-500 selection:text-white min-h-screen">
     <!-- Google Tag Manager (noscript) -->
