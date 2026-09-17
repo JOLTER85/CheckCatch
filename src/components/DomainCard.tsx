@@ -171,11 +171,18 @@ const DomainCardComponent: React.FC<DomainCardProps> = ({
               {domain.valuationTier}
             </span>
 
-            {/* Auction Ending Soon Badge if applicable */}
-            {domain.auctionEndingSoon && (
+            {/* Auction Ending Soon / Expiration Date Badge if applicable */}
+            {(domain.endDate || domain.expirationDate || domain.auctionEndingSoon) && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">
                 <Clock className="w-3 h-3 text-rose-600" />
-                Ending in {domain.auctionEndsInHours || 3}h
+                {domain.endDate || domain.expirationDate ? (
+                  <span>
+                    {lang === 'ar' ? 'تاريخ الانتهاء: ' : 'Ends: '}
+                    <strong className="font-mono font-bold">{domain.endDate || domain.expirationDate}</strong>
+                  </span>
+                ) : (
+                  <span>Ending in {domain.auctionEndsInHours || 3}h</span>
+                )}
               </span>
             )}
           </div>
@@ -229,7 +236,7 @@ const DomainCardComponent: React.FC<DomainCardProps> = ({
 
         {/* Main Domain Heading */}
         <div className="mb-3">
-          <div className="flex items-baseline gap-1.5 flex-wrap" dir="ltr">
+          <div className="flex items-center gap-2 flex-wrap" dir="ltr">
             <span className="font-mono text-xl sm:text-2xl font-bold tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors break-all">
               {domain.name}
             </span>
@@ -238,6 +245,27 @@ const DomainCardComponent: React.FC<DomainCardProps> = ({
             >
               {domain.tld}
             </span>
+
+            {/* End Date from spreadsheet / auction expiration right next to domain name */}
+            {(domain.endDate || domain.expirationDate || (domain.auctionEndingSoon && domain.auctionEndsInHours)) && (
+              <span
+                id={`domain-end-date-${domain.id}`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200 shadow-2xs hover:bg-rose-100 transition-colors"
+                title={
+                  lang === 'ar'
+                    ? `تاريخ الانتهاء من ملف الإكسل: ${domain.endDate || domain.expirationDate || `Ending in ${domain.auctionEndsInHours}h`}`
+                    : `End date from spreadsheet: ${domain.endDate || domain.expirationDate || `Ending in ${domain.auctionEndsInHours}h`}`
+                }
+              >
+                <Clock className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                <span className="font-sans font-medium text-rose-700">
+                  {lang === 'ar' ? 'ينتهي في:' : lang === 'fr' ? 'Se termine :' : 'Ends:'}
+                </span>
+                <strong className="font-mono font-black text-rose-950">
+                  {domain.endDate || domain.expirationDate || `Ending in ${domain.auctionEndsInHours}h`}
+                </strong>
+              </span>
+            )}
           </div>
 
           {/* Clean Professional Summary */}

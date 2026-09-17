@@ -49,7 +49,9 @@ interface FilterControlsProps {
     contextTopic: string,
     stats: FilterEvaluationStats,
     searchMode: SearchTargetMode,
-    targetKeyword: string
+    targetKeyword: string,
+    relaxKeywordFilters?: boolean,
+    metadataMap?: Record<string, { endDate?: string; expirationDate?: string; rawRow?: Record<string, any> }>
   ) => void;
   evaluationStats: FilterEvaluationStats | null;
   setEvaluationStats: React.Dispatch<React.SetStateAction<FilterEvaluationStats | null>>;

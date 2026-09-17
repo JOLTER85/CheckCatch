@@ -1553,6 +1553,7 @@ app.post("/api/analyze-domains", async (req, res) => {
       contextTopic = "Modern Technology, SaaS, and AI Ventures",
       searchMode = "niche",
       targetKeyword = "",
+      domainMetadataMap = {},
     } = req.body;
 
     if (!Array.isArray(candidateDomains) || candidateDomains.length === 0) {
@@ -1741,9 +1742,24 @@ app.post("/api/analyze-domains", async (req, res) => {
       verifiedStrictDomains.push(...extraPicks);
     }
 
+    const finalEnrichedDomains = verifiedStrictDomains.slice(0, targetCount).map((d: any) => {
+      const domKey = String(d.domain || "").toLowerCase().trim();
+      const nameKey = String(d.name || "").toLowerCase().trim();
+      const meta = (domainMetadataMap && (domainMetadataMap[domKey] || domainMetadataMap[nameKey])) || {};
+      const endDate = d.endDate || meta.endDate || undefined;
+      const expirationDate = d.expirationDate || meta.expirationDate || endDate;
+      return {
+        ...d,
+        endDate,
+        expirationDate,
+        rawSpreadsheetRow: d.rawSpreadsheetRow || meta.rawRow || undefined,
+        auctionEndingSoon: d.auctionEndingSoon || Boolean(endDate),
+      };
+    });
+
     return res.json({
       success: true,
-      domains: verifiedStrictDomains.slice(0, targetCount),
+      domains: finalEnrichedDomains,
       totalQualified: qualified.length,
       usedFallback,
       querySummary: `Analyzed ${qualified.length} qualified domains exclusively from spreadsheet`,

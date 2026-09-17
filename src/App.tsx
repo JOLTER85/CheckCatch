@@ -238,7 +238,8 @@ export default function App() {
     stats: FilterEvaluationStats,
     searchMode: SearchTargetMode = 'niche',
     targetKeyword: string = '',
-    relaxKeywordFilters: boolean = false
+    relaxKeywordFilters: boolean = false,
+    metadataMap?: Record<string, { endDate?: string; expirationDate?: string; rawRow?: Record<string, any> }>
   ) => {
     setIsLoading(true);
     setHasAnalyzedSpreadsheet(true);
@@ -273,6 +274,7 @@ export default function App() {
           searchMode,
           targetKeyword,
           relaxKeywordFilters,
+          domainMetadataMap: metadataMap,
         }),
       });
 
@@ -282,7 +284,19 @@ export default function App() {
 
       const data = await response.json();
       if (data.success && Array.isArray(data.domains)) {
-        const cleanDataDomains = data.domains.map((d: DomainItem) => enforceStrictDomainItem(d, rules.tlds));
+        const cleanDataDomains = data.domains.map((d: DomainItem) => {
+          const item = enforceStrictDomainItem(d, rules.tlds);
+          const fullKey = (item.domain || '').toLowerCase().trim();
+          const nameKey = (item.name || '').toLowerCase().trim();
+          const meta = (metadataMap && (metadataMap[fullKey] || metadataMap[nameKey])) || {};
+          return {
+            ...item,
+            endDate: item.endDate || meta.endDate,
+            expirationDate: item.expirationDate || meta.expirationDate || meta.endDate,
+            rawSpreadsheetRow: item.rawSpreadsheetRow || meta.rawRow,
+            auctionEndingSoon: item.auctionEndingSoon || Boolean(meta.endDate),
+          };
+        });
         const allowedSpreadsheetSet = new Set(
           qualifiedDomains.map((d) => {
             let cl = d.toLowerCase().trim().replace(/https?:\/\//, '').replace(/^www\./, '').split('/')[0];
@@ -331,8 +345,21 @@ export default function App() {
         rules,
         contextTopic,
         searchMode,
-        targetKeyword
-      ).map((d: DomainItem) => enforceStrictDomainItem(d, rules.tlds));
+        targetKeyword,
+        metadataMap
+      ).map((d: DomainItem) => {
+        const item = enforceStrictDomainItem(d, rules.tlds);
+        const fullKey = (item.domain || '').toLowerCase().trim();
+        const nameKey = (item.name || '').toLowerCase().trim();
+        const meta = (metadataMap && (metadataMap[fullKey] || metadataMap[nameKey])) || {};
+        return {
+          ...item,
+          endDate: item.endDate || meta.endDate,
+          expirationDate: item.expirationDate || meta.expirationDate || meta.endDate,
+          rawSpreadsheetRow: item.rawSpreadsheetRow || meta.rawRow,
+          auctionEndingSoon: item.auctionEndingSoon || Boolean(meta.endDate),
+        };
+      });
       setSpreadsheetDomains(localEvaluated);
       if (localEvaluated.length > 0) {
         setSelectedBestDomainId(localEvaluated[0].id);

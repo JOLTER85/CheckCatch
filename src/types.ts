@@ -154,6 +154,9 @@ export interface DomainItem {
   auctionCurrentBid?: string;
   arabicBreakdown?: DomainArabicBreakdown;
   valuationSplit?: RealisticValuationSplit;
+  endDate?: string;
+  expirationDate?: string;
+  rawSpreadsheetRow?: Record<string, any>;
 }
 
 export interface GenerateRequest {
@@ -208,11 +211,17 @@ export interface UploadedSheetInfo {
   sheetNames: string[];
   columns: string[];
   selectedColumn: string;
+  selectedDateColumn?: string;
   totalRows: number;
   previewRows: Record<string, any>[];
   detectedDomains: string[];
   detectedTlds?: string[];
   allRows?: any[][];
+  domainMetadataMap?: Record<string, {
+    endDate?: string;
+    expirationDate?: string;
+    rawRow?: Record<string, any>;
+  }>;
 }
 
 export interface AnalyzeUploadedRequest {
@@ -223,6 +232,11 @@ export interface AnalyzeUploadedRequest {
   searchMode?: SearchTargetMode;
   targetKeyword?: string;
   relaxKeywordFilters?: boolean;
+  domainMetadataMap?: Record<string, {
+    endDate?: string;
+    expirationDate?: string;
+    rawRow?: Record<string, any>;
+  }>;
 }
 
 export interface AnalyzeUploadedResponse {

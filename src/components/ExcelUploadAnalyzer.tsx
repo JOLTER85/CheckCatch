@@ -12,6 +12,7 @@ import {
   XCircle,
   KeyRound,
   Target,
+  Clock,
 } from 'lucide-react';
 import { FilterRules, FilterEvaluationStats, UploadedSheetInfo, SearchTargetMode } from '../types';
 import { Language, translations } from '../utils/translations';
@@ -19,6 +20,7 @@ import {
   parseSpreadsheetFile,
   validateDomainsAgainstRules,
   createSamplePortfolioWorkbook,
+  formatSpreadsheetDate,
 } from '../utils/spreadsheet';
 
 interface ExcelUploadAnalyzerProps {
@@ -31,7 +33,8 @@ interface ExcelUploadAnalyzerProps {
     stats: FilterEvaluationStats,
     searchMode: SearchTargetMode,
     targetKeyword: string,
-    relaxKeywordFilters?: boolean
+    relaxKeywordFilters?: boolean,
+    metadataMap?: Record<string, { endDate?: string; expirationDate?: string; rawRow?: Record<string, any> }>
   ) => void;
   evaluationStats: FilterEvaluationStats | null;
   setEvaluationStats: React.Dispatch<React.SetStateAction<FilterEvaluationStats | null>>;
@@ -305,6 +308,9 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
     const detected: string[] = [];
     const seen = new Set<string>();
 
+    const dateColIdx = sheetInfo.selectedDateColumn ? sheetInfo.columns.indexOf(sheetInfo.selectedDateColumn) : -1;
+    const newMetadataMap: Record<string, { endDate?: string; expirationDate?: string; rawRow?: Record<string, any> }> = {};
+
     if (sheetInfo.allRows && Array.isArray(sheetInfo.allRows)) {
       for (const row of sheetInfo.allRows) {
         const val = String(row[colIdx] || '').trim();
@@ -312,6 +318,23 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
         if (clean && !seen.has(clean)) {
           seen.add(clean);
           detected.push(clean);
+        }
+        if (clean) {
+          const endDateStr = dateColIdx !== -1 && row[dateColIdx] !== undefined ? formatSpreadsheetDate(row[dateColIdx]) : '';
+          const rowObj: Record<string, any> = {};
+          sheetInfo.columns.forEach((col, idx) => {
+            rowObj[col] = row[idx] ?? '';
+          });
+          const entry = {
+            endDate: endDateStr || undefined,
+            expirationDate: endDateStr || undefined,
+            rawRow: rowObj,
+          };
+          newMetadataMap[clean] = entry;
+          const baseClean = clean.split('.')[0].replace(/[^a-z0-9-]/g, '');
+          if (baseClean && !newMetadataMap[baseClean]) {
+            newMetadataMap[baseClean] = entry;
+          }
         }
       }
     } else {
@@ -331,10 +354,49 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
       ...sheetInfo,
       selectedColumn: newColumn,
       detectedDomains: detected,
+      domainMetadataMap: Object.keys(newMetadataMap).length > 0 ? newMetadataMap : sheetInfo.domainMetadataMap,
     };
     setSheetInfo(updated);
     const val = validateDomainsAgainstRules(detected, rules);
     setEvaluationStats(val.stats);
+  };
+
+  const handleDateColumnChange = (newDateColumn: string) => {
+    if (!sheetInfo) return;
+    const dateColIdx = newDateColumn ? sheetInfo.columns.indexOf(newDateColumn) : -1;
+    const domColIdx = sheetInfo.columns.indexOf(sheetInfo.selectedColumn);
+
+    const newMetadataMap: Record<string, { endDate?: string; expirationDate?: string; rawRow?: Record<string, any> }> = {};
+
+    if (sheetInfo.allRows && Array.isArray(sheetInfo.allRows)) {
+      for (const row of sheetInfo.allRows) {
+        const val = String(row[domColIdx] || '').trim();
+        const clean = val.replace(/https?:\/\//i, '').replace(/^www\./i, '').replace(/\/.*$/, '').toLowerCase();
+        if (clean) {
+          const endDateStr = dateColIdx !== -1 && row[dateColIdx] !== undefined ? formatSpreadsheetDate(row[dateColIdx]) : '';
+          const rowObj: Record<string, any> = {};
+          sheetInfo.columns.forEach((col, idx) => {
+            rowObj[col] = row[idx] ?? '';
+          });
+          const entry = {
+            endDate: endDateStr || undefined,
+            expirationDate: endDateStr || undefined,
+            rawRow: rowObj,
+          };
+          newMetadataMap[clean] = entry;
+          const baseClean = clean.split('.')[0].replace(/[^a-z0-9-]/g, '');
+          if (baseClean && !newMetadataMap[baseClean]) {
+            newMetadataMap[baseClean] = entry;
+          }
+        }
+      }
+    }
+
+    setSheetInfo({
+      ...sheetInfo,
+      selectedDateColumn: newDateColumn || undefined,
+      domainMetadataMap: Object.keys(newMetadataMap).length > 0 ? newMetadataMap : sheetInfo.domainMetadataMap,
+    });
   };
 
   const handleRunAnalysis = () => {
@@ -376,7 +438,8 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
       effectiveStats,
       searchMode,
       targetKeyword,
-      relaxKeywordFilters
+      relaxKeywordFilters,
+      sheetInfo?.domainMetadataMap
     );
   };
 
@@ -481,31 +544,58 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
       {/* When a file is loaded: Column selector & Data preview toggle */}
       {sheetInfo && (
         <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-blue-600" />
-              <span className="text-xs font-semibold text-slate-700">
-                {t.excelAnalyzer.domainColumn}
-              </span>
-              <select
-                id="select-domain-column"
-                value={sheetInfo.selectedColumn}
-                onChange={(e) => handleColumnChange(e.target.value)}
-                className="bg-white border border-slate-300 text-slate-800 text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                {sheetInfo.columns.map((col) => (
-                  <option key={col} value={col}>
-                    {col}
-                  </option>
-                ))}
-              </select>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-teal-600" />
+                <span className="text-xs font-semibold text-slate-700">
+                  {t.excelAnalyzer.domainColumn}
+                </span>
+                <select
+                  id="select-domain-column"
+                  value={sheetInfo.selectedColumn}
+                  onChange={(e) => handleColumnChange(e.target.value)}
+                  className="bg-white border border-slate-300 text-slate-800 text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                >
+                  {sheetInfo.columns.map((col) => (
+                    <option key={col} value={col}>
+                      {col}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-rose-600" />
+                <span className="text-xs font-semibold text-slate-700">
+                  {lang === 'ar' ? 'عمود تاريخ الانتهاء:' : 'End Date Column:'}
+                </span>
+                <select
+                  id="select-date-column"
+                  value={sheetInfo.selectedDateColumn || ''}
+                  onChange={(e) => handleDateColumnChange(e.target.value)}
+                  className="bg-white border border-slate-300 text-slate-800 text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-rose-500"
+                >
+                  <option value="">{lang === 'ar' ? '(تلقائي / غير محدد)' : '(None / Auto-detect)'}</option>
+                  {sheetInfo.columns.map((col) => (
+                    <option key={col} value={col}>
+                      {col}
+                    </option>
+                  ))}
+                </select>
+                {sheetInfo.selectedDateColumn && (
+                  <span className="text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                    {lang === 'ar' ? 'مفعّل' : 'Active'}
+                  </span>
+                )}
+              </div>
             </div>
 
             <button
               id="toggle-raw-preview-btn"
               type="button"
               onClick={() => setShowDataPreview(!showDataPreview)}
-              className="inline-flex items-center gap-1 text-xs text-slate-600 hover:text-slate-900 transition-colors"
+              className="inline-flex items-center gap-1 text-xs text-slate-600 hover:text-slate-900 transition-colors self-end md:self-auto"
             >
               <Eye className="w-3.5 h-3.5" />
               <span>{showDataPreview ? t.excelAnalyzer.hidePreview : t.excelAnalyzer.previewRows}</span>

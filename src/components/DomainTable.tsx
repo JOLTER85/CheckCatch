@@ -442,17 +442,24 @@ const DomainTableComponent: React.FC<DomainTableProps> = ({
 
               {/* Domain Name + TLD */}
               <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
-                <span className="font-mono text-base font-bold text-slate-900 tracking-tight break-all" dir="ltr">
-                  {item.domain}
-                </span>
-                <span
-                  className={`font-mono font-bold px-2 py-0.5 rounded border text-xs ${
-                    tldColors[item.tld] || 'bg-slate-100 text-slate-700 border-slate-200'
-                  }`}
-                  dir="ltr"
-                >
-                  {item.tld}
-                </span>
+                <div className="flex items-center gap-2 flex-wrap" dir="ltr">
+                  <span className="font-mono text-base font-bold text-slate-900 tracking-tight break-all">
+                    {item.domain}
+                  </span>
+                  <span
+                    className={`font-mono font-bold px-2 py-0.5 rounded border text-xs ${
+                      tldColors[item.tld] || 'bg-slate-100 text-slate-700 border-slate-200'
+                    }`}
+                  >
+                    {item.tld}
+                  </span>
+                </div>
+                {(item.endDate || item.expirationDate) && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-200 shadow-2xs">
+                    <Clock className="w-3 h-3 text-rose-600 shrink-0" />
+                    <span>{lang === 'ar' ? 'ينتهي: ' : 'Ends: '}{item.endDate || item.expirationDate}</span>
+                  </span>
+                )}
               </div>
 
               {/* Pitch Summary */}
@@ -646,6 +653,15 @@ const DomainTableComponent: React.FC<DomainTableProps> = ({
                         >
                           {item.domain}
                         </span>
+                        {(item.endDate || item.expirationDate) && (
+                          <span
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200 shadow-2xs"
+                            title={lang === 'ar' ? `تاريخ الانتهاء: ${item.endDate || item.expirationDate}` : `End Date: ${item.endDate || item.expirationDate}`}
+                          >
+                            <Clock className="w-3 h-3 text-rose-600 shrink-0" />
+                            <span>{lang === 'ar' ? 'ينتهي: ' : 'Ends: '}<strong>{item.endDate || item.expirationDate}</strong></span>
+                          </span>
+                        )}
                         {isSelected ? (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white flex items-center gap-1 shadow-xs">
                             <Crown className="w-3 h-3 fill-white" /> {t.domainCard.bestDomainBadge}
