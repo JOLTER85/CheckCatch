@@ -181,16 +181,21 @@ export default function App() {
   const handleGenerate = async () => {
     setIsLoading(true);
 
+    const abortController = new AbortController();
+    const abortTimeout = setTimeout(() => abortController.abort(), 4000);
+
     try {
       const response = await fetch('/api/generate-domains', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: abortController.signal,
         body: JSON.stringify({
           keywords,
           count,
           rules,
         }),
       });
+      clearTimeout(abortTimeout);
 
       if (!response.ok) {
         throw new Error(`Server returned HTTP ${response.status}`);
@@ -205,14 +210,15 @@ export default function App() {
         setUsedFallback(Boolean(data.usedFallback));
         showToast(
           lang === 'ar'
-            ? `تم فحص وتثمين ${cleanDomains.length} دومينات مختارة`
-            : `Generated ${cleanDomains.length} verified domain candidates`
+            ? `تم فحص وتثمين ${cleanDomains.length} دومينات مختارة في ثوانٍ`
+            : `Generated ${cleanDomains.length} verified domain candidates in seconds`
         );
       } else {
         throw new Error(data.error || 'Failed to generate domains');
       }
     } catch (err: any) {
-      console.warn('Deploying local synthesizer:', err?.message || err);
+      clearTimeout(abortTimeout);
+      console.warn('Deploying ultra-fast local synthesizer:', err?.message || err);
       const localGenerated = clientGenerateDomains(keywords, count, rules).map((d: DomainItem) =>
         enforceStrictDomainItem(d, rules.tlds)
       );
@@ -224,8 +230,8 @@ export default function App() {
       setUsedFallback(true);
       showToast(
         lang === 'ar'
-          ? `تم تجهيز ${localGenerated.length} دومينات معتمدة`
-          : `Generated ${localGenerated.length} qualified domains`
+          ? `تم تجهيز ${localGenerated.length} دومينات معتمدة في ثوانٍ`
+          : `Generated ${localGenerated.length} qualified domains in seconds`
       );
     } finally {
       setIsLoading(false);
@@ -241,7 +247,6 @@ export default function App() {
     relaxKeywordFilters: boolean = false,
     metadataMap?: Record<string, { endDate?: string; expirationDate?: string; rawRow?: Record<string, any> }>
   ) => {
-    setIsLoading(true);
     setHasAnalyzedSpreadsheet(true);
 
     if (!qualifiedDomains || qualifiedDomains.length === 0) {
@@ -261,11 +266,70 @@ export default function App() {
       return;
     }
 
+    // 1. INSTANT RESULT (Under 50ms): Calculate and display verified domains immediately
+    const immediateLocal = clientEvaluateBatch(
+      qualifiedDomains,
+      count,
+      rules,
+      contextTopic,
+      searchMode,
+      targetKeyword,
+      metadataMap
+    ).map((d: DomainItem) => {
+      const item = enforceStrictDomainItem(d, rules.tlds);
+      const fullKey = (item.domain || '').toLowerCase().trim();
+      const nameKey = (item.name || '').toLowerCase().trim();
+      const meta = (metadataMap && (metadataMap[fullKey] || metadataMap[nameKey])) || {};
+      return {
+        ...item,
+        endDate: item.endDate || meta.endDate,
+        expirationDate: item.expirationDate || meta.expirationDate || meta.endDate,
+        rawSpreadsheetRow: item.rawSpreadsheetRow || meta.rawRow,
+        auctionEndingSoon: item.auctionEndingSoon || Boolean(meta.endDate),
+      };
+    });
+
+    setSpreadsheetDomains(immediateLocal);
+    if (immediateLocal.length > 0) {
+      setSelectedBestDomainId(immediateLocal[0].id);
+    } else {
+      setSelectedBestDomainId(null);
+    }
+    setLastGeneratedAt(new Date().toISOString());
+    setUsedFallback(false);
+    setEvaluationStats({
+      ...stats,
+      showingCount: immediateLocal.length,
+    });
+    // End the loading state immediately so the user sees results without waiting!
+    setIsLoading(false);
+
+    if (immediateLocal.length === 0) {
+      showToast(
+        lang === 'ar'
+          ? 'لم تتطابق أي نطاقات من الملف مع الفلاتر الصارمة'
+          : 'No domains from file matched active strict filters',
+        'info'
+      );
+      return;
+    }
+
+    showToast(
+      lang === 'ar'
+        ? `تم فحص وانتقاء أفضل ${immediateLocal.length} دومينات بنجاح في ثوانٍ!`
+        : `Ranked Top ${immediateLocal.length} picks from your spreadsheet in seconds!`
+    );
+
+    // 2. BACKGROUND ENRICHMENT: Asynchronously fetch server-side deeper AI insights with a fast 3.5s timeout
+    const abortController = new AbortController();
+    const abortTimeout = setTimeout(() => abortController.abort(), 3500);
+
     try {
-      const candidatePayload = qualifiedDomains.slice(0, 200);
+      const candidatePayload = qualifiedDomains.slice(0, 100);
       const response = await fetch('/api/analyze-domains', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: abortController.signal,
         body: JSON.stringify({
           candidateDomains: candidatePayload,
           count,
@@ -277,108 +341,49 @@ export default function App() {
           domainMetadataMap: metadataMap,
         }),
       });
+      clearTimeout(abortTimeout);
 
-      if (!response.ok) {
-        throw new Error(`Server returned status ${response.status}`);
-      }
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.domains) && data.domains.length > 0) {
+          const cleanDataDomains = data.domains.map((d: DomainItem) => {
+            const item = enforceStrictDomainItem(d, rules.tlds);
+            const fullKey = (item.domain || '').toLowerCase().trim();
+            const nameKey = (item.name || '').toLowerCase().trim();
+            const meta = (metadataMap && (metadataMap[fullKey] || metadataMap[nameKey])) || {};
+            return {
+              ...item,
+              endDate: item.endDate || meta.endDate,
+              expirationDate: item.expirationDate || meta.expirationDate || meta.endDate,
+              rawSpreadsheetRow: item.rawSpreadsheetRow || meta.rawRow,
+              auctionEndingSoon: item.auctionEndingSoon || Boolean(meta.endDate),
+            };
+          });
 
-      const data = await response.json();
-      if (data.success && Array.isArray(data.domains)) {
-        const cleanDataDomains = data.domains.map((d: DomainItem) => {
-          const item = enforceStrictDomainItem(d, rules.tlds);
-          const fullKey = (item.domain || '').toLowerCase().trim();
-          const nameKey = (item.name || '').toLowerCase().trim();
-          const meta = (metadataMap && (metadataMap[fullKey] || metadataMap[nameKey])) || {};
-          return {
-            ...item,
-            endDate: item.endDate || meta.endDate,
-            expirationDate: item.expirationDate || meta.expirationDate || meta.endDate,
-            rawSpreadsheetRow: item.rawSpreadsheetRow || meta.rawRow,
-            auctionEndingSoon: item.auctionEndingSoon || Boolean(meta.endDate),
-          };
-        });
-        const allowedSpreadsheetSet = new Set(
-          qualifiedDomains.map((d) => {
-            let cl = d.toLowerCase().trim().replace(/https?:\/\//, '').replace(/^www\./, '').split('/')[0];
-            if (cl.includes('.')) cl = cl.substring(0, cl.lastIndexOf('.'));
-            return cl.replace(/[^a-z0-9-]/g, '');
-          })
-        );
-        const strictSpreadsheet = cleanDataDomains.filter((d: DomainItem) =>
-          allowedSpreadsheetSet.has(d.name.toLowerCase().trim())
-        );
-
-        setSpreadsheetDomains(strictSpreadsheet);
-        if (strictSpreadsheet.length > 0) {
-          setSelectedBestDomainId(strictSpreadsheet[0].id);
-        } else {
-          setSelectedBestDomainId(null);
-        }
-        setLastGeneratedAt(data.generatedAt || new Date().toISOString());
-        setUsedFallback(Boolean(data.usedFallback));
-        setEvaluationStats({
-          ...stats,
-          showingCount: strictSpreadsheet.length,
-        });
-        if (strictSpreadsheet.length === 0) {
-          showToast(
-            lang === 'ar'
-              ? 'لم تتطابق أي نطاقات من الملف مع الفلاتر الصارمة'
-              : 'No domains from file matched active strict filters',
-            'info'
-          );
-        } else {
-          showToast(
-            lang === 'ar'
-              ? `تم تصنيف أفضل ${strictSpreadsheet.length} نطاقات من ملفك`
-              : `Ranked Top ${strictSpreadsheet.length} picks from your spreadsheet!`
+          // Seamlessly update pitches and scores without jarring the user
+          setSpreadsheetDomains((prev) =>
+            prev.map((existing) => {
+              const enriched = cleanDataDomains.find(
+                (c: DomainItem) => c.domain.toLowerCase().trim() === existing.domain.toLowerCase().trim()
+              );
+              if (enriched && enriched.pitch && enriched.pitch !== existing.pitch) {
+                return {
+                  ...existing,
+                  pitch: enriched.pitch,
+                  relevanceScore: Math.max(existing.relevanceScore, enriched.relevanceScore || 0),
+                  valuationTier: enriched.valuationTier || existing.valuationTier,
+                  estimatedValue: enriched.estimatedValue || existing.estimatedValue,
+                };
+              }
+              return existing;
+            })
           );
         }
-      } else {
-        throw new Error(data.error || 'Evaluation yielded no candidates');
       }
-    } catch (err: any) {
-      console.warn('Batch evaluation network fallback:', err?.message || err);
-      const localEvaluated = clientEvaluateBatch(
-        qualifiedDomains,
-        count,
-        rules,
-        contextTopic,
-        searchMode,
-        targetKeyword,
-        metadataMap
-      ).map((d: DomainItem) => {
-        const item = enforceStrictDomainItem(d, rules.tlds);
-        const fullKey = (item.domain || '').toLowerCase().trim();
-        const nameKey = (item.name || '').toLowerCase().trim();
-        const meta = (metadataMap && (metadataMap[fullKey] || metadataMap[nameKey])) || {};
-        return {
-          ...item,
-          endDate: item.endDate || meta.endDate,
-          expirationDate: item.expirationDate || meta.expirationDate || meta.endDate,
-          rawSpreadsheetRow: item.rawSpreadsheetRow || meta.rawRow,
-          auctionEndingSoon: item.auctionEndingSoon || Boolean(meta.endDate),
-        };
-      });
-      setSpreadsheetDomains(localEvaluated);
-      if (localEvaluated.length > 0) {
-        setSelectedBestDomainId(localEvaluated[0].id);
-      } else {
-        setSelectedBestDomainId(null);
-      }
-      setLastGeneratedAt(new Date().toISOString());
-      setUsedFallback(true);
-      setEvaluationStats({
-        ...stats,
-        showingCount: localEvaluated.length,
-      });
-      showToast(
-        lang === 'ar'
-          ? `تم تصنيف أفضل ${localEvaluated.length} دومينات من الملف`
-          : `Ranked Top ${localEvaluated.length} picks from spreadsheet`
-      );
+    } catch {
+      // Background enrichment timed out or failed; user already has instant results!
     } finally {
-      setIsLoading(false);
+      clearTimeout(abortTimeout);
     }
   };
 

@@ -314,94 +314,82 @@ ${rules.auctionMode ? '- auctionEndsInHours: integer 1-24\n- auctionCurrentBid: 
 
 Order them by quality and relevance, with the absolute best ones first.`;
 
-  const modelsToTry = ["gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
+  const modelsToTry = ["gemini-3.1-flash-lite", "gemini-3.8-flash"];
   let lastError: any = null;
   let parsed: any = null;
 
   for (const model of modelsToTry) {
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        const response: any = await withTimeout(
-          ai.models.generateContent({
-            model,
-            contents: prompt,
-            config: {
-              temperature: 0.8,
-              responseMimeType: "application/json",
-              responseSchema: {
-                type: Type.ARRAY,
-                description: "List of top generated domain names",
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    domain: { type: Type.STRING, description: "Full domain name e.g. cloudnexus.ai" },
-                    name: { type: Type.STRING, description: "Domain name without TLD e.g. cloudnexus" },
-                    tld: { type: Type.STRING, description: "TLD extension e.g. .ai or .com" },
-                    relevanceScore: { type: Type.INTEGER, description: "Match percentage between 80 and 99" },
-                    wordsCount: { type: Type.INTEGER, description: "Count of English words" },
-                    words: {
-                      type: Type.ARRAY,
-                      items: { type: Type.STRING },
-                      description: "The constituent English words"
-                    },
-                    hasDashes: { type: Type.BOOLEAN },
-                    hasNumbers: { type: Type.BOOLEAN },
-                    valuationTier: {
-                      type: Type.STRING,
-                      description: "Premium, Brandable, or Standard"
-                    },
-                    estimatedValue: { type: Type.STRING, description: "Valuation range string e.g. $3,200 - $5,400" },
-                    pitch: { type: Type.STRING, description: "One sentence branding rationale" },
-                    isTopPick: { type: Type.BOOLEAN },
-                    topPickBadge: { type: Type.STRING, description: "Badge text or empty" },
-                    auctionEndsInHours: { type: Type.INTEGER },
-                    auctionCurrentBid: { type: Type.STRING }
+    try {
+      const response: any = await withTimeout(
+        ai.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            temperature: 0.8,
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.ARRAY,
+              description: "List of top generated domain names",
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  domain: { type: Type.STRING, description: "Full domain name e.g. cloudnexus.ai" },
+                  name: { type: Type.STRING, description: "Domain name without TLD e.g. cloudnexus" },
+                  tld: { type: Type.STRING, description: "TLD extension e.g. .ai or .com" },
+                  relevanceScore: { type: Type.INTEGER, description: "Match percentage between 80 and 99" },
+                  wordsCount: { type: Type.INTEGER, description: "Count of English words" },
+                  words: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                    description: "The constituent English words"
                   },
-                  required: [
-                    "domain",
-                    "name",
-                    "tld",
-                    "relevanceScore",
-                    "wordsCount",
-                    "words",
-                    "hasDashes",
-                    "hasNumbers",
-                    "valuationTier",
-                    "estimatedValue",
-                    "pitch",
-                    "isTopPick"
-                  ]
-                }
+                  hasDashes: { type: Type.BOOLEAN },
+                  hasNumbers: { type: Type.BOOLEAN },
+                  valuationTier: {
+                    type: Type.STRING,
+                    description: "Premium, Brandable, or Standard"
+                  },
+                  estimatedValue: { type: Type.STRING, description: "Valuation range string e.g. $3,200 - $5,400" },
+                  pitch: { type: Type.STRING, description: "One sentence branding rationale" },
+                  isTopPick: { type: Type.BOOLEAN },
+                  topPickBadge: { type: Type.STRING, description: "Badge text or empty" },
+                  auctionEndsInHours: { type: Type.INTEGER },
+                  auctionCurrentBid: { type: Type.STRING }
+                },
+                required: [
+                  "domain",
+                  "name",
+                  "tld",
+                  "relevanceScore",
+                  "wordsCount",
+                  "words",
+                  "hasDashes",
+                  "hasNumbers",
+                  "valuationTier",
+                  "estimatedValue",
+                  "pitch",
+                  "isTopPick"
+                ]
               }
             }
-          }),
-          10000,
-          `Gemini ${model} generation`
-        );
-
-        const text = response.text;
-        if (text) {
-          const json = JSON.parse(text);
-          if (Array.isArray(json) && json.length > 0) {
-            parsed = json;
-            break; // Success!
           }
-        }
-      } catch (err: any) {
-        lastError = err;
-        const isTransient = err?.status === 503 || err?.status === 429 ||
-          String(err?.message || "").includes("503") ||
-          String(err?.message || "").includes("high demand") ||
-          String(err?.message || "").includes("timed out");
+        }),
+        3500,
+        `Gemini ${model} generation`
+      );
 
-        if (isTransient && attempt < 2) {
-          await new Promise((resolve) => setTimeout(resolve, 600));
-          continue;
+      const text = response.text;
+      if (text) {
+        const json = JSON.parse(text);
+        if (Array.isArray(json) && json.length > 0) {
+          parsed = json;
+          break; // Success!
         }
-        break; // Next model
       }
+    } catch (err: any) {
+      lastError = err;
+      continue; // Move to next fast model
     }
-    if (parsed) break;
   }
 
   if (!parsed) {
@@ -1065,8 +1053,8 @@ async function evaluateUploadedWithGemini(
   });
 
   const candidateSet = new Set(validCandidates.map((c) => c.toLowerCase().trim()));
-  // Provide up to 40 candidates in prompt
-  const domainBatch = validCandidates.slice(0, 40).join(", ");
+  // Provide up to 15 top candidates in prompt for sub-second generation
+  const domainBatch = validCandidates.slice(0, 15).join(", ");
 
   let strategyDirective = `Evaluation criteria for target niche "${contextTopic || "Technology, Cloud, AI, and SaaS"}":
 - Focus specifically on identifying and ranking the best domains that fit the "${contextTopic || "Technology, Cloud, AI, and SaaS"}" niche. Prioritize domains that have direct commercial application for this specific industry.`;
@@ -1110,83 +1098,71 @@ ${strategyDirective}
 - Sort with highest scoring domains FIRST.
 - Mark top 3 domains with isTopPick: true and appropriate topPickBadge ("Best Match #1", "Top Pick #2", "Top Pick #3").`;
 
-  const modelsToTry = ["gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
+  const modelsToTry = ["gemini-3.1-flash-lite", "gemini-3.8-flash"];
   let parsed: any = null;
   let lastError: any = null;
 
   for (const model of modelsToTry) {
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        const response: any = await withTimeout(
-          ai.models.generateContent({
-            model,
-            contents: prompt,
-            config: {
-              temperature: 0.3,
-              responseMimeType: "application/json",
-              responseSchema: {
-                type: Type.ARRAY,
-                description: "Evaluated domains from Candidate Domains only, sorted best to worst",
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    domain: { type: Type.STRING },
-                    name: { type: Type.STRING },
-                    tld: { type: Type.STRING },
-                    relevanceScore: { type: Type.INTEGER },
-                    wordsCount: { type: Type.INTEGER },
-                    words: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    valuationTier: { type: Type.STRING },
-                    estimatedValue: { type: Type.STRING },
-                    pitch: { type: Type.STRING },
-                    isTopPick: { type: Type.BOOLEAN },
-                    topPickBadge: { type: Type.STRING }
-                  },
-                  required: [
-                    "domain",
-                    "relevanceScore",
-                    "valuationTier",
-                    "estimatedValue",
-                    "pitch"
-                  ]
-                }
+    try {
+      const response: any = await withTimeout(
+        ai.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            temperature: 0.2,
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.ARRAY,
+              description: "Evaluated domains from Candidate Domains only, sorted best to worst",
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  domain: { type: Type.STRING },
+                  name: { type: Type.STRING },
+                  tld: { type: Type.STRING },
+                  relevanceScore: { type: Type.INTEGER },
+                  wordsCount: { type: Type.INTEGER },
+                  words: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  valuationTier: { type: Type.STRING },
+                  estimatedValue: { type: Type.STRING },
+                  pitch: { type: Type.STRING },
+                  isTopPick: { type: Type.BOOLEAN },
+                  topPickBadge: { type: Type.STRING }
+                },
+                required: [
+                  "domain",
+                  "relevanceScore",
+                  "valuationTier",
+                  "estimatedValue",
+                  "pitch"
+                ]
               }
             }
-          }),
-          10000,
-          `Gemini ${model} batch evaluation`
-        );
+          }
+        }),
+        3200,
+        `Gemini ${model} batch evaluation`
+      );
 
-        const text = response.text;
-        if (text) {
-          const json = JSON.parse(text);
-          if (Array.isArray(json) && json.length > 0) {
-            // STRICT FILTER: keep ONLY items whose domain is in candidateSet
-            const verified = json.filter((item: any) => {
-              const d = String(item.domain || "").toLowerCase().trim();
-              return candidateSet.has(d);
-            });
-            if (verified.length > 0) {
-              parsed = verified;
-              break;
-            }
+      const text = response.text;
+      if (text) {
+        const json = JSON.parse(text);
+        if (Array.isArray(json) && json.length > 0) {
+          // STRICT FILTER: keep ONLY items whose domain is in candidateSet
+          const verified = json.filter((item: any) => {
+            const d = String(item.domain || "").toLowerCase().trim();
+            return candidateSet.has(d);
+          });
+          if (verified.length > 0) {
+            parsed = verified;
+            break;
           }
         }
-      } catch (err: any) {
-        lastError = err;
-        const isTransient = err?.status === 503 || err?.status === 429 ||
-          String(err?.message || "").includes("503") ||
-          String(err?.message || "").includes("high demand") ||
-          String(err?.message || "").includes("timed out");
-
-        if (isTransient && attempt < 2) {
-          await new Promise((resolve) => setTimeout(resolve, 600));
-          continue;
-        }
-        break; // Next model
       }
+    } catch (err: any) {
+      lastError = err;
+      continue;
     }
-    if (parsed && parsed.length > 0) break;
   }
 
   if (!parsed || parsed.length === 0) {
