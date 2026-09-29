@@ -16,9 +16,14 @@ import {
 } from "./src/services/domainEvaluationEngine";
 import {
   evaluateDomainWithTypeSafeRules,
+  isShortSingleDictionaryWord,
+  detectTrademarkOrFamousBrand,
   CATEGORY_LABELS,
+  TRADEMARK_DISCLAIMER_AR,
+  TRADEMARK_DISCLAIMER_EN,
   TypeSafeCategory,
   RecommendedAction,
+  ValuationClass,
   TypeSafeRawAnalysis,
   TypeSafeDomainEvaluation,
 } from "./src/utils/typesafeEngine";
@@ -28,6 +33,15 @@ dotenv.config();
 // Circuit breaker for upstream Gemini API when quota (429) or overload (503) occurs
 // Prevents subsequent requests from waiting on timeouts for 60 seconds
 let geminiCooldownUntil = 0;
+
+/**
+ * Helper to verify if a slug is a short single English word in the 274k master dictionary
+ */
+function isBackendSingleShortDictionaryWord(word: string): boolean {
+  if (!word || !/^[a-z]{2,7}$/.test(word)) return false;
+  if (word.length <= 4 && isRealEnglishWord(word)) return true;
+  return isAtomicEnglishWord(word);
+}
 
 /**
  * Step 2: TypeSafe AI SystemOne Domain Evaluation Service (Single & Parallel Bulk)
@@ -42,19 +56,28 @@ async function analyzeDomain(domainName: string): Promise<TypeSafeRawAnalysis> {
     apiKey !== "your_secret_api_key_here" &&
     apiKey !== "MY_TYPESAFE_API_KEY";
 
+  const fallback = evaluateDomainWithTypeSafeRules(
+    domainName,
+    undefined,
+    undefined,
+    isBackendSingleShortDictionaryWord
+  ).rawAnalysis;
+
   if (hasRealKey) {
     const url = "https://api.typesafe.ai/v1/systemone";
     const payload = {
       model: "jev-latest",
-      state: `Domain Name to evaluate: ${domainName}`,
+      state: `Domain Name to evaluate: ${domainName}. CRITICAL INSTRUCTION: Actively recognize famous established global brands, major web portals, search engines, media networks, and iconic existing companies (e.g., Ask.com, Apple, Target, Uber, Chase, Time, Slack, Zoom, Visa, Shell, Forbes, eBay, Yahoo, etc.) even when the name is a common dictionary word. Do NOT treat famous existing brands or major websites as mere ordinary dictionary words.`,
       questions: {
         is_brandable: {
           type: "noul",
-          prompt: "Is this domain name catchy, short, and good for a tech/business startup?",
+          prompt:
+            "Is this domain name catchy, short, memorable, and strong for a major brand or tech/business startup? Short single-word .com dictionary domains (like ask.com, news.com, car.com) have maximum brandability.",
         },
         has_trademark_risk: {
           type: "noul",
-          prompt: "Does this domain contain a protected trademark name like Apple, Nike, Google, etc.?",
+          prompt:
+            "Does this domain match or contain a protected trademark, famous global brand, or established major company/website (such as Ask.com, Apple, Nike, Google, Target, Uber, Time, Chase, Slack, Zoom, etc.)? You MUST recognize famous existing brands and major web companies even if the word is a standard dictionary word—do NOT dismiss famous established brands as ordinary dictionary words.",
         },
         category: {
           type: "choice",
@@ -65,7 +88,8 @@ async function analyzeDomain(domainName: string): Promise<TypeSafeRawAnalysis> {
           type: "score",
           min: 1,
           max: 5,
-          prompt: "Rate the commercial/resale potential of this domain name.",
+          prompt:
+            "Rate the commercial/resale potential of this domain name from 1 to 5. Ultra-short single-word .com dictionary domains (such as ask.com, news.com, car.com) must be rated 5/5 (High Value).",
         },
       },
     };
@@ -88,15 +112,18 @@ async function analyzeDomain(domainName: string): Promise<TypeSafeRawAnalysis> {
         const data: any = await response.json();
         if (data && data.results) {
           const r = data.results;
-          const fallback = evaluateDomainWithTypeSafeRules(domainName).rawAnalysis;
+          const aiHasRisk = Boolean(r.has_trademark_risk?.value);
+          const mergedHasRisk = aiHasRisk || fallback.has_trademark_risk.value;
           return {
             is_brandable: {
               value: Boolean(r.is_brandable?.value ?? fallback.is_brandable.value),
               probability: Number(r.is_brandable?.probability ?? fallback.is_brandable.probability),
             },
             has_trademark_risk: {
-              value: Boolean(r.has_trademark_risk?.value ?? fallback.has_trademark_risk.value),
-              probability: Number(r.has_trademark_risk?.probability ?? fallback.has_trademark_risk.probability),
+              value: mergedHasRisk,
+              probability: mergedHasRisk
+                ? Math.max(Number(r.has_trademark_risk?.probability ?? 0), fallback.has_trademark_risk.probability, 0.92)
+                : Number(r.has_trademark_risk?.probability ?? fallback.has_trademark_risk.probability),
               matchedTrademark: fallback.has_trademark_risk.matchedTrademark,
             },
             category: {
@@ -114,12 +141,12 @@ async function analyzeDomain(domainName: string): Promise<TypeSafeRawAnalysis> {
     }
   }
 
-  return evaluateDomainWithTypeSafeRules(domainName).rawAnalysis;
+  return fallback;
 }
 
 /**
  * TypeSafe AI Domain Evaluation & Recommendation Logic
- * Relies exclusively on TYPESAFE_API_KEY
+ * Relies exclusively on TYPESAFE_API_KEY + Programmatic Override Logic for Single-Word .com Domains
  */
 async function evaluateAndDecideDomain(
   domainName: string
@@ -127,11 +154,53 @@ async function evaluateAndDecideDomain(
   const startMs = Date.now();
   const analysis = await analyzeDomain(domainName);
 
-  const brandable = analysis.is_brandable.value; // true / false
-  const brandProbability = analysis.is_brandable.probability;
-  const hasRisk = analysis.has_trademark_risk.value;
-  const score = analysis.investment_score.value; // 1 to 5
+  const clean = domainName.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+  const lastDot = clean.lastIndexOf(".");
+  const slug = lastDot !== -1 ? clean.substring(0, lastDot) : clean;
+  const tld = lastDot !== -1 ? clean.substring(lastDot) : ".com";
+  const alphaSlug = slug.replace(/[^a-z0-9]/g, "");
+  const hasDashes = slug.includes("-") || slug.includes("_");
+  const hasNumbers = /\d/.test(slug);
+
+  // Ensure famous brands (like ask.com, time.com, target.com) are always flagged for trademark risk
+  const tmCheck = detectTrademarkOrFamousBrand(alphaSlug);
+  let hasRisk = analysis.has_trademark_risk.value || tmCheck.hasRisk;
+  const matchedTrademark = analysis.has_trademark_risk.matchedTrademark || tmCheck.matchedTrademark;
+  if (hasRisk) {
+    analysis.has_trademark_risk.value = true;
+    analysis.has_trademark_risk.matchedTrademark = matchedTrademark;
+  }
+
+  let brandable = analysis.is_brandable.value; // true / false
+  let brandProbability = analysis.is_brandable.probability;
+  let score = analysis.investment_score.value; // 1 to 5
   const category = analysis.category.value;
+
+  // Programmatic Override Logic (شرط برمجي):
+  // If the domain is a short single dictionary word (such as ask, news, car) and has a .com extension,
+  // automatically set Investment Score to 5/5 and Valuation to High Value!
+  const isSingleShortWord =
+    !hasDashes &&
+    !hasNumbers &&
+    isShortSingleDictionaryWord(alphaSlug, isBackendSingleShortDictionaryWord);
+  const isSingleWordComOverride = isSingleShortWord && tld === ".com";
+
+  if (isSingleWordComOverride) {
+    score = 5;
+    brandable = true;
+    brandProbability = Math.max(brandProbability, 0.99);
+    analysis.investment_score.value = 5;
+    analysis.is_brandable.value = true;
+    analysis.is_brandable.probability = brandProbability;
+  }
+
+  const isHighValue = isSingleWordComOverride || score >= 4;
+  const valuationTier: ValuationClass =
+    isSingleWordComOverride || score >= 4
+      ? "High Value"
+      : score === 3
+      ? "Moderate Value"
+      : "Low Value";
 
   let recommendedAction: RecommendedAction = "AVOID";
   if (!hasRisk && score >= 4 && brandProbability > 0.80) {
@@ -143,17 +212,22 @@ async function evaluateAndDecideDomain(
   const catMeta = CATEGORY_LABELS[category] || CATEGORY_LABELS.tech_ai;
 
   return {
-    domain: domainName.trim().toLowerCase(),
+    domain: `${slug}${tld}`,
     score,
+    valuationTier,
+    isHighValue,
+    isSingleWordComOverride,
     category,
     categoryLabelEn: catMeta.en,
     categoryLabelAr: catMeta.ar,
     hasRisk,
-    matchedTrademark: analysis.has_trademark_risk.matchedTrademark,
+    matchedTrademark,
     brandable,
     brandProbability,
     recommendedAction,
     rawAnalysis: analysis,
+    trademarkDisclaimerAr: TRADEMARK_DISCLAIMER_AR,
+    trademarkDisclaimerEn: TRADEMARK_DISCLAIMER_EN,
     latencyMs: Math.max(2, Date.now() - startMs),
   };
 }
@@ -162,11 +236,15 @@ function enrichDomainItemWithTypeSafe(item: any): any {
   const tsEval = evaluateDomainWithTypeSafeRules(
     item.domain || item.name || "",
     item.relevanceScore,
-    item.wordsCount
+    item.wordsCount,
+    isBackendSingleShortDictionaryWord
   );
   return {
     ...item,
     aiScore: item.aiScore ?? tsEval.score,
+    valuationTier: tsEval.isSingleWordComOverride ? "High Value" : (item.valuationTier ?? tsEval.valuationTier),
+    isHighValue: tsEval.isHighValue,
+    isSingleWordComOverride: tsEval.isSingleWordComOverride,
     aiCategory: item.aiCategory ?? tsEval.category,
     aiCategoryLabelEn: item.aiCategoryLabelEn ?? tsEval.categoryLabelEn,
     aiCategoryLabelAr: item.aiCategoryLabelAr ?? tsEval.categoryLabelAr,
@@ -176,6 +254,8 @@ function enrichDomainItemWithTypeSafe(item: any): any {
     brandProbability: item.brandProbability ?? tsEval.brandProbability,
     recommendedAction: item.recommendedAction ?? tsEval.recommendedAction,
     rawAnalysis: item.rawAnalysis ?? tsEval.rawAnalysis,
+    trademarkDisclaimerAr: tsEval.trademarkDisclaimerAr,
+    trademarkDisclaimerEn: tsEval.trademarkDisclaimerEn,
   };
 }
 
@@ -1532,20 +1612,7 @@ app.post("/api/check-domain", async (req, res) => {
 
     const evaluation = await evaluateAndDecideDomain(domain);
 
-    return res.json({
-      domain: evaluation.domain,
-      score: evaluation.score,
-      category: evaluation.category,
-      categoryLabelEn: evaluation.categoryLabelEn,
-      categoryLabelAr: evaluation.categoryLabelAr,
-      hasRisk: evaluation.hasRisk,
-      matchedTrademark: evaluation.matchedTrademark,
-      brandable: evaluation.brandable,
-      brandProbability: evaluation.brandProbability,
-      recommendedAction: evaluation.recommendedAction,
-      latencyMs: evaluation.latencyMs,
-      rawAnalysis: evaluation.rawAnalysis,
-    });
+    return res.json(evaluation);
   } catch (err: any) {
     console.error("Error in /api/check-domain:", err);
     return res.status(500).json({ error: "Evaluation failed" });
@@ -1659,7 +1726,7 @@ app.post("/api/verify-domain", async (req, res) => {
       isValidTwoWord = true;
       words = twoWords;
     } else {
-      if (MASTER_ENGLISH_DICTIONARY.has(name)) {
+      if (getMasterEnglishDictionary().has(name)) {
         failureReason = "Single English dictionary word detected. CheckCatch engine specifically checks and values Two-Word Compound Domains.";
       } else {
         failureReason = "Could not split into two valid English dictionary words. Check spelling or vocabulary roots.";

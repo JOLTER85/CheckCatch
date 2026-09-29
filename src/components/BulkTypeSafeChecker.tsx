@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import {
   TypeSafeDomainEvaluation,
   CATEGORY_LABELS,
+  TRADEMARK_DISCLAIMER_AR,
+  TRADEMARK_DISCLAIMER_EN,
   evaluateDomainWithTypeSafeRules,
   getExternalDomainBuyUrl,
 } from '../utils/typesafeEngine';
@@ -21,6 +23,8 @@ import {
   TrendingUp,
   Layers,
   Award,
+  AlertTriangle,
+  Zap,
 } from 'lucide-react';
 
 interface BulkTypeSafeCheckerProps {
@@ -30,14 +34,14 @@ interface BulkTypeSafeCheckerProps {
 }
 
 const QUICK_SAMPLE_DOMAINS = [
+  'ask.com',
+  'news.com',
+  'car.com',
   'cloudnexus.com',
   'swiftpay.ai',
-  'healthbio.net',
   'applecloud.com',
   'cashvault.io',
-  'neuralforge.ai',
   'nikestore.com',
-  'cartflow.com',
 ];
 
 export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
@@ -48,15 +52,18 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
   const isAr = lang === 'ar';
 
   const [analyzerTab, setAnalyzerTab] = useState<'single' | 'bulk'>('single');
-  const [singleDomainInput, setSingleDomainInput] = useState<string>('cloudnexus.com');
+  const [singleDomainInput, setSingleDomainInput] = useState<string>('ask.com');
   const [bulkInputText, setBulkInputText] = useState<string>(QUICK_SAMPLE_DOMAINS.join('\n'));
   const [results, setResults] = useState<TypeSafeDomainEvaluation[]>(() => [
+    evaluateDomainWithTypeSafeRules('ask.com'),
+    evaluateDomainWithTypeSafeRules('news.com'),
+    evaluateDomainWithTypeSafeRules('car.com'),
     evaluateDomainWithTypeSafeRules('cloudnexus.com'),
     evaluateDomainWithTypeSafeRules('swiftpay.ai'),
     evaluateDomainWithTypeSafeRules('applecloud.com'),
   ]);
   const [isScanning, setIsScanning] = useState(false);
-  const [totalLatencyMs, setTotalLatencyMs] = useState<number>(95);
+  const [totalLatencyMs, setTotalLatencyMs] = useState<number>(85);
   const [smartFilterHighSafeOnly, setSmartFilterHighSafeOnly] = useState<boolean>(false);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
   const [copiedDomain, setCopiedDomain] = useState<string | null>(null);
@@ -66,8 +73,8 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
     if (!raw || raw.length < 2) {
       onErrorToast(
         isAr
-          ? 'يرجى إدخال اسم الدومين لتقييمه (مثال: cloudnexus.com)'
-          : 'Please enter a domain name to analyze (e.g., cloudnexus.com)'
+          ? 'يرجى إدخال اسم الدومين لتقييمه (مثال: ask.com أو cloudnexus.com)'
+          : 'Please enter a domain name to analyze (e.g., ask.com or cloudnexus.com)'
       );
       return;
     }
@@ -258,7 +265,7 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
                 dir="ltr"
                 value={singleDomainInput}
                 onChange={(e) => setSingleDomainInput(e.target.value)}
-                placeholder="e.g. cloudnexus.com, swiftpay.ai, applecloud.com..."
+                placeholder="e.g. ask.com, news.com, car.com, cloudnexus.com..."
                 className="w-full min-h-[50px] pl-12 pr-4 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 focus:border-teal-500 focus:bg-white text-base font-mono font-bold text-slate-900 placeholder-slate-400 focus:outline-none transition-all shadow-xs"
               />
             </div>
@@ -286,13 +293,13 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
             <span className="font-semibold text-slate-500">
               {isAr ? 'جرّب فحص دومين فوري:' : 'Quick test domains:'}
             </span>
-            {QUICK_SAMPLE_DOMAINS.slice(0, 6).map((sample) => (
+            {QUICK_SAMPLE_DOMAINS.map((sample) => (
               <button
                 key={sample}
                 type="button"
                 dir="ltr"
                 onClick={() => handleAnalyzeSingleDomain(sample)}
-                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-900 border border-slate-200 hover:border-teal-300 font-mono text-xs transition-colors"
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-900 border border-slate-200 hover:border-teal-300 font-mono text-xs transition-colors cursor-pointer"
               >
                 {sample}
               </button>
@@ -332,7 +339,7 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
               dir="ltr"
               value={bulkInputText}
               onChange={(e) => setBulkInputText(e.target.value)}
-              placeholder="cloudnexus.com&#10;swiftpay.ai&#10;applecloud.com"
+              placeholder="ask.com&#10;news.com&#10;car.com&#10;cloudnexus.com"
               className="w-full rounded-xl bg-slate-50 border border-slate-200 p-3 font-mono text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all"
             />
           </div>
@@ -358,6 +365,24 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
           </div>
         </div>
       )}
+
+      {/* AI Trademark Legal Disclaimer Banner (إخلاء مسؤولية فحص العلامات التجارية) */}
+      <div
+        id="trademark-ai-disclaimer-banner"
+        className="flex items-start gap-2.5 p-3.5 rounded-xl bg-amber-50/90 border border-amber-200 text-amber-950 text-xs leading-relaxed"
+      >
+        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+        <div className="space-y-0.5">
+          <p className="font-bold">
+            {isAr ? TRADEMARK_DISCLAIMER_AR : TRADEMARK_DISCLAIMER_EN}
+          </p>
+          <p className="text-[11px] text-amber-800">
+            {isAr
+              ? 'يتعرف المحرك على الأسماء الشهيرة والماركات العالمية القائمة (مثل Ask.com، Apple، Target)، كما يمنح الدومينات المكونة من كلمة قاموسية واحدة قصيرة بامتداد .com (مثل ask.com, news.com, car.com) تقييم 5/5 (High Value) تلقائياً. يرجى دائماً مراجعة قواعد البيانات الرسمية (USPTO / WIPO) قبل الشراء.'
+              : 'The engine detects famous global brands (e.g., Ask.com, Apple, Target) and automatically assigns 5/5 (High Value) to ultra-short single-word dictionary .com domains (e.g., ask.com, news.com, car.com). Always verify with official trademark registries (USPTO / WIPO) before purchasing.'}
+          </p>
+        </div>
+      </div>
 
       {/* Smart Filters Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
@@ -412,12 +437,13 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
           const catMeta = CATEGORY_LABELS[item.category] || CATEGORY_LABELS.tech_ai;
           const qualityPercent = Math.round((item.brandProbability || 0.85) * 100);
           const buyUrl = getExternalDomainBuyUrl(item.domain);
+          const isHighValue = item.isHighValue || item.valuationTier === 'High Value' || item.score >= 4;
 
           return (
             <div
               key={item.domain}
               className={`rounded-2xl p-5 border transition-all flex flex-col justify-between space-y-4 shadow-xs hover:shadow-md ${
-                item.hasRisk
+                item.hasRisk && !item.isSingleWordComOverride
                   ? 'bg-rose-50/30 border-rose-200'
                   : item.score >= 4
                   ? 'bg-white border-teal-300 ring-1 ring-teal-500/20'
@@ -442,27 +468,47 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
                       <ShieldAlert className="w-3.5 h-3.5 text-rose-700 shrink-0" />
                       <span>
                         {isAr
-                          ? `خطر علامة تجارية (${item.matchedTrademark || 'مسجلة'})`
-                          : `Trademark Risk (${item.matchedTrademark || 'Protected'})`}
+                          ? `علامة تجارية/ماركة شهيرة (${item.matchedTrademark || 'مسجلة'})`
+                          : `Trademark / Famous Brand (${item.matchedTrademark || 'Protected'})`}
                       </span>
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-300">
                       <span aria-hidden="true">🟢</span>
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>{isAr ? 'آمن من العلامات التجارية' : 'Trademark Safe'}</span>
+                      <span>{isAr ? 'آمن مبدئياً (فحص تقريبي)' : 'Likely Safe (AI Check)'}</span>
                     </span>
                   )}
                 </div>
 
+                {/* Single-Word .com Override Badge if triggered */}
+                {item.isSingleWordComOverride && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 text-[11px] font-bold">
+                    <Zap className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>
+                      {isAr
+                        ? 'دومين كلمة قاموسية مفردة قصيرة (.com) — تقييم تلقائي 5/5 (High Value)'
+                        : 'Short Single-Word Dictionary .com — Auto 5/5 (High Value)'}
+                    </span>
+                  </div>
+                )}
+
                 {/* Domain Name & Copy */}
                 <div className="flex items-center justify-between gap-2 pt-1">
-                  <h3
-                    className="text-xl font-extrabold font-mono text-slate-900 tracking-tight break-all"
-                    dir="ltr"
-                  >
-                    {item.domain}
-                  </h3>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3
+                      className="text-xl font-extrabold font-mono text-slate-900 tracking-tight break-all"
+                      dir="ltr"
+                    >
+                      {item.domain}
+                    </h3>
+                    {isHighValue && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300">
+                        <Award className="w-3 h-3 text-amber-600" />
+                        <span>High Value</span>
+                      </span>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => handleCopy(item.domain)}
@@ -540,21 +586,28 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
                         ))}
                       </div>
                     </div>
-                    <div className="text-[11px] font-semibold text-slate-600">
-                      {item.score >= 4
+                    <div className="text-[11px] font-bold text-amber-800">
+                      {isHighValue
                         ? isAr
-                          ? 'قيمة استثمارية عالية'
-                          : 'High Resale Potential'
+                          ? 'High Value • قيمة عالية جداً'
+                          : 'High Value'
                         : item.score === 3
                         ? isAr
-                          ? 'قيمة متوسطة جيدة'
-                          : 'Moderate Potential'
+                          ? 'Moderate • قيمة متوسطة'
+                          : 'Moderate Value'
                         : isAr
-                        ? 'قيمة محدودة'
-                        : 'Low Potential'}
+                        ? 'Low Value • قيمة محدودة'
+                        : 'Low Value'}
                     </div>
                   </div>
                 </div>
+
+                {/* Per-Card Compact Legal Disclaimer */}
+                <p className="text-[11px] text-slate-500 leading-snug">
+                  {isAr
+                    ? '* تنبيه: فحص العلامات التجارية تقريبي عبر الذكاء الاصطناعي وليس استشارة قانونية رسمية.'
+                    : '* Note: Trademark check is an AI approximation and not formal legal advice.'}
+                </p>
               </div>
 
               {/* Action Button: اشترِ الدومين الآن (External Link) */}

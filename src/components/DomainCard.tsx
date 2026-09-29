@@ -341,9 +341,20 @@ const DomainCardComponent: React.FC<DomainCardProps> = ({
                 <span className="font-mono font-extrabold text-amber-700 flex items-center gap-1">
                   {aiScore}/5
                   <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                  {aiScore >= 4 && (
+                    <span className="text-[10px] font-sans font-bold bg-amber-100 text-amber-900 px-1 rounded">
+                      High Value
+                    </span>
+                  )}
                 </span>
               </div>
             </div>
+
+            <p className="text-[10px] text-slate-500 pt-0.5">
+              {lang === 'ar'
+                ? '* فحص العلامات التجارية تقريبي عبر الذكاء الاصطناعي وليس استشارة قانونية رسمية.'
+                : '* Trademark check is an AI approximation and not formal legal advice.'}
+            </p>
           </div>
         </div>
 
