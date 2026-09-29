@@ -3,7 +3,6 @@ import { Navbar } from './components/Navbar';
 import { FilterControls } from './components/FilterControls';
 import { DomainCard } from './components/DomainCard';
 import { DomainTable } from './components/DomainTable';
-import { BulkTypeSafeChecker } from './components/BulkTypeSafeChecker';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { CheckCatchLogo } from './components/CheckCatchLogo';
 import { Footer } from './components/Footer';
@@ -582,13 +581,6 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
-        {/* AI Domain Analyzer (Powered by TypeSafe API) */}
-        <BulkTypeSafeChecker
-          lang={lang}
-          onSuccessToast={(msg) => showToast(msg, 'success')}
-          onErrorToast={(msg) => showToast(msg, 'error')}
-        />
-
         {/* Smart 2-Word Domain Discovery Engine */}
         <section id="batch-analyzer-and-generator-section" className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
