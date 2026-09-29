@@ -3,6 +3,11 @@ import { DomainItem } from '../types';
 import { getRegistrarLinks } from '../utils/registrars';
 import { generateDomainArabicBreakdown } from '../utils/domainArabicAnalysis';
 import {
+  evaluateDomainWithTypeSafeRules,
+  CATEGORY_LABELS,
+  getExternalDomainBuyUrl,
+} from '../utils/typesafeEngine';
+import {
   Copy,
   Check,
   ExternalLink,
@@ -22,6 +27,9 @@ import {
   Coins,
   CheckCircle2,
   Search,
+  ShieldCheck,
+  ShieldAlert,
+  Tag,
 } from 'lucide-react';
 import { Language, translations } from '../utils/translations';
 
@@ -78,6 +86,18 @@ const DomainCardComponent: React.FC<DomainCardProps> = ({
   };
 
   const registrars = getRegistrarLinks(domain.domain);
+  const tsEval = evaluateDomainWithTypeSafeRules(
+    domain.domain,
+    domain.relevanceScore,
+    domain.wordsCount
+  );
+  const aiScore = domain.aiScore ?? tsEval.score;
+  const aiCat = domain.aiCategory ?? tsEval.category;
+  const catMeta = CATEGORY_LABELS[aiCat] || CATEGORY_LABELS.tech_ai;
+  const hasRisk = domain.hasTrademarkRisk ?? tsEval.hasRisk;
+  const matchedTm = domain.matchedTrademark ?? tsEval.matchedTrademark;
+  const qualityPercent = Math.round(((domain.brandProbability ?? tsEval.brandProbability) || 0.85) * 100);
+  const externalBuyUrl = getExternalDomainBuyUrl(domain.domain);
 
   const tldColors: Record<string, string> = {
     '.com': 'bg-emerald-50 text-emerald-800 border-emerald-300',
@@ -274,6 +294,57 @@ const DomainCardComponent: React.FC<DomainCardProps> = ({
               ? (arabicBreakdown.classification?.cleanSummaryAr || domain.pitch)
               : (arabicBreakdown.classification?.cleanSummaryEn || domain.pitch)}
           </p>
+
+          {/* TypeSafe AI Evaluation Summary Card (نسبة الجودة، شارة الأمان، التصنيف، درجة التقييم) */}
+          <div className="mt-2.5 p-3 rounded-xl bg-gradient-to-r from-teal-50/70 to-slate-50 border border-teal-200/80 space-y-2.5">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              {/* 🏷️ التصنيف (category) */}
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold border ${catMeta.badgeClass}`}>
+                <Tag className="w-3 h-3 shrink-0" />
+                <span>{lang === 'ar' ? catMeta.ar : catMeta.en}</span>
+              </span>
+
+              {/* 🛡️ شارة الأمان (has_trademark_risk) */}
+              {hasRisk ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                  <span aria-hidden="true">🔴</span>
+                  <ShieldAlert className="w-3 h-3 text-rose-700 shrink-0" />
+                  <span>
+                    {lang === 'ar'
+                      ? `خطر علامة تجارية (${matchedTm || 'مسجلة'})`
+                      : `Trademark Risk (${matchedTm || 'Protected'})`}
+                  </span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                  <span aria-hidden="true">🟢</span>
+                  <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
+                  <span>{lang === 'ar' ? 'آمن من العلامات التجارية' : 'Trademark Safe'}</span>
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-teal-100/80 text-xs">
+              {/* نسبة الجودة والسهولة (is_brandable) */}
+              <div className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-slate-200/80">
+                <span className="text-[11px] font-semibold text-slate-600">
+                  {lang === 'ar' ? 'نسبة الجودة:' : 'Quality:'}
+                </span>
+                <span className="font-mono font-extrabold text-teal-800">{qualityPercent}%</span>
+              </div>
+
+              {/* ⭐ درجة التقييم (investment_score) */}
+              <div className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-slate-200/80">
+                <span className="text-[11px] font-semibold text-slate-600">
+                  {lang === 'ar' ? 'التقييم:' : 'AI Score:'}
+                </span>
+                <span className="font-mono font-extrabold text-amber-700 flex items-center gap-1">
+                  {aiScore}/5
+                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Semantic Breakdown Section */}
@@ -696,12 +767,12 @@ const DomainCardComponent: React.FC<DomainCardProps> = ({
         </button>
 
         <a
-          href={registrars[0]?.url || `https://www.namecheap.com/domains/registration/results/?domain=${domain.domain}`}
+          href={externalBuyUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-xs"
         >
-          <span>Namecheap</span>
+          <span>{lang === 'ar' ? 'اشترِ الدومين الآن' : 'Buy Domain Now (اشترِ الدومين الآن)'}</span>
           <ExternalLink className="w-3.5 h-3.5 text-white shrink-0" />
         </a>
       </div>

@@ -14,8 +14,170 @@ import {
   nicheMatchCache,
   mapInParallelChunks,
 } from "./src/services/domainEvaluationEngine";
+import {
+  evaluateDomainWithTypeSafeRules,
+  CATEGORY_LABELS,
+  TypeSafeCategory,
+  RecommendedAction,
+  TypeSafeRawAnalysis,
+  TypeSafeDomainEvaluation,
+} from "./src/utils/typesafeEngine";
 
 dotenv.config();
+
+// Circuit breaker for upstream Gemini API when quota (429) or overload (503) occurs
+// Prevents subsequent requests from waiting on timeouts for 60 seconds
+let geminiCooldownUntil = 0;
+
+/**
+ * Step 2: TypeSafe AI SystemOne Domain Evaluation Service (Single & Parallel Bulk)
+ * Calls https://api.typesafe.ai/v1/systemone when TYPESAFE_API_KEY is configured,
+ * and falls back instantaneously (<2ms) to deterministic TypeSafe SystemOne rules.
+ */
+async function analyzeDomain(domainName: string): Promise<TypeSafeRawAnalysis> {
+  const apiKey = process.env.TYPESAFE_API_KEY;
+  const hasRealKey =
+    apiKey &&
+    apiKey.trim() !== "" &&
+    apiKey !== "your_secret_api_key_here" &&
+    apiKey !== "MY_TYPESAFE_API_KEY";
+
+  if (hasRealKey) {
+    const url = "https://api.typesafe.ai/v1/systemone";
+    const payload = {
+      model: "jev-latest",
+      state: `Domain Name to evaluate: ${domainName}`,
+      questions: {
+        is_brandable: {
+          type: "noul",
+          prompt: "Is this domain name catchy, short, and good for a tech/business startup?",
+        },
+        has_trademark_risk: {
+          type: "noul",
+          prompt: "Does this domain contain a protected trademark name like Apple, Nike, Google, etc.?",
+        },
+        category: {
+          type: "choice",
+          options: ["tech_ai", "finance", "ecommerce", "health", "crypto", "general_junk"],
+          prompt: "Which primary industry does this domain name fit best?",
+        },
+        investment_score: {
+          type: "score",
+          min: 1,
+          max: 5,
+          prompt: "Rate the commercial/resale potential of this domain name.",
+        },
+      },
+    };
+
+    try {
+      const response = await withTimeout(
+        fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify(payload),
+        }),
+        1500,
+        "TypeSafe AI SystemOne"
+      );
+
+      if (response.ok) {
+        const data: any = await response.json();
+        if (data && data.results) {
+          const r = data.results;
+          const fallback = evaluateDomainWithTypeSafeRules(domainName).rawAnalysis;
+          return {
+            is_brandable: {
+              value: Boolean(r.is_brandable?.value ?? fallback.is_brandable.value),
+              probability: Number(r.is_brandable?.probability ?? fallback.is_brandable.probability),
+            },
+            has_trademark_risk: {
+              value: Boolean(r.has_trademark_risk?.value ?? fallback.has_trademark_risk.value),
+              probability: Number(r.has_trademark_risk?.probability ?? fallback.has_trademark_risk.probability),
+              matchedTrademark: fallback.has_trademark_risk.matchedTrademark,
+            },
+            category: {
+              value: (r.category?.value as TypeSafeCategory) || fallback.category.value,
+              probability: Number(r.category?.probability ?? fallback.category.probability),
+            },
+            investment_score: {
+              value: Number(r.investment_score?.value ?? fallback.investment_score.value),
+            },
+          };
+        }
+      }
+    } catch (error) {
+      // Seamless fallback to ultra-fast local TypeSafe rules engine
+    }
+  }
+
+  return evaluateDomainWithTypeSafeRules(domainName).rawAnalysis;
+}
+
+/**
+ * TypeSafe AI Domain Evaluation & Recommendation Logic
+ * Relies exclusively on TYPESAFE_API_KEY
+ */
+async function evaluateAndDecideDomain(
+  domainName: string
+): Promise<TypeSafeDomainEvaluation> {
+  const startMs = Date.now();
+  const analysis = await analyzeDomain(domainName);
+
+  const brandable = analysis.is_brandable.value; // true / false
+  const brandProbability = analysis.is_brandable.probability;
+  const hasRisk = analysis.has_trademark_risk.value;
+  const score = analysis.investment_score.value; // 1 to 5
+  const category = analysis.category.value;
+
+  let recommendedAction: RecommendedAction = "AVOID";
+  if (!hasRisk && score >= 4 && brandProbability > 0.80) {
+    recommendedAction = "RECOMMENDED_BUY";
+  } else if (!hasRisk && score >= 3) {
+    recommendedAction = "CONSIDER";
+  }
+
+  const catMeta = CATEGORY_LABELS[category] || CATEGORY_LABELS.tech_ai;
+
+  return {
+    domain: domainName.trim().toLowerCase(),
+    score,
+    category,
+    categoryLabelEn: catMeta.en,
+    categoryLabelAr: catMeta.ar,
+    hasRisk,
+    matchedTrademark: analysis.has_trademark_risk.matchedTrademark,
+    brandable,
+    brandProbability,
+    recommendedAction,
+    rawAnalysis: analysis,
+    latencyMs: Math.max(2, Date.now() - startMs),
+  };
+}
+
+function enrichDomainItemWithTypeSafe(item: any): any {
+  const tsEval = evaluateDomainWithTypeSafeRules(
+    item.domain || item.name || "",
+    item.relevanceScore,
+    item.wordsCount
+  );
+  return {
+    ...item,
+    aiScore: item.aiScore ?? tsEval.score,
+    aiCategory: item.aiCategory ?? tsEval.category,
+    aiCategoryLabelEn: item.aiCategoryLabelEn ?? tsEval.categoryLabelEn,
+    aiCategoryLabelAr: item.aiCategoryLabelAr ?? tsEval.categoryLabelAr,
+    hasTrademarkRisk: item.hasTrademarkRisk ?? tsEval.hasRisk,
+    matchedTrademark: item.matchedTrademark ?? tsEval.matchedTrademark,
+    isBrandable: item.isBrandable ?? tsEval.brandable,
+    brandProbability: item.brandProbability ?? tsEval.brandProbability,
+    recommendedAction: item.recommendedAction ?? tsEval.recommendedAction,
+    rawAnalysis: item.rawAnalysis ?? tsEval.rawAnalysis,
+  };
+}
 
 const app = express();
 const PORT = 3000;
@@ -1304,18 +1466,26 @@ app.post("/api/generate-domains", async (req, res) => {
     let domains: any[] = [];
     let usedFallback = false;
 
-    try {
-      domains = await generateWithGemini(keywords, targetCount, normalizedRules);
-    } catch (aiErr: any) {
-      const reason = formatSafeLog(aiErr);
-      console.info(`[Autonomous Synthesizer] Active: ${reason}. Fast algorithmic 2-word generator engaged.`);
+    if (Date.now() < geminiCooldownUntil) {
       usedFallback = true;
       domains = generateAlgorithmicDomains(keywords, targetCount, normalizedRules);
+    } else {
+      try {
+        domains = await generateWithGemini(keywords, targetCount, normalizedRules);
+      } catch (aiErr: any) {
+        geminiCooldownUntil = Date.now() + 60000;
+        const reason = formatSafeLog(aiErr);
+        console.info(`[Autonomous Synthesizer] Active: ${reason}. Fast algorithmic 2-word generator engaged.`);
+        usedFallback = true;
+        domains = generateAlgorithmicDomains(keywords, targetCount, normalizedRules);
+      }
     }
+
+    const enrichedDomains = domains.map((d) => enrichDomainItemWithTypeSafe(d));
 
     return res.json({
       success: true,
-      domains,
+      domains: enrichedDomains,
       usedFallback,
       querySummary: keywords || "Curated Top Tech Domains",
       generatedAt: new Date().toISOString(),
@@ -1326,6 +1496,99 @@ app.post("/api/generate-domains", async (req, res) => {
       success: false,
       error: "Unable to generate domains at this time. Please try again shortly.",
     });
+  }
+});
+
+// AI Domain Analyzer Endpoint (/api/check-domain) powered by TypeSafe API
+app.post("/api/check-domain", async (req, res) => {
+  try {
+    const { domain, domains } = req.body;
+
+    // Support both single domain and array of domains in parallel
+    if (Array.isArray(domains) && domains.length > 0) {
+      const cleanList = domains
+        .map((d: any) => String(d || "").trim())
+        .filter(Boolean)
+        .slice(0, 200);
+      const results = await Promise.all(
+        cleanList.map((d: string) => evaluateAndDecideDomain(d))
+      );
+      return res.json({
+        success: true,
+        count: results.length,
+        results,
+      });
+    }
+
+    if (!domain || typeof domain !== "string") {
+      return res.status(400).json({ error: "Domain parameter is required" });
+    }
+
+    const evaluation = await evaluateAndDecideDomain(domain);
+
+    return res.json({
+      domain: evaluation.domain,
+      score: evaluation.score,
+      category: evaluation.category,
+      categoryLabelEn: evaluation.categoryLabelEn,
+      categoryLabelAr: evaluation.categoryLabelAr,
+      hasRisk: evaluation.hasRisk,
+      matchedTrademark: evaluation.matchedTrademark,
+      brandable: evaluation.brandable,
+      brandProbability: evaluation.brandProbability,
+      recommendedAction: evaluation.recommendedAction,
+      latencyMs: evaluation.latencyMs,
+      rawAnalysis: evaluation.rawAnalysis,
+    });
+  } catch (err: any) {
+    console.error("Error in /api/check-domain:", err);
+    return res.status(500).json({ error: "Evaluation failed" });
+  }
+});
+
+// Parallel Bulk AI Domain Analyzer (/api/check-domains-bulk)
+app.post("/api/check-domains-bulk", async (req, res) => {
+  try {
+    const startMs = Date.now();
+    const { domains = [] } = req.body;
+
+    if (!Array.isArray(domains) || domains.length === 0) {
+      return res.status(400).json({ success: false, error: "Please provide an array of domains." });
+    }
+
+    const cleanDomains = Array.from(
+      new Set(
+        domains
+          .map((d: any) =>
+            String(d || "")
+              .trim()
+              .toLowerCase()
+              .replace(/^https?:\/\//, "")
+              .replace(/^www\./, "")
+              .split("/")[0]
+          )
+          .filter((d: string) => d.length >= 3)
+      )
+    ).slice(0, 250);
+
+    const evaluations = await Promise.all(
+      cleanDomains.map((d) => evaluateAndDecideDomain(d))
+    );
+
+    const totalLatencyMs = Math.max(5, Date.now() - startMs);
+
+    return res.json({
+      success: true,
+      totalChecked: evaluations.length,
+      recommendedCount: evaluations.filter((e) => e.recommendedAction === "RECOMMENDED_BUY").length,
+      considerCount: evaluations.filter((e) => e.recommendedAction === "CONSIDER").length,
+      riskCount: evaluations.filter((e) => e.hasRisk).length,
+      totalLatencyMs,
+      results: evaluations,
+    });
+  } catch (err: any) {
+    console.error("Bulk check error:", err);
+    return res.status(500).json({ success: false, error: "Bulk evaluation failed" });
   }
 });
 
@@ -1626,18 +1889,7 @@ app.post("/api/analyze-domains", async (req, res) => {
     // Send at most top 30 candidates to Gemini to ensure prompt remains compact and response is fast
     const candidateSlice = qualified.slice(0, 30);
 
-    try {
-      evaluatedDomains = await evaluateUploadedWithGemini(
-        candidateSlice,
-        targetCount,
-        normalizedRules,
-        contextTopic,
-        searchMode as 'niche' | 'keyword',
-        cleanKw
-      );
-    } catch (aiErr: any) {
-      const reason = formatSafeLog(aiErr);
-      console.info(`[Autonomous Evaluator] Active: ${reason}. Fast algorithmic batch evaluation engaged.`);
+    if (Date.now() < geminiCooldownUntil) {
       usedFallback = true;
       evaluatedDomains = await evaluateAlgorithmicBatch(
         qualified,
@@ -1647,6 +1899,30 @@ app.post("/api/analyze-domains", async (req, res) => {
         searchMode as 'niche' | 'keyword',
         cleanKw
       );
+    } else {
+      try {
+        evaluatedDomains = await evaluateUploadedWithGemini(
+          candidateSlice,
+          targetCount,
+          normalizedRules,
+          contextTopic,
+          searchMode as 'niche' | 'keyword',
+          cleanKw
+        );
+      } catch (aiErr: any) {
+        geminiCooldownUntil = Date.now() + 60000;
+        const reason = formatSafeLog(aiErr);
+        console.info(`[Autonomous Evaluator] Active: ${reason}. Fast algorithmic batch evaluation engaged.`);
+        usedFallback = true;
+        evaluatedDomains = await evaluateAlgorithmicBatch(
+          qualified,
+          targetCount,
+          normalizedRules,
+          contextTopic,
+          searchMode as 'niche' | 'keyword',
+          cleanKw
+        );
+      }
     }
 
     // If AI evaluated fewer items than requested, pad from algorithmic evaluation
@@ -1724,13 +2000,13 @@ app.post("/api/analyze-domains", async (req, res) => {
       const meta = (domainMetadataMap && (domainMetadataMap[domKey] || domainMetadataMap[nameKey])) || {};
       const endDate = d.endDate || meta.endDate || undefined;
       const expirationDate = d.expirationDate || meta.expirationDate || endDate;
-      return {
+      return enrichDomainItemWithTypeSafe({
         ...d,
         endDate,
         expirationDate,
         rawSpreadsheetRow: d.rawSpreadsheetRow || meta.rawRow || undefined,
         auctionEndingSoon: d.auctionEndingSoon || Boolean(endDate),
-      };
+      });
     });
 
     return res.json({

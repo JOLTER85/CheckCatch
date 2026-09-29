@@ -1,3 +1,17 @@
+import type {
+  TypeSafeCategory,
+  RecommendedAction,
+  TypeSafeRawAnalysis,
+  TypeSafeDomainEvaluation,
+} from './utils/typesafeEngine';
+
+export type {
+  TypeSafeCategory,
+  RecommendedAction,
+  TypeSafeRawAnalysis,
+  TypeSafeDomainEvaluation,
+};
+
 export interface FilterRules {
   exactlyTwoWords: boolean;
   noDashes: boolean;
@@ -157,6 +171,17 @@ export interface DomainItem {
   endDate?: string;
   expirationDate?: string;
   rawSpreadsheetRow?: Record<string, any>;
+  // TypeSafe AI Domain Analyzer Fields
+  aiScore?: number; // 1 to 5
+  aiCategory?: TypeSafeCategory;
+  aiCategoryLabelEn?: string;
+  aiCategoryLabelAr?: string;
+  hasTrademarkRisk?: boolean;
+  matchedTrademark?: string;
+  isBrandable?: boolean;
+  brandProbability?: number;
+  recommendedAction?: RecommendedAction;
+  rawAnalysis?: TypeSafeRawAnalysis;
 }
 
 export interface GenerateRequest {

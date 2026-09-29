@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { DomainItem, FilterRules, FilterEvaluationStats, DiscardedDomain, UploadedSheetInfo } from '../types';
+import { evaluateDomainWithTypeSafeRules } from './typesafeEngine';
 
 // Common English words set for client-side quick 2-word verification and fallbacks
 const COMMON_DICTIONARY_SET = new Set([
@@ -1090,20 +1091,27 @@ export function validateDomainsAgainstRules(
  * Export evaluated domain results to an Excel (.xlsx) file
  */
 export function exportDomainsToExcel(domains: DomainItem[], filename = 'top_domain_picks.xlsx'): void {
-  const exportData = domains.map((d, idx) => ({
-    Rank: idx + 1,
-    'Domain Name': d.domain,
-    'Root Name': d.name,
-    Extension: d.tld,
-    'Relevance Match (%)': d.relevanceScore,
-    'Valuation Tier': d.valuationTier,
-    'Estimated Valuation': d.estimatedValue,
-    'Words Count': d.wordsCount,
-    'Constituent Words': d.words.join(', '),
-    'Branding Pitch': d.pitch,
-    'Top Pick Status': d.isTopPick ? (d.topPickBadge || 'Top Pick') : 'Standard Candidate',
-    'Auction Mode': d.auctionEndingSoon ? `Ends in ${d.auctionEndsInHours || 8}h (${d.auctionCurrentBid || '$150'})` : 'N/A',
-  }));
+  const exportData = domains.map((d, idx) => {
+    const ts = evaluateDomainWithTypeSafeRules(d.domain, d.relevanceScore, d.wordsCount);
+    return {
+      Rank: idx + 1,
+      'Domain Name': d.domain,
+      'Root Name': d.name,
+      Extension: d.tld,
+      'Smart Category (TypeSafe AI)': d.aiCategoryLabelEn || ts.categoryLabelEn,
+      'AI Investment Score (1-5)': `${d.aiScore ?? ts.score}/5`,
+      'Trademark Safety': (d.hasTrademarkRisk ?? ts.hasRisk) ? `RISK (${d.matchedTrademark || ts.matchedTrademark || 'Trademark'})` : 'SAFE',
+      'Auto-Action Decision': d.recommendedAction || ts.recommendedAction,
+      'Relevance Match (%)': d.relevanceScore,
+      'Valuation Tier': d.valuationTier,
+      'Estimated Valuation': d.estimatedValue,
+      'End Date': d.endDate || d.expirationDate || (d.auctionEndingSoon ? `Ends in ${d.auctionEndsInHours || 8}h` : 'N/A'),
+      'Words Count': d.wordsCount,
+      'Constituent Words': d.words.join(', '),
+      'Branding Pitch': d.pitch,
+      'Top Pick Status': d.isTopPick ? (d.topPickBadge || 'Top Pick') : 'Standard Candidate',
+    };
+  });
 
   const worksheet = XLSX.utils.json_to_sheet(exportData);
 
@@ -1113,14 +1121,18 @@ export function exportDomainsToExcel(domains: DomainItem[], filename = 'top_doma
     { wch: 22 }, // Domain Name
     { wch: 16 }, // Root Name
     { wch: 10 }, // Extension
+    { wch: 24 }, // Smart Category
+    { wch: 20 }, // AI Score
+    { wch: 18 }, // Trademark Safety
+    { wch: 22 }, // Auto-Action Decision
     { wch: 18 }, // Relevance Match
     { wch: 15 }, // Valuation Tier
     { wch: 22 }, // Estimated Valuation
+    { wch: 20 }, // End Date
     { wch: 12 }, // Words Count
     { wch: 22 }, // Constituent Words
     { wch: 55 }, // Branding Pitch
     { wch: 18 }, // Top Pick Status
-    { wch: 24 }, // Auction Mode
   ];
 
   const workbook = XLSX.utils.book_new();
@@ -1133,19 +1145,27 @@ export function exportDomainsToExcel(domains: DomainItem[], filename = 'top_doma
  * Export evaluated domain results to a CSV file
  */
 export function exportDomainsToCsv(domains: DomainItem[], filename = 'top_domain_picks.csv'): void {
-  const exportData = domains.map((d, idx) => ({
-    Rank: idx + 1,
-    'Domain Name': d.domain,
-    'Root Name': d.name,
-    Extension: d.tld,
-    'Relevance Match (%)': d.relevanceScore,
-    'Valuation Tier': d.valuationTier,
-    'Estimated Valuation': d.estimatedValue,
-    'Words Count': d.wordsCount,
-    'Constituent Words': d.words.join(', '),
-    'Branding Pitch': d.pitch,
-    'Top Pick Status': d.isTopPick ? (d.topPickBadge || 'Top Pick') : 'Standard Candidate',
-  }));
+  const exportData = domains.map((d, idx) => {
+    const ts = evaluateDomainWithTypeSafeRules(d.domain, d.relevanceScore, d.wordsCount);
+    return {
+      Rank: idx + 1,
+      'Domain Name': d.domain,
+      'Root Name': d.name,
+      Extension: d.tld,
+      'Smart Category': d.aiCategoryLabelEn || ts.categoryLabelEn,
+      'AI Score (1-5)': `${d.aiScore ?? ts.score}/5`,
+      'Trademark Safety': (d.hasTrademarkRisk ?? ts.hasRisk) ? 'TRADEMARK_RISK' : 'SAFE',
+      'Recommended Action': d.recommendedAction || ts.recommendedAction,
+      'Relevance Match (%)': d.relevanceScore,
+      'Valuation Tier': d.valuationTier,
+      'Estimated Valuation': d.estimatedValue,
+      'End Date': d.endDate || d.expirationDate || 'N/A',
+      'Words Count': d.wordsCount,
+      'Constituent Words': d.words.join(', '),
+      'Branding Pitch': d.pitch,
+      'Top Pick Status': d.isTopPick ? (d.topPickBadge || 'Top Pick') : 'Standard Candidate',
+    };
+  });
 
   const worksheet = XLSX.utils.json_to_sheet(exportData);
   const workbook = XLSX.utils.book_new();
@@ -1238,12 +1258,28 @@ export function enforceStrictDomainItem(item: DomainItem, allowedTlds: string[] 
     finalPitch = finalPitch.replace(/(?:\s|^)\.(cc|tools|io|net|co|org|biz|info|us|uk|ca|me|ai|xyz)\b/gi, ` ${finalTld}`);
   }
 
+  const tsEval = evaluateDomainWithTypeSafeRules(
+    finalFullDomain,
+    item.relevanceScore,
+    item.wordsCount
+  );
+
   return {
     ...item,
     name: cleanName,
     tld: finalTld,
     domain: finalFullDomain,
     pitch: finalPitch,
+    aiScore: item.aiScore ?? tsEval.score,
+    aiCategory: item.aiCategory ?? tsEval.category,
+    aiCategoryLabelEn: item.aiCategoryLabelEn ?? tsEval.categoryLabelEn,
+    aiCategoryLabelAr: item.aiCategoryLabelAr ?? tsEval.categoryLabelAr,
+    hasTrademarkRisk: item.hasTrademarkRisk ?? tsEval.hasRisk,
+    matchedTrademark: item.matchedTrademark ?? tsEval.matchedTrademark,
+    isBrandable: item.isBrandable ?? tsEval.brandable,
+    brandProbability: item.brandProbability ?? tsEval.brandProbability,
+    recommendedAction: item.recommendedAction ?? tsEval.recommendedAction,
+    rawAnalysis: item.rawAnalysis ?? tsEval.rawAnalysis,
   };
 }
 
