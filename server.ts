@@ -649,18 +649,24 @@ Order them by quality and relevance, with the absolute best ones first.`;
   return validDomains;
 }
 
-// Master English dictionary using 274,937 real English words
-const MASTER_ENGLISH_DICTIONARY = new Set<string>(englishWords);
+// Master English dictionary using 274,937 real English words (lazy-initialized for instant server startup)
+let _masterEnglishDictionary: Set<string> | null = null;
 
-// Modern venture/tech/business root words commonly utilized in brandable domains
 const MODERN_TECH_ROOTS = [
   "saas", "tech", "app", "web", "net", "dev", "bot", "crypto", "ai", "io", "ops",
   "bio", "eco", "cyber", "meta", "sync", "hub", "lab", "labs", "pro", "fit", "fin",
   "med", "doc", "docs", "stack", "pay", "vibe", "zen", "node", "grid", "mesh",
   "link", "flow", "byte", "flux", "pulse", "core", "spark", "forge", "nova", "apex"
 ];
-for (const w of MODERN_TECH_ROOTS) {
-  MASTER_ENGLISH_DICTIONARY.add(w);
+
+function getMasterEnglishDictionary(): Set<string> {
+  if (!_masterEnglishDictionary) {
+    _masterEnglishDictionary = new Set<string>(englishWords);
+    for (const w of MODERN_TECH_ROOTS) {
+      _masterEnglishDictionary.add(w);
+    }
+  }
+  return _masterEnglishDictionary;
 }
 
 // Suffixes and non-standalone grammatical affixes that must not count as independent words
@@ -692,7 +698,7 @@ export function isRealEnglishWord(word: string): boolean {
   let isValid = false;
   if (!INVALID_WORD_PARTS.has(clean)) {
     if (clean.length > 2 || VALID_TWO_LETTER_WORDS.has(clean)) {
-      isValid = MASTER_ENGLISH_DICTIONARY.has(clean) || HIGH_VALUE_ENGLISH_WORDS_SET.has(clean);
+      isValid = getMasterEnglishDictionary().has(clean) || HIGH_VALUE_ENGLISH_WORDS_SET.has(clean);
     }
   }
 
@@ -2148,7 +2154,7 @@ app.post("/api/validate-spreadsheet-domains", async (req, res) => {
         if (!twoWords) {
           breakdown.words++;
           const cleanSlug = name.replace(/[^a-z]/g, "");
-          const isSingle = MASTER_ENGLISH_DICTIONARY.has(cleanSlug);
+          const isSingle = getMasterEnglishDictionary().has(cleanSlug);
           const reason = isSingle
             ? "Single English word (rule requires exactly two English words)"
             : "Does not form two valid English words (3+ words or non-dictionary parts)";
@@ -2305,14 +2311,24 @@ app.get("/api/health", (req, res) => {
 // Vite middleware or production static serving
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
+    let viteMiddleware: any = null;
+    const vitePromise = createViteServer({
       server: {
         middlewareMode: true,
         allowedHosts: true,
       },
       appType: "spa",
+    }).then((vite) => {
+      viteMiddleware = vite.middlewares;
+      return vite;
     });
-    app.use(vite.middlewares);
+
+    app.use(async (req, res, next) => {
+      if (!viteMiddleware) {
+        await vitePromise;
+      }
+      return viteMiddleware(req, res, next);
+    });
   } else {
     const distPath = path.join(process.cwd(), "dist");
     // Serve static assets with high performance Cache-Control headers
