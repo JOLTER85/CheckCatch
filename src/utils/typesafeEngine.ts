@@ -283,51 +283,24 @@ export function detectGibberishDomain(
     return { isGibberish: true, reason: 'Too short or empty alphabetical string' };
   }
 
-  // 1. If it's a known dictionary word, famous brand, or 2-word meaningful compound -> NOT gibberish
-  if (isComposedOfKnownMeaningfulRoots(clean)) {
-    return { isGibberish: false };
-  }
-  if (externalIsValidDomainWordsFn && externalIsValidDomainWordsFn(clean)) {
-    return { isGibberish: false };
-  }
-
-  // 2. Check for 3+ identical consecutive letters (e.g. 'aaabbb', 'coimhhhk')
+  // 1. Unconditional Regex Checks (run BEFORE dictionary checks so 'ccccdvdvask' is caught on 'cccc' and 'dvdv')
+  // 1a. 3+ identical consecutive letters (e.g. 'cccc' in 'ccccdvdvask.com', 'aaa', 'kkk')
   if (/(.)\1\1/i.test(clean)) {
     return {
       isGibberish: true,
-      reason: 'Contains 3+ identical consecutive characters',
+      reason: 'Contains 3+ identical consecutive characters (e.g. cccc)',
     };
   }
 
-  // 3. Check for keyboard mash sequences
-  if (/(?:qwert|asdf|zxcv|hjkl|yuiop|qaz|wsx|edc|rfv|tgb|yhn|ujm)/i.test(clean)) {
+  // 1b. Repeated 2-letter consonant pair (e.g. 'dvdv' in 'ccccdvdvask.com', 'hkhk', 'cvcv', 'bvbv')
+  if (/([bcdfghjklmnpqrstvwxyz]{2})\1/i.test(clean)) {
     return {
       isGibberish: true,
-      reason: 'Matches random keyboard mash sequence',
+      reason: 'Contains repeated unpronounceable consonant pair (e.g. dvdv / hkhk)',
     };
   }
 
-  // 4. Check for unpronounceable consonant clusters:
-  // - 5+ consonants in a row (including y when clustered)
-  // - OR 4+ strict consonants in a row in an unrecognized word
-  if (/[bcdfghjklmnpqrstvwxyz]{5,}/i.test(clean) || /[bcdfghjklmnpqrstvwxz]{4,}/i.test(clean)) {
-    return {
-      isGibberish: true,
-      reason: 'Unpronounceable consecutive consonant cluster (e.g. hkkykhkhnt)',
-    };
-  }
-
-  // 5. Check for impossible English consonant bigrams / repeated harsh consonant pairs (like hk, kh, kk, jj, qq, vv, xx, yy, qz, xz, etc.)
-  const impossibleBigramRegex =
-    /(?:hk|kh|kk|jj|qq|vv|ww|xx|yy|q[^u]|bx|cj|cv|cx|dx|fq|fx|gq|gx|hx|jb|jc|jd|jf|jg|jh|jk|jl|jm|jn|jp|jq|jr|js|jt|jv|jw|jx|jz|kq|kx|kz|mx|px|pz|qb|qc|qd|qf|qg|qh|qj|qk|ql|qm|qn|qp|qr|qs|qt|qv|qw|qx|qy|qz|sx|vb|vc|vd|vf|vg|vh|vj|vk|vl|vm|vn|vp|vq|vr|vs|vt|vw|vx|vz|wx|wz|xb|xc|xd|xf|xg|xh|xj|xk|xl|xm|xn|xp|xq|xr|xs|xt|xv|xw|xz|yq|yx|zb|zc|zd|zf|zg|zj|zk|zm|zn|zp|zq|zr|zs|zt|zv|zw|zx)/i;
-  if (impossibleBigramRegex.test(clean)) {
-    return {
-      isGibberish: true,
-      reason: 'Contains unpronounceable consonant pairs (e.g. hk/kh/kk)',
-    };
-  }
-
-  // 6. Check vowel presence & vowel-to-consonant ratio
+  // 1c. Zero vowels
   const strictVowels = (clean.match(/[aeiou]/gi) || []).length;
   const allVowels = (clean.match(/[aeiouy]/gi) || []).length;
   if (allVowels === 0) {
@@ -336,6 +309,41 @@ export function detectGibberishDomain(
       reason: 'Contains zero vowels (impossible to pronounce)',
     };
   }
+
+  // 1d. Keyboard mash sequences
+  if (/(?:qwert|asdf|zxcv|hjkl|yuiop|qaz|wsx|edc|rfv|tgb|yhn|ujm|lkjh|poiu|mnbv)/i.test(clean)) {
+    return {
+      isGibberish: true,
+      reason: 'Matches random keyboard mash sequence',
+    };
+  }
+
+  // 2. If it's a clean 1-word or 2-word combination of known meaningful roots -> NOT gibberish
+  if (isComposedOfKnownMeaningfulRoots(clean)) {
+    return { isGibberish: false };
+  }
+
+  // 3. Check for unpronounceable consonant clusters:
+  // - 5+ consonants in a row (including y when clustered)
+  // - OR 4+ strict consonants in a row in an unrecognized word (e.g. 'ccccdvdv', 'hkkykhkhnt')
+  if (/[bcdfghjklmnpqrstvwxyz]{5,}/i.test(clean) || /[bcdfghjklmnpqrstvwxz]{4,}/i.test(clean)) {
+    return {
+      isGibberish: true,
+      reason: 'Unpronounceable consecutive consonant cluster (e.g. ccccdvdv / hkkykhkhnt)',
+    };
+  }
+
+  // 4. Check for impossible English consonant bigrams / harsh consonant pairs
+  const impossibleBigramRegex =
+    /(?:hk|kh|kk|jj|qq|vv|ww|xx|yy|q[^u]|bx|cj|cv|cx|dx|fq|fx|gq|gx|hx|jb|jc|jd|jf|jg|jh|jk|jl|jm|jn|jp|jq|jr|js|jt|jv|jw|jx|jz|kq|kx|kz|mx|px|pz|qb|qc|qd|qf|qg|qh|qj|qk|ql|qm|qn|qp|qr|qs|qt|qv|qw|qx|qy|qz|sx|vb|vc|vd|vf|vg|vh|vj|vk|vl|vm|vn|vp|vq|vr|vs|vt|vw|vx|vz|wx|wz|xb|xc|xd|xf|xg|xh|xj|xk|xl|xm|xn|xp|xq|xr|xs|xt|xv|xw|xz|yq|yx|zb|zc|zd|zf|zg|zj|zk|zm|zn|zp|zq|zr|zs|zt|zv|zw|zx)/i;
+  if (impossibleBigramRegex.test(clean)) {
+    return {
+      isGibberish: true,
+      reason: 'Contains unpronounceable consonant pairs (e.g. hk/kh/kk/dv)',
+    };
+  }
+
+  // 5. Vowel-to-consonant ratio imbalance
   if (clean.length >= 6) {
     const vowelRatio = strictVowels / clean.length;
     if (vowelRatio < 0.22 || vowelRatio > 0.80) {
@@ -346,36 +354,49 @@ export function detectGibberishDomain(
     }
   }
 
-  // 7. Repetitive consonant stutter or long unrecognized character sequences
-  if (clean.length >= 8 && /([bcdfghjklmnpqrstvwxyz]{2,3}).*\1/i.test(clean)) {
-    // Check if at least one known root >= 4 chars exists inside
-    let matchedChars = 0;
-    for (const root of KNOWN_MEANINGFUL_ROOTS) {
-      if (root.length >= 4 && clean.includes(root)) {
-        matchedChars += root.length;
-      }
+  // 6. If backend 274k dictionary check is provided:
+  // If it's valid 1-word or 2-word English dictionary words -> NOT gibberish;
+  // Otherwise, if it failed to decompose into valid English dictionary words -> IT IS GIBBERISH!
+  if (externalIsValidDomainWordsFn) {
+    if (externalIsValidDomainWordsFn(clean)) {
+      return { isGibberish: false };
     }
-    if (matchedChars < clean.length * 0.5) {
-      return {
-        isGibberish: true,
-        reason: 'Repetitive random consonant sequence with no recognizable word roots',
-      };
+    return {
+      isGibberish: true,
+      reason: 'Does not form valid English dictionary words (random/gibberish characters detected)',
+    };
+  }
+
+  // 7. Frontend instant check: if the domain starts or ends with a known root (like 'ask')
+  // but the remaining prefix/suffix is NOT a known root (like 'ccccdvdv' + 'ask' or 'xyz' + 'ask') -> Gibberish!
+  for (const root of KNOWN_MEANINGFUL_ROOTS) {
+    if (root.length >= 3 && clean.length > root.length) {
+      if (clean.endsWith(root)) {
+        const prefix = clean.slice(0, clean.length - root.length);
+        if (!KNOWN_MEANINGFUL_ROOTS.has(prefix)) {
+          return {
+            isGibberish: true,
+            reason: `Random/unrecognized prefix "${prefix}" attached to "${root}"`,
+          };
+        }
+      }
+      if (clean.startsWith(root)) {
+        const suffix = clean.slice(root.length);
+        if (!KNOWN_MEANINGFUL_ROOTS.has(suffix)) {
+          return {
+            isGibberish: true,
+            reason: `Random/unrecognized suffix "${suffix}" attached to "${root}"`,
+          };
+        }
+      }
     }
   }
 
-  if (clean.length >= 11) {
-    let covered = 0;
-    for (const root of KNOWN_MEANINGFUL_ROOTS) {
-      if (root.length >= 3 && clean.includes(root)) {
-        covered += root.length;
-      }
-    }
-    if (covered < clean.length * 0.45) {
-      return {
-        isGibberish: true,
-        reason: 'Long random character sequence not matching English vocabulary',
-      };
-    }
+  if (clean.length >= 8) {
+    return {
+      isGibberish: true,
+      reason: 'Unrecognized character sequence not matching English vocabulary',
+    };
   }
 
   return { isGibberish: false };

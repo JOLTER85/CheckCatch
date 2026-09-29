@@ -34,6 +34,7 @@ interface BulkTypeSafeCheckerProps {
 }
 
 const QUICK_SAMPLE_DOMAINS = [
+  'ccccdvdvask.com',
   'coimhkkykhkhntat.com',
   'ask.com',
   'news.com',
@@ -41,7 +42,6 @@ const QUICK_SAMPLE_DOMAINS = [
   'cloudnexus.com',
   'swiftpay.ai',
   'applecloud.com',
-  'nikestore.com',
 ];
 
 export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
@@ -52,15 +52,15 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
   const isAr = lang === 'ar';
 
   const [analyzerTab, setAnalyzerTab] = useState<'single' | 'bulk'>('single');
-  const [singleDomainInput, setSingleDomainInput] = useState<string>('coimhkkykhkhntat.com');
+  const [singleDomainInput, setSingleDomainInput] = useState<string>('ccccdvdvask.com');
   const [bulkInputText, setBulkInputText] = useState<string>(QUICK_SAMPLE_DOMAINS.join('\n'));
   const [results, setResults] = useState<TypeSafeDomainEvaluation[]>(() => [
+    evaluateDomainWithTypeSafeRules('ccccdvdvask.com'),
     evaluateDomainWithTypeSafeRules('coimhkkykhkhntat.com'),
     evaluateDomainWithTypeSafeRules('ask.com'),
     evaluateDomainWithTypeSafeRules('news.com'),
     evaluateDomainWithTypeSafeRules('car.com'),
     evaluateDomainWithTypeSafeRules('cloudnexus.com'),
-    evaluateDomainWithTypeSafeRules('applecloud.com'),
   ]);
   const [isScanning, setIsScanning] = useState(false);
   const [totalLatencyMs, setTotalLatencyMs] = useState<number>(85);

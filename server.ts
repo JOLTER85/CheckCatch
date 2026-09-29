@@ -1,10 +1,9 @@
 import express from "express";
 import compression from "compression";
 import path from "path";
-import { createServer as createViteServer } from "vite";
+import { createRequire } from "module";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
-import englishWords from "an-array-of-english-words";
 import {
   BoundedCache,
   wordValidityCache,
@@ -847,7 +846,13 @@ const MODERN_TECH_ROOTS = [
 
 function getMasterEnglishDictionary(): Set<string> {
   if (!_masterEnglishDictionary) {
-    _masterEnglishDictionary = new Set<string>(englishWords);
+    try {
+      const req = createRequire(import.meta.url);
+      const wordsList: string[] = req("an-array-of-english-words");
+      _masterEnglishDictionary = new Set<string>(wordsList);
+    } catch {
+      _masterEnglishDictionary = new Set<string>(HIGH_VALUE_ENGLISH_WORDS);
+    }
     for (const w of MODERN_TECH_ROOTS) {
       _masterEnglishDictionary.add(w);
     }
@@ -877,6 +882,7 @@ export function isRealEnglishWord(word: string): boolean {
   if (!word) return false;
   const clean = word.toLowerCase().trim().replace(/[^a-z]/g, "");
   if (clean.length < 2) return false;
+  if (!/[aeiouy]/i.test(clean) || /(.)\1\1/i.test(clean)) return false;
 
   const cached = wordValidityCache.get(clean);
   if (cached !== undefined) return cached;
@@ -2485,22 +2491,37 @@ app.get("/api/health", (req, res) => {
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     let viteMiddleware: any = null;
-    const vitePromise = createViteServer({
-      server: {
-        middlewareMode: true,
-        allowedHosts: true,
-      },
-      appType: "spa",
-    }).then((vite) => {
-      viteMiddleware = vite.middlewares;
-      return vite;
-    });
+    let vitePromise: Promise<any> | null = null;
+
+    const initVite = () => {
+      if (!vitePromise) {
+        vitePromise = import("vite").then(({ createServer }) =>
+          createServer({
+            server: {
+              middlewareMode: true,
+              allowedHosts: true,
+            },
+            appType: "spa",
+          }).then((vite) => {
+            viteMiddleware = vite.middlewares;
+            return vite;
+          })
+        );
+      }
+      return vitePromise;
+    };
 
     app.use(async (req, res, next) => {
       if (!viteMiddleware) {
-        await vitePromise;
+        await initVite();
       }
       return viteMiddleware(req, res, next);
+    });
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Domain Finder Server running on http://localhost:${PORT}`);
+      // Warm up Vite asynchronously after port 3000 is already bound
+      initVite().catch((err) => console.error("Vite init error:", err));
     });
   } else {
     const distPath = path.join(process.cwd(), "dist");
@@ -2522,11 +2543,11 @@ async function startServer() {
       res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.sendFile(path.join(distPath, "index.html"));
     });
-  }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Domain Finder Server running on http://localhost:${PORT}`);
-  });
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Domain Finder Server running on http://localhost:${PORT}`);
+    });
+  }
 }
 
 startServer();
