@@ -96,7 +96,7 @@ const DomainCardComponent: React.FC<DomainCardProps> = ({
   const catMeta = CATEGORY_LABELS[aiCat] || CATEGORY_LABELS.tech_ai;
   const hasRisk = domain.hasTrademarkRisk ?? tsEval.hasRisk;
   const matchedTm = domain.matchedTrademark ?? tsEval.matchedTrademark;
-  const qualityPercent = Math.round(((domain.brandProbability ?? tsEval.brandProbability) || 0.85) * 100);
+  const qualityPercent = Math.round((domain.brandProbability ?? tsEval.brandProbability ?? 0.85) * 100);
   const externalBuyUrl = getExternalDomainBuyUrl(domain.domain);
 
   const tldColors: Record<string, string> = {

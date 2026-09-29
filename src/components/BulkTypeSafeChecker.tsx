@@ -34,13 +34,13 @@ interface BulkTypeSafeCheckerProps {
 }
 
 const QUICK_SAMPLE_DOMAINS = [
+  'coimhkkykhkhntat.com',
   'ask.com',
   'news.com',
   'car.com',
   'cloudnexus.com',
   'swiftpay.ai',
   'applecloud.com',
-  'cashvault.io',
   'nikestore.com',
 ];
 
@@ -52,14 +52,14 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
   const isAr = lang === 'ar';
 
   const [analyzerTab, setAnalyzerTab] = useState<'single' | 'bulk'>('single');
-  const [singleDomainInput, setSingleDomainInput] = useState<string>('ask.com');
+  const [singleDomainInput, setSingleDomainInput] = useState<string>('coimhkkykhkhntat.com');
   const [bulkInputText, setBulkInputText] = useState<string>(QUICK_SAMPLE_DOMAINS.join('\n'));
   const [results, setResults] = useState<TypeSafeDomainEvaluation[]>(() => [
+    evaluateDomainWithTypeSafeRules('coimhkkykhkhntat.com'),
     evaluateDomainWithTypeSafeRules('ask.com'),
     evaluateDomainWithTypeSafeRules('news.com'),
     evaluateDomainWithTypeSafeRules('car.com'),
     evaluateDomainWithTypeSafeRules('cloudnexus.com'),
-    evaluateDomainWithTypeSafeRules('swiftpay.ai'),
     evaluateDomainWithTypeSafeRules('applecloud.com'),
   ]);
   const [isScanning, setIsScanning] = useState(false);
@@ -435,16 +435,16 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredResults.map((item) => {
           const catMeta = CATEGORY_LABELS[item.category] || CATEGORY_LABELS.tech_ai;
-          const qualityPercent = Math.round((item.brandProbability || 0.85) * 100);
+          const qualityPercent = item.isGibberish ? 0 : Math.round((item.brandProbability ?? 0.85) * 100);
           const buyUrl = getExternalDomainBuyUrl(item.domain);
-          const isHighValue = item.isHighValue || item.valuationTier === 'High Value' || item.score >= 4;
+          const isHighValue = !item.isGibberish && (item.isHighValue || item.valuationTier === 'High Value' || item.score >= 4);
 
           return (
             <div
               key={item.domain}
               className={`rounded-2xl p-5 border transition-all flex flex-col justify-between space-y-4 shadow-xs hover:shadow-md ${
-                item.hasRisk && !item.isSingleWordComOverride
-                  ? 'bg-rose-50/30 border-rose-200'
+                item.isGibberish || (item.hasRisk && !item.isSingleWordComOverride)
+                  ? 'bg-rose-50/40 border-rose-300'
                   : item.score >= 4
                   ? 'bg-white border-teal-300 ring-1 ring-teal-500/20'
                   : 'bg-white border-slate-200'
@@ -481,8 +481,20 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
                   )}
                 </div>
 
+                {/* Gibberish / Random Letters Alert Banner if triggered */}
+                {item.isGibberish && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-100 border border-rose-300 text-rose-950 text-[11px] font-bold">
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-700 shrink-0" />
+                    <span>
+                      {isAr
+                        ? 'حروف عشوائية غير قابلة للنطق (Gibberish) — التقييم: 0/5 والجودة: 0%'
+                        : 'Gibberish / Random Letters Detected — Score: 0/5 & Brand Quality: 0%'}
+                    </span>
+                  </div>
+                )}
+
                 {/* Single-Word .com Override Badge if triggered */}
-                {item.isSingleWordComOverride && (
+                {item.isSingleWordComOverride && !item.isGibberish && (
                   <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 text-[11px] font-bold">
                     <Zap className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                     <span>
@@ -506,6 +518,11 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300">
                         <Award className="w-3 h-3 text-amber-600" />
                         <span>High Value</span>
+                      </span>
+                    )}
+                    {item.isGibberish && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-extrabold bg-rose-200 text-rose-950 border border-rose-400">
+                        <span>Junk / Random Letters</span>
                       </span>
                     )}
                   </div>
@@ -534,17 +551,27 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
                       </span>
                     </div>
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-lg font-extrabold font-mono text-teal-800 tabular-nums">
+                      <span
+                        className={`text-lg font-extrabold font-mono tabular-nums ${
+                          item.isGibberish ? 'text-rose-700' : 'text-teal-800'
+                        }`}
+                      >
                         {qualityPercent}%
                       </span>
                       <span
                         className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                          item.brandable
+                          item.isGibberish
+                            ? 'bg-rose-200 text-rose-900'
+                            : item.brandable
                             ? 'bg-emerald-100 text-emerald-800'
                             : 'bg-amber-100 text-amber-800'
                         }`}
                       >
-                        {item.brandable
+                        {item.isGibberish
+                          ? isAr
+                            ? 'غير قابل للنطق'
+                            : 'Unpronounceable'
+                          : item.brandable
                           ? isAr
                             ? 'قابل للبراند'
                             : 'Brandable'
@@ -556,7 +583,11 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
                     <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full ${
-                          qualityPercent >= 80 ? 'bg-teal-600' : 'bg-amber-500'
+                          item.isGibberish
+                            ? 'bg-rose-500'
+                            : qualityPercent >= 80
+                            ? 'bg-teal-600'
+                            : 'bg-amber-500'
                         }`}
                         style={{ width: `${qualityPercent}%` }}
                       />
@@ -570,7 +601,11 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
                       <span>{isAr ? 'درجة التقييم' : 'Investment Score'}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-lg font-extrabold font-mono text-slate-900 tabular-nums">
+                      <span
+                        className={`text-lg font-extrabold font-mono tabular-nums ${
+                          item.isGibberish ? 'text-rose-700' : 'text-slate-900'
+                        }`}
+                      >
                         {item.score}/5
                       </span>
                       <div className="flex items-center gap-0.5">
@@ -586,8 +621,16 @@ export const BulkTypeSafeChecker: React.FC<BulkTypeSafeCheckerProps> = ({
                         ))}
                       </div>
                     </div>
-                    <div className="text-[11px] font-bold text-amber-800">
-                      {isHighValue
+                    <div
+                      className={`text-[11px] font-bold ${
+                        item.isGibberish ? 'text-rose-700' : 'text-amber-800'
+                      }`}
+                    >
+                      {item.isGibberish
+                        ? isAr
+                          ? 'Junk / Random Letters • حروف عشوائية'
+                          : 'Junk / Random Letters'
+                        : isHighValue
                         ? isAr
                           ? 'High Value • قيمة عالية جداً'
                           : 'High Value'

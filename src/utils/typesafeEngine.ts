@@ -8,9 +8,14 @@ export type TypeSafeCategory =
 
 export type RecommendedAction = 'RECOMMENDED_BUY' | 'CONSIDER' | 'AVOID';
 
-export type ValuationClass = 'High Value' | 'Moderate Value' | 'Low Value';
+export type ValuationClass = 'High Value' | 'Moderate Value' | 'Low Value' | 'Junk / Random Letters';
 
 export interface TypeSafeRawAnalysis {
+  is_gibberish: {
+    value: boolean;
+    probability: number;
+    reason?: string;
+  };
   is_brandable: {
     value: boolean;
     probability: number;
@@ -25,15 +30,17 @@ export interface TypeSafeRawAnalysis {
     probability: number;
   };
   investment_score: {
-    value: number; // 1 to 5
+    value: number; // 0 to 5
   };
 }
 
 export interface TypeSafeDomainEvaluation {
   domain: string;
-  score: number; // 1 to 5 (investment_score)
+  score: number; // 0 to 5 (investment_score)
   valuationTier: ValuationClass;
   isHighValue: boolean;
+  isGibberish: boolean;
+  gibberishReason?: string;
   isSingleWordComOverride?: boolean;
   category: TypeSafeCategory;
   categoryLabelEn: string;
@@ -41,7 +48,7 @@ export interface TypeSafeDomainEvaluation {
   hasRisk: boolean; // has_trademark_risk
   matchedTrademark?: string;
   brandable: boolean; // is_brandable
-  brandProbability: number; // 0.0 to 1.0 quality & ease percentage
+  brandProbability: number; // 0.0 to 1.0 quality & ease percentage (0 for gibberish)
   recommendedAction: RecommendedAction;
   rawAnalysis: TypeSafeRawAnalysis;
   trademarkDisclaimerAr: string;
@@ -196,9 +203,9 @@ export const CATEGORY_LABELS: Record<TypeSafeCategory, { en: string; ar: string;
     badgeClass: 'bg-purple-50 text-purple-800 border-purple-200',
   },
   general_junk: {
-    en: 'General / Low Tier',
-    ar: 'عام / منخفض القيمة (General)',
-    badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
+    en: 'Junk / Random Letters',
+    ar: 'حروف عشوائية / غير قابل للنطق (Junk / Random Letters)',
+    badgeClass: 'bg-rose-100 text-rose-900 border-rose-300',
   },
 };
 
@@ -210,7 +217,7 @@ const CATEGORY_KEYWORDS: Record<Exclude<TypeSafeCategory, 'general_junk'>, strin
     'app', 'web', 'net', 'saas', 'ops', 'smart', 'auto', 'agent', 'prompt', 'vision', 'deep',
     'orbit', 'apex', 'zenith', 'prime', 'shift', 'wave', 'link', 'pilot', 'craft', 'scope',
     'signal', 'echo', 'beam', 'pixel', 'engine', 'system', 'compute', 'server', 'dock',
-    'ask', 'search', 'news', 'media', 'voice', 'video', 'music', 'photo', 'phone'
+    'ask', 'search', 'news', 'media', 'voice', 'video', 'music', 'photo', 'phone', 'swift'
   ],
   finance: [
     'pay', 'bank', 'fund', 'cash', 'lend', 'wealth', 'capital', 'venture', 'asset',
@@ -234,6 +241,145 @@ const CATEGORY_KEYWORDS: Record<Exclude<TypeSafeCategory, 'general_junk'>, strin
     'swap', 'stake', 'wallet', 'dex', 'nft', 'bit', 'ether', 'sol', 'zk', 'node'
   ],
 };
+
+// Known meaningful roots to avoid false-positive gibberish on valid 2-word compounds
+const KNOWN_MEANINGFUL_ROOTS: Set<string> = new Set([
+  ...Array.from(SHORT_SINGLE_DICTIONARY_WORDS),
+  ...PROTECTED_TRADEMARKS,
+  ...Object.keys(FAMOUS_ESTABLISHED_BRANDS),
+  ...CATEGORY_KEYWORDS.tech_ai,
+  ...CATEGORY_KEYWORDS.finance,
+  ...CATEGORY_KEYWORDS.ecommerce,
+  ...CATEGORY_KEYWORDS.health,
+  ...CATEGORY_KEYWORDS.crypto,
+]);
+
+/**
+ * Checks if a slug is a clean 1-word or 2-word combination of known meaningful roots.
+ */
+function isComposedOfKnownMeaningfulRoots(slug: string): boolean {
+  if (KNOWN_MEANINGFUL_ROOTS.has(slug)) return true;
+  for (let i = 2; i <= slug.length - 2; i++) {
+    const left = slug.slice(0, i);
+    const right = slug.slice(i);
+    if (KNOWN_MEANINGFUL_ROOTS.has(left) && KNOWN_MEANINGFUL_ROOTS.has(right)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Algorithmic Regex & Linguistic Gibberish Detector (فحص خوارزمي ولغوي للكلمات العشوائية).
+ * Detects unpronounceable random strings, repeated harsh consonants, keyboard mashes,
+ * and severe vowel imbalances (such as 'coimhkkykhkhntat.com').
+ */
+export function detectGibberishDomain(
+  rawSlug: string,
+  externalIsValidDomainWordsFn?: (slug: string) => boolean
+): { isGibberish: boolean; reason?: string } {
+  const clean = (rawSlug || '').trim().toLowerCase().replace(/[^a-z]/g, '');
+  if (!clean || clean.length < 2) {
+    return { isGibberish: true, reason: 'Too short or empty alphabetical string' };
+  }
+
+  // 1. If it's a known dictionary word, famous brand, or 2-word meaningful compound -> NOT gibberish
+  if (isComposedOfKnownMeaningfulRoots(clean)) {
+    return { isGibberish: false };
+  }
+  if (externalIsValidDomainWordsFn && externalIsValidDomainWordsFn(clean)) {
+    return { isGibberish: false };
+  }
+
+  // 2. Check for 3+ identical consecutive letters (e.g. 'aaabbb', 'coimhhhk')
+  if (/(.)\1\1/i.test(clean)) {
+    return {
+      isGibberish: true,
+      reason: 'Contains 3+ identical consecutive characters',
+    };
+  }
+
+  // 3. Check for keyboard mash sequences
+  if (/(?:qwert|asdf|zxcv|hjkl|yuiop|qaz|wsx|edc|rfv|tgb|yhn|ujm)/i.test(clean)) {
+    return {
+      isGibberish: true,
+      reason: 'Matches random keyboard mash sequence',
+    };
+  }
+
+  // 4. Check for unpronounceable consonant clusters:
+  // - 5+ consonants in a row (including y when clustered)
+  // - OR 4+ strict consonants in a row in an unrecognized word
+  if (/[bcdfghjklmnpqrstvwxyz]{5,}/i.test(clean) || /[bcdfghjklmnpqrstvwxz]{4,}/i.test(clean)) {
+    return {
+      isGibberish: true,
+      reason: 'Unpronounceable consecutive consonant cluster (e.g. hkkykhkhnt)',
+    };
+  }
+
+  // 5. Check for impossible English consonant bigrams / repeated harsh consonant pairs (like hk, kh, kk, jj, qq, vv, xx, yy, qz, xz, etc.)
+  const impossibleBigramRegex =
+    /(?:hk|kh|kk|jj|qq|vv|ww|xx|yy|q[^u]|bx|cj|cv|cx|dx|fq|fx|gq|gx|hx|jb|jc|jd|jf|jg|jh|jk|jl|jm|jn|jp|jq|jr|js|jt|jv|jw|jx|jz|kq|kx|kz|mx|px|pz|qb|qc|qd|qf|qg|qh|qj|qk|ql|qm|qn|qp|qr|qs|qt|qv|qw|qx|qy|qz|sx|vb|vc|vd|vf|vg|vh|vj|vk|vl|vm|vn|vp|vq|vr|vs|vt|vw|vx|vz|wx|wz|xb|xc|xd|xf|xg|xh|xj|xk|xl|xm|xn|xp|xq|xr|xs|xt|xv|xw|xz|yq|yx|zb|zc|zd|zf|zg|zj|zk|zm|zn|zp|zq|zr|zs|zt|zv|zw|zx)/i;
+  if (impossibleBigramRegex.test(clean)) {
+    return {
+      isGibberish: true,
+      reason: 'Contains unpronounceable consonant pairs (e.g. hk/kh/kk)',
+    };
+  }
+
+  // 6. Check vowel presence & vowel-to-consonant ratio
+  const strictVowels = (clean.match(/[aeiou]/gi) || []).length;
+  const allVowels = (clean.match(/[aeiouy]/gi) || []).length;
+  if (allVowels === 0) {
+    return {
+      isGibberish: true,
+      reason: 'Contains zero vowels (impossible to pronounce)',
+    };
+  }
+  if (clean.length >= 6) {
+    const vowelRatio = strictVowels / clean.length;
+    if (vowelRatio < 0.22 || vowelRatio > 0.80) {
+      return {
+        isGibberish: true,
+        reason: 'Severe vowel-to-consonant imbalance',
+      };
+    }
+  }
+
+  // 7. Repetitive consonant stutter or long unrecognized character sequences
+  if (clean.length >= 8 && /([bcdfghjklmnpqrstvwxyz]{2,3}).*\1/i.test(clean)) {
+    // Check if at least one known root >= 4 chars exists inside
+    let matchedChars = 0;
+    for (const root of KNOWN_MEANINGFUL_ROOTS) {
+      if (root.length >= 4 && clean.includes(root)) {
+        matchedChars += root.length;
+      }
+    }
+    if (matchedChars < clean.length * 0.5) {
+      return {
+        isGibberish: true,
+        reason: 'Repetitive random consonant sequence with no recognizable word roots',
+      };
+    }
+  }
+
+  if (clean.length >= 11) {
+    let covered = 0;
+    for (const root of KNOWN_MEANINGFUL_ROOTS) {
+      if (root.length >= 3 && clean.includes(root)) {
+        covered += root.length;
+      }
+    }
+    if (covered < clean.length * 0.45) {
+      return {
+        isGibberish: true,
+        reason: 'Long random character sequence not matching English vocabulary',
+      };
+    }
+  }
+
+  return { isGibberish: false };
+}
 
 /**
  * Generates an external registration link for buying the domain.
@@ -291,13 +437,17 @@ export function detectTrademarkOrFamousBrand(alphaSlug: string): {
 }
 
 /**
- * Deterministic TypeSafe AI SystemOne evaluation engine with Single-Word .com Override Logic.
+ * Deterministic TypeSafe AI SystemOne evaluation engine with:
+ * - Algorithmic Gibberish Detection (0/5 score, 0% brand quality, Junk / Random Letters)
+ * - Famous Brand & Trademark Recognition (e.g. Ask.com)
+ * - Single-Word .com Override Logic (5/5 score, High Value)
  */
 export function evaluateDomainWithTypeSafeRules(
   rawDomain: string,
   existingRelevanceScore?: number,
   existingWordsCount?: number,
-  externalIsSingleWordFn?: (word: string) => boolean
+  externalIsSingleWordFn?: (word: string) => boolean,
+  externalIsValidDomainWordsFn?: (slug: string) => boolean
 ): TypeSafeDomainEvaluation {
   const start = Date.now();
   const clean = (rawDomain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
@@ -315,7 +465,62 @@ export function evaluateDomainWithTypeSafeRules(
   const matchedTrademark = tmDetection.matchedTrademark;
   const riskProbability = hasRisk ? 0.96 : 0.02;
 
-  // 2. Check Programmatic Override Logic:
+  // 2. Check Algorithmic Gibberish / Unpronounceable String (is_gibberish)
+  const gibberishCheck = detectGibberishDomain(alphaSlug, externalIsValidDomainWordsFn);
+  const isGibberish = gibberishCheck.isGibberish;
+
+  // If Gibberish -> Immediately enforce Investment Score: 0/5, Brand Quality: 0%, Category: Junk / Random Letters
+  if (isGibberish) {
+    const junkCategory: TypeSafeCategory = 'general_junk';
+    const catMeta = CATEGORY_LABELS[junkCategory];
+    const rawAnalysis: TypeSafeRawAnalysis = {
+      is_gibberish: {
+        value: true,
+        probability: 0.99,
+        reason: gibberishCheck.reason,
+      },
+      is_brandable: {
+        value: false,
+        probability: 0,
+      },
+      has_trademark_risk: {
+        value: hasRisk,
+        probability: riskProbability,
+        matchedTrademark,
+      },
+      category: {
+        value: junkCategory,
+        probability: 0.99,
+      },
+      investment_score: {
+        value: 0,
+      },
+    };
+
+    return {
+      domain: `${slug}${tld}`,
+      score: 0,
+      valuationTier: 'Junk / Random Letters',
+      isHighValue: false,
+      isGibberish: true,
+      gibberishReason: gibberishCheck.reason,
+      isSingleWordComOverride: false,
+      category: junkCategory,
+      categoryLabelEn: catMeta.en,
+      categoryLabelAr: catMeta.ar,
+      hasRisk,
+      matchedTrademark,
+      brandable: false,
+      brandProbability: 0,
+      recommendedAction: 'AVOID',
+      rawAnalysis,
+      trademarkDisclaimerAr: TRADEMARK_DISCLAIMER_AR,
+      trademarkDisclaimerEn: TRADEMARK_DISCLAIMER_EN,
+      latencyMs: Math.max(1, Date.now() - start),
+    };
+  }
+
+  // 3. Check Programmatic Override Logic:
   // If the domain is a short single dictionary word (e.g. ask, news, car) AND has .com extension ->
   // Automatically force Investment Score = 5/5 and Valuation = High Value!
   const isSingleShortWord =
@@ -324,7 +529,7 @@ export function evaluateDomainWithTypeSafeRules(
     isShortSingleDictionaryWord(alphaSlug, externalIsSingleWordFn);
   const isSingleWordComOverride = isSingleShortWord && tld === '.com';
 
-  // 3. Determine Primary Industry Category (category)
+  // 4. Determine Primary Industry Category (category)
   let bestCategory: TypeSafeCategory = 'tech_ai';
   let maxHits = 0;
 
@@ -354,7 +559,7 @@ export function evaluateDomainWithTypeSafeRules(
     }
   }
 
-  // 4. Brandability & Quality Percentage (is_brandable)
+  // 5. Brandability & Quality Percentage (is_brandable)
   let brandProb = 0.85;
   if (tld === '.com') brandProb += 0.08;
   else if (tld === '.ai' || tld === '.io') brandProb += 0.06;
@@ -377,7 +582,7 @@ export function evaluateDomainWithTypeSafeRules(
 
   const brandable = isSingleWordComOverride || (brandProb >= 0.72 && !hasDashes && !hasNumbers);
 
-  // 5. Investment Score (1 to 5) & Valuation Tier
+  // 6. Investment Score (0 to 5) & Valuation Tier
   let score = 4;
   if (isSingleWordComOverride) {
     // Programmatic Override: Single short dictionary word + .com -> 5/5 & High Value
@@ -415,6 +620,10 @@ export function evaluateDomainWithTypeSafeRules(
   }
 
   const rawAnalysis: TypeSafeRawAnalysis = {
+    is_gibberish: {
+      value: false,
+      probability: 0.01,
+    },
     is_brandable: {
       value: brandable,
       probability: brandProb,
@@ -440,6 +649,7 @@ export function evaluateDomainWithTypeSafeRules(
     score,
     valuationTier,
     isHighValue,
+    isGibberish: false,
     isSingleWordComOverride,
     category: bestCategory,
     categoryLabelEn: catMeta.en,

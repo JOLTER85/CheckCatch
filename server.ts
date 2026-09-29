@@ -18,6 +18,7 @@ import {
   evaluateDomainWithTypeSafeRules,
   isShortSingleDictionaryWord,
   detectTrademarkOrFamousBrand,
+  detectGibberishDomain,
   CATEGORY_LABELS,
   TRADEMARK_DISCLAIMER_AR,
   TRADEMARK_DISCLAIMER_EN,
@@ -44,6 +45,16 @@ function isBackendSingleShortDictionaryWord(word: string): boolean {
 }
 
 /**
+ * Helper to verify if a slug is a real English word or a valid 2-word English compound
+ */
+function isBackendValidDomainWords(slug: string): boolean {
+  if (!slug || !/^[a-z]+$/.test(slug)) return false;
+  if (isRealEnglishWord(slug)) return true;
+  if (decomposeIntoTwoEnglishWords(slug)) return true;
+  return false;
+}
+
+/**
  * Step 2: TypeSafe AI SystemOne Domain Evaluation Service (Single & Parallel Bulk)
  * Calls https://api.typesafe.ai/v1/systemone when TYPESAFE_API_KEY is configured,
  * and falls back instantaneously (<2ms) to deterministic TypeSafe SystemOne rules.
@@ -60,19 +71,25 @@ async function analyzeDomain(domainName: string): Promise<TypeSafeRawAnalysis> {
     domainName,
     undefined,
     undefined,
-    isBackendSingleShortDictionaryWord
+    isBackendSingleShortDictionaryWord,
+    isBackendValidDomainWords
   ).rawAnalysis;
 
   if (hasRealKey) {
     const url = "https://api.typesafe.ai/v1/systemone";
     const payload = {
       model: "jev-latest",
-      state: `Domain Name to evaluate: ${domainName}. CRITICAL INSTRUCTION: Actively recognize famous established global brands, major web portals, search engines, media networks, and iconic existing companies (e.g., Ask.com, Apple, Target, Uber, Chase, Time, Slack, Zoom, Visa, Shell, Forbes, eBay, Yahoo, etc.) even when the name is a common dictionary word. Do NOT treat famous existing brands or major websites as mere ordinary dictionary words.`,
+      state: `Domain Name to evaluate: ${domainName}. CRITICAL INSTRUCTION: 1) If the domain name is a random string of characters, unpronounceable, or full of typos (e.g., 'coimhkkykhkhntat'), mark is_gibberish: true and immediately drop investment_score to 0 and brand_quality (is_brandable) to 0%. DO NOT complement or score random letters. 2) Actively recognize famous established global brands, major web portals, search engines, media networks, and iconic existing companies (e.g., Ask.com, Apple, Target, Uber, Chase, Time, Slack, Zoom, Visa, Shell, Forbes, eBay, Yahoo, etc.) even when the name is a common dictionary word. Do NOT treat famous existing brands or major websites as mere ordinary dictionary words.`,
       questions: {
+        is_gibberish: {
+          type: "noul",
+          prompt:
+            "Is this domain name a random string of characters, unpronounceable, or full of typos (e.g., 'coimhkkykhkhntat')? If YES, mark is_gibberish: true.",
+        },
         is_brandable: {
           type: "noul",
           prompt:
-            "Is this domain name catchy, short, memorable, and strong for a major brand or tech/business startup? Short single-word .com dictionary domains (like ask.com, news.com, car.com) have maximum brandability.",
+            "Is this domain name catchy, short, memorable, and good for a tech/business startup? If is_gibberish is true or the domain is impossible to pronounce fluently, you MUST give brand_quality: 0% (false, probability 0). DO NOT complement or score random letters.",
         },
         has_trademark_risk: {
           type: "noul",
@@ -82,14 +99,15 @@ async function analyzeDomain(domainName: string): Promise<TypeSafeRawAnalysis> {
         category: {
           type: "choice",
           options: ["tech_ai", "finance", "ecommerce", "health", "crypto", "general_junk"],
-          prompt: "Which primary industry does this domain name fit best?",
+          prompt:
+            "Which primary industry does this domain name fit best? If is_gibberish is true, select general_junk.",
         },
         investment_score: {
           type: "score",
-          min: 1,
+          min: 0,
           max: 5,
           prompt:
-            "Rate the commercial/resale potential of this domain name from 1 to 5. Ultra-short single-word .com dictionary domains (such as ask.com, news.com, car.com) must be rated 5/5 (High Value).",
+            "If is_gibberish is true or the domain is impossible to pronounce fluently, you MUST give investment_score: 0 or 1 and brand_quality: 0%. DO NOT complement or score random letters. Ultra-short single-word .com dictionary domains (such as ask.com, news.com, car.com) must be rated 5/5 (High Value).",
         },
       },
     };
@@ -112,9 +130,42 @@ async function analyzeDomain(domainName: string): Promise<TypeSafeRawAnalysis> {
         const data: any = await response.json();
         if (data && data.results) {
           const r = data.results;
+          const aiIsGibberish = Boolean(r.is_gibberish?.value);
+          const mergedIsGibberish = aiIsGibberish || fallback.is_gibberish.value;
           const aiHasRisk = Boolean(r.has_trademark_risk?.value);
           const mergedHasRisk = aiHasRisk || fallback.has_trademark_risk.value;
+
+          if (mergedIsGibberish) {
+            return {
+              is_gibberish: {
+                value: true,
+                probability: Math.max(Number(r.is_gibberish?.probability ?? 0), fallback.is_gibberish.probability, 0.99),
+                reason: fallback.is_gibberish.reason || "Unpronounceable / random character string",
+              },
+              is_brandable: {
+                value: false,
+                probability: 0,
+              },
+              has_trademark_risk: {
+                value: mergedHasRisk,
+                probability: mergedHasRisk ? 0.96 : 0.02,
+                matchedTrademark: fallback.has_trademark_risk.matchedTrademark,
+              },
+              category: {
+                value: "general_junk",
+                probability: 0.99,
+              },
+              investment_score: {
+                value: 0,
+              },
+            };
+          }
+
           return {
+            is_gibberish: {
+              value: false,
+              probability: Number(r.is_gibberish?.probability ?? 0.01),
+            },
             is_brandable: {
               value: Boolean(r.is_brandable?.value ?? fallback.is_brandable.value),
               probability: Number(r.is_brandable?.probability ?? fallback.is_brandable.probability),
@@ -146,7 +197,7 @@ async function analyzeDomain(domainName: string): Promise<TypeSafeRawAnalysis> {
 
 /**
  * TypeSafe AI Domain Evaluation & Recommendation Logic
- * Relies exclusively on TYPESAFE_API_KEY + Programmatic Override Logic for Single-Word .com Domains
+ * Relies exclusively on TYPESAFE_API_KEY + Algorithmic Gibberish Detection + Single-Word .com Override Logic
  */
 async function evaluateAndDecideDomain(
   domainName: string
@@ -171,12 +222,59 @@ async function evaluateAndDecideDomain(
     analysis.has_trademark_risk.matchedTrademark = matchedTrademark;
   }
 
+  // 1. Algorithmic Regex/Linguistic Gibberish Check (فحص الكلمات والحروف العشوائية)
+  const gibberishCheck = detectGibberishDomain(alphaSlug, isBackendValidDomainWords);
+  const isGibberish = Boolean(analysis.is_gibberish?.value || gibberishCheck.isGibberish);
+
+  if (isGibberish) {
+    const junkCat: TypeSafeCategory = "general_junk";
+    const junkMeta = CATEGORY_LABELS[junkCat];
+    analysis.is_gibberish = {
+      value: true,
+      probability: 0.99,
+      reason: gibberishCheck.reason || analysis.is_gibberish?.reason || "Random / unpronounceable character sequence",
+    };
+    analysis.is_brandable = {
+      value: false,
+      probability: 0,
+    };
+    analysis.category = {
+      value: junkCat,
+      probability: 0.99,
+    };
+    analysis.investment_score = {
+      value: 0,
+    };
+
+    return {
+      domain: `${slug}${tld}`,
+      score: 0,
+      valuationTier: "Junk / Random Letters",
+      isHighValue: false,
+      isGibberish: true,
+      gibberishReason: analysis.is_gibberish.reason,
+      isSingleWordComOverride: false,
+      category: junkCat,
+      categoryLabelEn: junkMeta.en,
+      categoryLabelAr: junkMeta.ar,
+      hasRisk,
+      matchedTrademark,
+      brandable: false,
+      brandProbability: 0,
+      recommendedAction: "AVOID",
+      rawAnalysis: analysis,
+      trademarkDisclaimerAr: TRADEMARK_DISCLAIMER_AR,
+      trademarkDisclaimerEn: TRADEMARK_DISCLAIMER_EN,
+      latencyMs: Math.max(2, Date.now() - startMs),
+    };
+  }
+
   let brandable = analysis.is_brandable.value; // true / false
   let brandProbability = analysis.is_brandable.probability;
-  let score = analysis.investment_score.value; // 1 to 5
+  let score = analysis.investment_score.value; // 0 to 5
   const category = analysis.category.value;
 
-  // Programmatic Override Logic (شرط برمجي):
+  // 2. Programmatic Override Logic (شرط برمجي):
   // If the domain is a short single dictionary word (such as ask, news, car) and has a .com extension,
   // automatically set Investment Score to 5/5 and Valuation to High Value!
   const isSingleShortWord =
@@ -216,6 +314,7 @@ async function evaluateAndDecideDomain(
     score,
     valuationTier,
     isHighValue,
+    isGibberish: false,
     isSingleWordComOverride,
     category,
     categoryLabelEn: catMeta.en,
@@ -237,13 +336,20 @@ function enrichDomainItemWithTypeSafe(item: any): any {
     item.domain || item.name || "",
     item.relevanceScore,
     item.wordsCount,
-    isBackendSingleShortDictionaryWord
+    isBackendSingleShortDictionaryWord,
+    isBackendValidDomainWords
   );
   return {
     ...item,
     aiScore: item.aiScore ?? tsEval.score,
-    valuationTier: tsEval.isSingleWordComOverride ? "High Value" : (item.valuationTier ?? tsEval.valuationTier),
+    valuationTier: tsEval.isGibberish
+      ? "Junk / Random Letters"
+      : tsEval.isSingleWordComOverride
+      ? "High Value"
+      : (item.valuationTier ?? tsEval.valuationTier),
     isHighValue: tsEval.isHighValue,
+    isGibberish: tsEval.isGibberish,
+    gibberishReason: tsEval.gibberishReason,
     isSingleWordComOverride: tsEval.isSingleWordComOverride,
     aiCategory: item.aiCategory ?? tsEval.category,
     aiCategoryLabelEn: item.aiCategoryLabelEn ?? tsEval.categoryLabelEn,
