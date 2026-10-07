@@ -762,15 +762,15 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
         {/* 1. Filter by Domain Type (Selected Domain Column) */}
         <div className="space-y-2">
           <div className="flex items-center justify-between flex-wrap gap-1">
-            <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-              <Tag className="w-3.5 h-3.5 text-indigo-600" />
+            <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <Tag className="w-3.5 h-3.5 text-indigo-700" />
               <span>
                 {lang === 'ar'
                   ? 'Selected Domain Column (نوع الدومين):'
                   : 'Selected Domain Column (Type):'}
               </span>
             </label>
-            <span className="text-[10px] text-slate-500 font-medium">
+            <span className="text-xs text-slate-700 font-semibold">
               {lang === 'ar' ? 'اختر أحد الخيارات للفلترة الفورية:' : 'Select an option to filter instantly:'}
             </span>
           </div>
@@ -780,6 +780,68 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
             {availableTypes.map((typeOption) => {
               const countForType = typeCounts[typeOption] ?? 0;
               const isSelected = selectedTypeFilter === typeOption;
+
+              // High-contrast, WCAG AAA compliant color scheme for each type
+              let colorClass = '';
+              let badgeClass = '';
+
+              if (typeOption === 'Dropped') {
+                if (isSelected) {
+                  colorClass = 'bg-emerald-800 text-white border-emerald-900 shadow-sm scale-[1.02]';
+                  badgeClass = 'bg-emerald-950 text-emerald-100 font-black';
+                } else if (countForType > 0) {
+                  colorClass = 'bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border-emerald-300 font-extrabold';
+                  badgeClass = 'bg-emerald-200 text-emerald-950 font-black border border-emerald-400';
+                } else {
+                  colorClass = 'bg-slate-100 text-slate-700 border-slate-300';
+                  badgeClass = 'bg-slate-200 text-slate-800 font-bold';
+                }
+              } else if (typeOption === 'Private Seller') {
+                if (isSelected) {
+                  colorClass = 'bg-indigo-800 text-white border-indigo-900 shadow-sm scale-[1.02]';
+                  badgeClass = 'bg-indigo-950 text-indigo-100 font-black';
+                } else if (countForType > 0) {
+                  colorClass = 'bg-indigo-50 hover:bg-indigo-100 text-indigo-950 border-indigo-300 font-extrabold';
+                  badgeClass = 'bg-indigo-200 text-indigo-950 font-black border border-indigo-400';
+                } else {
+                  colorClass = 'bg-slate-100 text-slate-700 border-slate-300';
+                  badgeClass = 'bg-slate-200 text-slate-800 font-bold';
+                }
+              } else if (typeOption === 'Pending Delete') {
+                if (isSelected) {
+                  colorClass = 'bg-rose-800 text-white border-rose-900 shadow-sm scale-[1.02]';
+                  badgeClass = 'bg-rose-950 text-rose-100 font-black';
+                } else if (countForType > 0) {
+                  colorClass = 'bg-rose-50 hover:bg-rose-100 text-rose-950 border-rose-300 font-extrabold';
+                  badgeClass = 'bg-rose-200 text-rose-950 font-black border border-rose-400';
+                } else {
+                  colorClass = 'bg-slate-100 text-slate-700 border-slate-300';
+                  badgeClass = 'bg-slate-200 text-slate-800 font-bold';
+                }
+              } else if (typeOption === 'Pre-Release') {
+                if (isSelected) {
+                  colorClass = 'bg-amber-800 text-white border-amber-900 shadow-sm scale-[1.02]';
+                  badgeClass = 'bg-amber-950 text-amber-100 font-black';
+                } else if (countForType > 0) {
+                  colorClass = 'bg-amber-50 hover:bg-amber-100 text-amber-950 border-amber-300 font-extrabold';
+                  badgeClass = 'bg-amber-200 text-amber-950 font-black border border-amber-400';
+                } else {
+                  colorClass = 'bg-slate-100 text-slate-700 border-slate-300';
+                  badgeClass = 'bg-slate-200 text-slate-800 font-bold';
+                }
+              } else {
+                if (isSelected) {
+                  colorClass = 'bg-blue-800 text-white border-blue-900 shadow-sm scale-[1.02]';
+                  badgeClass = 'bg-blue-950 text-blue-100 font-black';
+                } else if (countForType > 0) {
+                  colorClass = 'bg-slate-50 hover:bg-slate-100 text-slate-950 border-slate-300 font-extrabold';
+                  badgeClass = 'bg-slate-200 text-slate-950 font-black border border-slate-400';
+                } else {
+                  colorClass = 'bg-slate-100 text-slate-700 border-slate-300';
+                  badgeClass = 'bg-slate-200 text-slate-800 font-bold';
+                }
+              }
+
               return (
                 <button
                   key={typeOption}
@@ -790,22 +852,10 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                     setServerStats(null);
                     setServerQualified(null);
                   }}
-                  className={`min-h-[42px] px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border ${
-                    isSelected
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs scale-[1.02]'
-                      : countForType > 0
-                      ? 'bg-white hover:bg-slate-100 text-slate-800 border-slate-200 hover:border-slate-300'
-                      : 'bg-slate-100 text-slate-400 border-slate-200 opacity-60'
-                  }`}
+                  className={`min-h-[42px] px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border ${colorClass}`}
                 >
                   <span>{typeOption === 'ALL' ? (lang === 'ar' ? 'ALL (الكل)' : 'ALL') : typeOption}</span>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-                      isSelected
-                        ? 'bg-white/25 text-white'
-                        : 'bg-slate-100 text-slate-700 border border-slate-200'
-                    }`}
-                  >
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold ${badgeClass}`}>
                     {countForType}
                   </span>
                 </button>
@@ -817,15 +867,15 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
         {/* 2. Filter by End Date (End Date Column) */}
         <div className="space-y-2 pt-3 border-t border-slate-200">
           <div className="flex items-center justify-between flex-wrap gap-1">
-            <label htmlFor="select-end-date-filter" className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-rose-600" />
+            <label htmlFor="select-end-date-filter" className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-rose-700" />
               <span>
                 {lang === 'ar'
                   ? 'End Date Column (تاريخ الانتهاء):'
                   : 'End Date Column (Auction End):'}
               </span>
             </label>
-            <span className="text-[10px] text-slate-500 font-medium">
+            <span className="text-xs text-slate-700 font-semibold">
               {lang === 'ar' ? 'العام: كل التواريخ (ALL)، أو اختر تاريخاً محدداً من القائمة' : 'General: ALL dates, or choose a specific date'}
             </span>
           </div>
@@ -861,7 +911,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                   setServerStats(null);
                   setServerQualified(null);
                 }}
-                className="min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors shrink-0"
+                className="min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-extrabold bg-slate-200 hover:bg-slate-300 text-slate-900 border border-slate-300 transition-colors shrink-0"
               >
                 {lang === 'ar' ? 'إعادة ضبط التاريخ (ALL)' : 'Reset Date (ALL)'}
               </button>
@@ -871,7 +921,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
           {/* Quick Date Chips if 10 or fewer distinct dates */}
           {availableDates.length > 0 && availableDates.length <= 10 && (
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-[10px] text-slate-500">{lang === 'ar' ? 'تواريخ سريعة:' : 'Quick dates:'}</span>
+              <span className="text-xs text-slate-700 font-semibold">{lang === 'ar' ? 'تواريخ سريعة:' : 'Quick dates:'}</span>
               <button
                 type="button"
                 onClick={() => {
@@ -879,10 +929,10 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                   setServerStats(null);
                   setServerQualified(null);
                 }}
-                className={`min-h-[32px] text-[11px] px-2.5 py-1 rounded-lg border font-mono transition-all flex items-center gap-1 ${
+                className={`min-h-[32px] text-xs px-2.5 py-1 rounded-lg border font-mono transition-all flex items-center gap-1 ${
                   selectedDateFilter === 'ALL'
-                    ? 'bg-rose-600 text-white border-rose-600 font-bold shadow-xs'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                    ? 'bg-rose-800 text-white border-rose-900 font-bold shadow-xs'
+                    : 'bg-white text-slate-900 font-bold border-slate-300 hover:bg-slate-100'
                 }`}
               >
                 <span>ALL</span>
@@ -896,14 +946,14 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                     setServerStats(null);
                     setServerQualified(null);
                   }}
-                  className={`min-h-[32px] text-[11px] px-2.5 py-1 rounded-lg border font-mono transition-all flex items-center gap-1 ${
+                  className={`min-h-[32px] text-xs px-2.5 py-1 rounded-lg border font-mono transition-all flex items-center gap-1 ${
                     selectedDateFilter === d
-                      ? 'bg-rose-600 text-white border-rose-600 font-bold shadow-xs'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                      ? 'bg-rose-800 text-white border-rose-900 font-bold shadow-xs'
+                      : 'bg-white text-slate-900 font-bold border-slate-300 hover:bg-slate-100'
                   }`}
                 >
                   <span>{d}</span>
-                  <span className="opacity-75">({dateCounts[d] ?? 0})</span>
+                  <span className="font-extrabold">({dateCounts[d] ?? 0})</span>
                 </button>
               ))}
             </div>

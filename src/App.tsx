@@ -253,18 +253,6 @@ export default function App() {
     }
   }, [savedDomains]);
 
-  // Check health on mount
-  useEffect(() => {
-    fetch('/api/health')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.hasApiKey !== undefined) {
-          setHasServerApiKey(data.hasApiKey);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
   const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
     const id = `${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     setToasts((prev) => [...prev, { id, message, type }]);
@@ -483,7 +471,15 @@ export default function App() {
   };
 
   useEffect(() => {
-    handleGenerate();
+    // Generate initial verified domains instantly using client-side deterministic engine without page-load network requests
+    const initialDomains = clientGenerateDomains(keywords, count, rules).map((d: DomainItem) =>
+      enforceStrictDomainItem(d, rules.tlds)
+    );
+    setGeneratorDomains(initialDomains);
+    if (initialDomains.length > 0) {
+      setSelectedBestDomainId(initialDomains[0].id);
+    }
+    setLastGeneratedAt(new Date().toISOString());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
