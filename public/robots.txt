@@ -1,47 +1,4 @@
 User-agent: *
 Allow: /
 
-# OpenAI Crawlers (ChatGPT & SearchGPT)
-User-agent: GPTBot
-Allow: /
-
-User-agent: OAI-SearchBot
-Allow: /
-
-User-agent: ChatGPT-User
-Allow: /
-
-# Perplexity AI Search Crawler
-User-agent: PerplexityBot
-Allow: /
-
-# Anthropic Claude Crawler
-User-agent: ClaudeBot
-Allow: /
-
-User-agent: anthropic-ai
-Allow: /
-
-# Google Search & Google Extended (Gemini / Vertex AI)
-User-agent: Googlebot
-Allow: /
-
-User-agent: Google-Extended
-Allow: /
-
-# Meta AI Crawler
-User-agent: Meta-ExternalAgent
-Allow: /
-
-# Bing & Microsoft Copilot
-User-agent: Bingbot
-Allow: /
-
-# Cohere AI
-User-agent: cohere-ai
-Allow: /
-
-# Sitemap & LLM Discovery Standards
 Sitemap: https://checkcatch.com/sitemap.xml
-LLMs-Txt: https://checkcatch.com/llms.txt
-LLMs-Full: https://checkcatch.com/llms-full.txt
