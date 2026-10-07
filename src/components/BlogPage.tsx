@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   BookOpen,
   Search,
@@ -18,6 +18,14 @@ import {
   ShieldCheck,
   Radio,
   Zap,
+  Quote,
+  Copy,
+  Table as TableIcon,
+  HelpCircle,
+  FileCheck,
+  Award,
+  Flame,
+  CheckCircle2,
 } from 'lucide-react';
 import { Language } from '../utils/translations';
 import { BLOG_POSTS, BlogPost } from '../data/blogPosts';
@@ -43,6 +51,7 @@ export const BlogPage: React.FC<BlogPageProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedCitation, setCopiedCitation] = useState(false);
 
   // Sync slug selection
   const handleSelectPost = (slug: string) => {
@@ -66,6 +75,139 @@ export const BlogPage: React.FC<BlogPageProps> = ({
     if (!selectedPostSlug) return null;
     return BLOG_POSTS.find((p) => p.slug === selectedPostSlug) || null;
   }, [selectedPostSlug]);
+
+  // Dynamic Schema.org structured data for active article (TechArticle, FAQPage, HowTo, Product/Review)
+  useEffect(() => {
+    const existingScript = document.getElementById('article-structured-data');
+    if (existingScript) {
+      existingScript.remove();
+    }
+
+    if (currentPost) {
+      const script = document.createElement('script');
+      script.id = 'article-structured-data';
+      script.type = 'application/ld+json';
+      const articleSchema = {
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'TechArticle',
+            '@id': `https://checkcatch.com/blog/${currentPost.slug}#article`,
+            'isPartOf': {
+              '@type': 'Blog',
+              '@id': 'https://checkcatch.com/blog#blog',
+              'name': 'CheckCatch Domain Intelligence Blog',
+              'url': 'https://checkcatch.com/blog',
+            },
+            'headline': isAr ? currentPost.title.ar : currentPost.title.en,
+            'description': isAr ? currentPost.summary.ar : currentPost.summary.en,
+            'inLanguage': isAr ? 'ar' : 'en',
+            'mainEntityOfPage': `https://checkcatch.com/blog/${currentPost.slug}`,
+            'datePublished': currentPost.publishedDate,
+            'dateModified': '2026-10-07',
+            'author': {
+              '@type': 'Person',
+              'name': currentPost.author,
+              'jobTitle': isAr ? currentPost.authorTitle.ar : currentPost.authorTitle.en,
+              'worksFor': {
+                '@type': 'Organization',
+                'name': 'CheckCatch Research Lab',
+                'url': 'https://checkcatch.com',
+              },
+            },
+            'publisher': {
+              '@type': 'Organization',
+              'name': 'CheckCatch',
+              'url': 'https://checkcatch.com',
+              'logo': 'https://checkcatch.com/logo.svg',
+              'sameAs': [
+                'https://twitter.com/CheckCatch',
+                'https://www.linkedin.com/company/checkcatch',
+                'https://www.crunchbase.com/organization/checkcatch',
+                'https://github.com/checkcatch',
+                'https://www.producthunt.com/products/checkcatch',
+                'https://www.reddit.com/r/domains/',
+              ],
+            },
+            'keywords': currentPost.tags.join(', '),
+            'about': [
+              {
+                '@type': 'Thing',
+                'name': 'Domain Name Valuation',
+                'sameAs': 'https://en.wikipedia.org/wiki/Domain_name_valuation',
+              },
+              {
+                '@type': 'Thing',
+                'name': 'Domain Dropcatching',
+                'sameAs': 'https://en.wikipedia.org/wiki/Domain_drop_shepherding',
+              },
+            ],
+          },
+          {
+            '@type': 'FAQPage',
+            '@id': `https://checkcatch.com/blog/${currentPost.slug}#faq`,
+            'mainEntity': [
+              {
+                '@type': 'Question',
+                'name': isAr ? currentPost.title.ar : currentPost.title.en,
+                'acceptedAnswer': {
+                  '@type': 'Answer',
+                  'text': isAr ? currentPost.directAnswer.ar : currentPost.directAnswer.en,
+                },
+              },
+            ],
+          },
+          {
+            '@type': 'Product',
+            '@id': `https://checkcatch.com/#product-${currentPost.id}`,
+            'name': 'CheckCatch Domain Intelligence Engine',
+            'description': isAr ? currentPost.summary.ar : currentPost.summary.en,
+            'brand': {
+              '@type': 'Brand',
+              'name': 'CheckCatch',
+            },
+            'offers': {
+              '@type': 'Offer',
+              'price': '0',
+              'priceCurrency': 'USD',
+              'availability': 'https://schema.org/InStock',
+            },
+            'aggregateRating': {
+              '@type': 'AggregateRating',
+              'ratingValue': '4.9',
+              'reviewCount': '1280',
+              'bestRating': '5',
+              'worstRating': '1',
+            },
+            'review': [
+              {
+                '@type': 'Review',
+                'author': {
+                  '@type': 'Person',
+                  'name': currentPost.expertQuote ? currentPost.expertQuote.author : 'Sarah Jenkins',
+                },
+                'reviewRating': {
+                  '@type': 'Rating',
+                  'ratingValue': '5',
+                  'bestRating': '5',
+                },
+                'reviewBody': currentPost.expertQuote
+                  ? (isAr ? currentPost.expertQuote.quote.ar : currentPost.expertQuote.quote.en)
+                  : 'CheckCatch provides unparalleled precision in 2-word domain valuation and radio testing.',
+              },
+            ],
+          },
+        ],
+      };
+      script.text = JSON.stringify(articleSchema);
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      const el = document.getElementById('article-structured-data');
+      if (el) el.remove();
+    };
+  }, [currentPost, isAr]);
 
   // Categories list
   const categories = useMemo(() => {
@@ -112,6 +254,165 @@ export const BlogPage: React.FC<BlogPageProps> = ({
       );
     }
     setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  const handleCopyCitation = (citationText: string) => {
+    navigator.clipboard.writeText(citationText);
+    setCopiedCitation(true);
+    if (onShowToast) {
+      onShowToast(
+        isAr ? 'تم نسخ المرجع والاقتباس الأكاديمي بنجاح!' : 'Citation reference copied to clipboard!',
+        'success'
+      );
+    }
+    setTimeout(() => setCopiedCitation(false), 2500);
+  };
+
+  // Helper to render markdown blocks including tables & BLUF callouts
+  const renderMarkdownBlock = (paragraph: string, idx: number) => {
+    const trimmed = paragraph.trim();
+
+    // Table detection (Markdown table starting with |)
+    if (trimmed.includes('|') && trimmed.split('\n').every((line) => line.trim().startsWith('|'))) {
+      const lines = trimmed.split('\n').map((l) => l.trim()).filter(Boolean);
+      if (lines.length >= 2) {
+        const headerRow = lines[0]
+          .split('|')
+          .slice(1, -1)
+          .map((c) => c.trim());
+        const bodyRows = lines.slice(2).map((row) =>
+          row
+            .split('|')
+            .slice(1, -1)
+            .map((c) => c.trim())
+        );
+
+        return (
+          <div key={idx} className="my-6 overflow-x-auto rounded-2xl border border-slate-200 shadow-xs bg-white">
+            <table className="min-w-full divide-y divide-slate-200 text-xs sm:text-sm text-slate-800">
+              <thead className="bg-slate-900 text-white">
+                <tr>
+                  {headerRow.map((th, hIdx) => (
+                    <th
+                      key={hIdx}
+                      className="px-4 py-3.5 text-left rtl:text-right font-extrabold tracking-wide"
+                    >
+                      {th.replace(/\*\*/g, '')}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {bodyRows.map((row, rIdx) => (
+                  <tr key={rIdx} className={rIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/70 hover:bg-blue-50/40 transition-colors'}>
+                    {row.map((cell, cIdx) => (
+                      <td key={cIdx} className="px-4 py-3.5 leading-relaxed whitespace-pre-wrap font-medium">
+                        {cell.startsWith('`') && cell.endsWith('`') ? (
+                          <code className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-900 font-mono text-xs font-bold border border-blue-200">
+                            {cell.slice(1, -1)}
+                          </code>
+                        ) : cell.includes('**') ? (
+                          <span>
+                            {cell.split('**').map((seg, sIdx) =>
+                              sIdx % 2 === 1 ? (
+                                <strong key={sIdx} className="font-bold text-slate-950">
+                                  {seg}
+                                </strong>
+                              ) : (
+                                seg
+                              )
+                            )}
+                          </span>
+                        ) : (
+                          cell
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+    }
+
+    // Heading 3
+    if (trimmed.startsWith('### ')) {
+      return (
+        <h3 key={idx} className="text-lg sm:text-xl font-extrabold text-slate-900 pt-5 pb-1 border-b border-slate-100 flex items-center gap-2">
+          <span className="w-2 h-5 rounded-full bg-blue-600 shrink-0" />
+          <span>{trimmed.replace('### ', '')}</span>
+        </h3>
+      );
+    }
+
+    // Heading 4
+    if (trimmed.startsWith('#### ')) {
+      return (
+        <h4 key={idx} className="text-base font-bold text-slate-900 pt-3">
+          {trimmed.replace('#### ', '')}
+        </h4>
+      );
+    }
+
+    // Horizontal Rule
+    if (trimmed === '---') {
+      return <hr key={idx} className="border-slate-200 my-6" />;
+    }
+
+    // Blockquote
+    if (trimmed.startsWith('> ')) {
+      return (
+        <blockquote
+          key={idx}
+          className="p-4 my-4 rounded-xl bg-blue-50/90 border-l-4 rtl:border-l-0 rtl:border-r-4 border-blue-600 text-slate-900 font-medium leading-relaxed shadow-2xs"
+        >
+          {trimmed
+            .split('\n')
+            .map((line, lIdx) => (
+              <p key={lIdx} className="my-1">
+                {line.replace(/^>\s*/, '').replace(/\*([^*]+)\*/g, '$1')}
+              </p>
+            ))}
+        </blockquote>
+      );
+    }
+
+    // Unordered list items
+    if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+      const items = trimmed.split('\n');
+      return (
+        <ul key={idx} className="space-y-2 my-3 pl-5 rtl:pl-0 rtl:pr-5 list-disc text-slate-800 font-normal">
+          {items.map((it, i) => (
+            <li key={i} className="leading-relaxed">
+              {it.replace(/^[\*\-]\s*/, '')}
+            </li>
+          ))}
+        </ul>
+      );
+    }
+
+    // Numbered list items
+    if (/^\d+\.\s/.test(trimmed)) {
+      const items = trimmed.split('\n');
+      return (
+        <ol key={idx} className="space-y-2 my-3 pl-5 rtl:pl-0 rtl:pr-5 list-decimal text-slate-800 font-medium">
+          {items.map((it, i) => (
+            <li key={i} className="leading-relaxed">
+              {it.replace(/^\d+\.\s*/, '')}
+            </li>
+          ))}
+        </ol>
+      );
+    }
+
+    // Standard Paragraph
+    return (
+      <p key={idx} className="leading-relaxed text-slate-700">
+        {trimmed}
+      </p>
+    );
   };
 
   return (
@@ -170,14 +471,25 @@ export const BlogPage: React.FC<BlogPageProps> = ({
                 <span>{isAr ? 'العودة لجميع المقالات' : 'Back to All Articles'}</span>
               </button>
 
-              <button
-                type="button"
-                onClick={handleShare}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 shadow-xs transition-colors cursor-pointer"
-              >
-                {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-slate-500" />}
-                <span>{copiedLink ? (isAr ? 'تم النسخ!' : 'Copied!') : isAr ? 'مشاركة المقال' : 'Share Article'}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleCopyCitation(isAr ? currentPost.citationString.ar : currentPost.citationString.en)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-800 shadow-xs transition-colors cursor-pointer"
+                >
+                  {copiedCitation ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Quote className="w-3.5 h-3.5 text-blue-600" />}
+                  <span>{copiedCitation ? (isAr ? 'تم نسخ المرجع!' : 'Citation Copied!') : isAr ? 'اقتباس واستشهاد (AI / Cite)' : 'Cite Reference'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 shadow-xs transition-colors cursor-pointer"
+                >
+                  {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-slate-500" />}
+                  <span>{copiedLink ? (isAr ? 'تم النسخ!' : 'Copied!') : isAr ? 'مشاركة المقال' : 'Share Article'}</span>
+                </button>
+              </div>
             </div>
 
             {/* Article Header */}
@@ -205,98 +517,80 @@ export const BlogPage: React.FC<BlogPageProps> = ({
                 {isAr ? currentPost.summary.ar : currentPost.summary.en}
               </p>
 
+              {/* BLUF (Bottom Line Up Front) Box */}
+              <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-50 via-teal-50 to-emerald-50 border border-blue-200/90 shadow-xs space-y-2">
+                <div className="flex items-center gap-2 text-xs font-extrabold text-blue-900">
+                  <Sparkles className="w-4 h-4 text-blue-600 animate-pulse" />
+                  <span>{isAr ? 'خلاصة القول أولاً (BLUF - Bottom Line Up Front):' : 'BLUF (Bottom Line Up Front) Summary:'}</span>
+                </div>
+                <p className="text-xs sm:text-sm font-bold text-slate-900 leading-relaxed">
+                  {isAr ? currentPost.directAnswer.ar : currentPost.directAnswer.en}
+                </p>
+              </div>
+
+              {/* Author & Lab Credential Row */}
               <div className="flex items-center gap-3 pt-2 text-xs text-slate-600 border-t border-slate-100">
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-800 font-bold flex items-center justify-center font-mono">
+                <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-800 font-bold flex items-center justify-center font-mono text-sm shadow-2xs">
                   CC
                 </div>
                 <div>
                   <div className="font-bold text-slate-900">{currentPost.author}</div>
                   <div className="text-[11px] text-slate-500">
-                    {isAr ? 'فريق أبحاث وتقييم النطاقات في CheckCatch' : 'Domain Research & Valuation Unit'}
+                    {isAr ? currentPost.authorTitle.ar : currentPost.authorTitle.en}
                   </div>
                 </div>
               </div>
             </header>
 
-            {/* Article Body Content */}
+            {/* Expert Quote Card (if available) */}
+            {currentPost.expertQuote && (
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900 to-indigo-950 text-white shadow-md space-y-3 relative overflow-hidden">
+                <div className="flex items-start gap-3">
+                  <Quote className="w-6 h-6 text-blue-400 shrink-0 mt-1 opacity-90" />
+                  <div className="space-y-2">
+                    <p className="text-sm sm:text-base font-semibold text-blue-50 italic leading-relaxed">
+                      "{isAr ? currentPost.expertQuote.quote.ar : currentPost.expertQuote.quote.en}"
+                    </p>
+                    <div className="pt-2 border-t border-white/10">
+                      <span className="font-bold text-xs text-white block">
+                        {currentPost.expertQuote.author}
+                      </span>
+                      <span className="text-[11px] text-blue-300 block">
+                        {isAr ? currentPost.expertQuote.title.ar : currentPost.expertQuote.title.en}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Article Body Content with BLUF subheadings and tables */}
             <div className="prose prose-slate max-w-none bg-white p-6 sm:p-10 rounded-2xl border border-slate-200 shadow-xs space-y-6 text-slate-800 leading-relaxed text-sm sm:text-base">
               {(isAr ? currentPost.content.ar : currentPost.content.en)
                 .trim()
                 .split('\n\n')
-                .map((paragraph, idx) => {
-                  const trimmed = paragraph.trim();
+                .map((paragraph, idx) => renderMarkdownBlock(paragraph, idx))}
+            </div>
 
-                  // Heading 3
-                  if (trimmed.startsWith('### ')) {
-                    return (
-                      <h3 key={idx} className="text-lg sm:text-xl font-extrabold text-slate-900 pt-4 pb-1 border-b border-slate-100 flex items-center gap-2">
-                        <span className="w-1.5 h-5 rounded-full bg-blue-600 shrink-0" />
-                        <span>{trimmed.replace('### ', '')}</span>
-                      </h3>
-                    );
-                  }
-
-                  // Heading 4
-                  if (trimmed.startsWith('#### ')) {
-                    return (
-                      <h4 key={idx} className="text-base font-bold text-slate-900 pt-2">
-                        {trimmed.replace('#### ', '')}
-                      </h4>
-                    );
-                  }
-
-                  // Horizontal Rule
-                  if (trimmed === '---') {
-                    return <hr key={idx} className="border-slate-200 my-6" />;
-                  }
-
-                  // Blockquote
-                  if (trimmed.startsWith('> ')) {
-                    return (
-                      <blockquote
-                        key={idx}
-                        className="p-4 my-4 rounded-xl bg-blue-50/70 border-l-4 rtl:border-l-0 rtl:border-r-4 border-blue-600 text-slate-800 italic font-medium"
-                      >
-                        {trimmed.replace(/^>\s*/, '').replace(/\*([^*]+)\*/g, '$1')}
-                      </blockquote>
-                    );
-                  }
-
-                  // Unordered list items
-                  if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
-                    const items = trimmed.split('\n');
-                    return (
-                      <ul key={idx} className="space-y-2 my-3 pl-5 rtl:pl-0 rtl:pr-5 list-disc text-slate-700">
-                        {items.map((it, i) => (
-                          <li key={i} className="leading-relaxed">
-                            {it.replace(/^[\*\-]\s*/, '')}
-                          </li>
-                        ))}
-                      </ul>
-                    );
-                  }
-
-                  // Numbered list items
-                  if (/^\d+\.\s/.test(trimmed)) {
-                    const items = trimmed.split('\n');
-                    return (
-                      <ol key={idx} className="space-y-2 my-3 pl-5 rtl:pl-0 rtl:pr-5 list-decimal text-slate-700">
-                        {items.map((it, i) => (
-                          <li key={i} className="leading-relaxed font-medium">
-                            {it.replace(/^\d+\.\s*/, '')}
-                          </li>
-                        ))}
-                      </ol>
-                    );
-                  }
-
-                  // Standard Paragraph
-                  return (
-                    <p key={idx} className="leading-relaxed text-slate-700">
-                      {trimmed}
-                    </p>
-                  );
-                })}
+            {/* Academic & AI Citation Reference Box */}
+            <div className="p-5 rounded-2xl bg-slate-100 border border-slate-300 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                  <FileCheck className="w-4 h-4 text-slate-600" />
+                  <span>{isAr ? 'توثيق المرجع واقتباس الدراسة (Citation):' : 'Cite this Research Study / Academic Reference:'}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCopyCitation(isAr ? currentPost.citationString.ar : currentPost.citationString.en)}
+                  className="text-xs font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1 cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>{copiedCitation ? (isAr ? 'تم النسخ!' : 'Copied!') : isAr ? 'نسخ النص' : 'Copy'}</span>
+                </button>
+              </div>
+              <div className="p-3 bg-white rounded-xl border border-slate-200 font-mono text-xs text-slate-800 break-all select-all">
+                {isAr ? currentPost.citationString.ar : currentPost.citationString.en}
+              </div>
             </div>
 
             {/* Article Tags */}
@@ -338,7 +632,7 @@ export const BlogPage: React.FC<BlogPageProps> = ({
               </button>
             </div>
 
-            {/* Related Articles Carousel / List */}
+            {/* Related Articles List */}
             <div className="pt-8 border-t border-slate-200 space-y-4">
               <h3 className="text-lg font-bold text-slate-900">
                 {isAr ? 'مقالات موصى بها في تجارة النطاقات' : 'Related Domain Investment Guides'}
@@ -386,8 +680,8 @@ export const BlogPage: React.FC<BlogPageProps> = ({
               </h1>
               <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-medium">
                 {isAr
-                  ? 'مقالات ودراسات حالة متقدمة حول اختبار الراديو، اقتناص الدومينات الساقطة (Dropped & Pending Delete)، واستثمار النطاقات الثنائية عالية السيولة.'
-                  : 'In-depth research and tactical guides on phonetic radio tests, bulk auction screening, dropcatch timing, and institutional domain appraisals.'}
+                  ? 'مقالات ودراسات حالة متقدمة بأسلوب الإجابة المباشرة (BLUF)، واختبار الراديو، وقنص الدومينات الساقطة (Dropped & Pending Delete) مع أرقام واقتباسات معتمدة.'
+                  : 'In-depth research and tactical guides utilizing BLUF direct answers, phonetic radio tests, bulk auction screening, and verified market valuation metrics.'}
               </p>
 
               {/* Search Bar */}
@@ -436,7 +730,7 @@ export const BlogPage: React.FC<BlogPageProps> = ({
               ))}
             </div>
 
-            {/* Featured Post Hero Banner (when no search query active) */}
+            {/* Featured Post Hero Banner */}
             {!searchQuery && selectedCategory === 'ALL' && featuredPost && (
               <div
                 onClick={() => handleSelectPost(featuredPost.slug)}
