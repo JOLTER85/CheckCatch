@@ -5,6 +5,7 @@ import { DomainCard } from './components/DomainCard';
 import { DomainTable } from './components/DomainTable';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { CheckCatchLogo } from './components/CheckCatchLogo';
+import { SeoFaqSection } from './components/SeoFaqSection';
 import { Footer } from './components/Footer';
 import type { LegalModalType } from './components/LegalModal';
 
@@ -76,6 +77,25 @@ export default function App() {
       localStorage.setItem('checkcatch_lang', lang);
       document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
       document.documentElement.lang = lang;
+      if (lang === 'ar') {
+        document.title = 'CheckCatch.com | محرك فحص وتقييم النطاقات الثنائية واصطياد الدومينات';
+        const metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) {
+          metaDesc.setAttribute(
+            'content',
+            'منصة CheckCatch الاحترافية لتقييم النطاقات الثنائية، فحص اختبار الراديو الصوتي، تدقيق القاموس واستبعاد الكلمات العشوائية، وحساب القيمة السوقية للدومينات.'
+          );
+        }
+      } else {
+        document.title = 'CheckCatch.com | Two-Word Domain Verification & Valuation Engine';
+        const metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) {
+          metaDesc.setAttribute(
+            'content',
+            'CheckCatch.com is a professional two-word domain verification, semantic analysis, and valuation platform. Check quality, inspect radio tests, analyze comps, and catch high-value domains.'
+          );
+        }
+      }
     } catch (e) {
       console.error(e);
     }
@@ -961,6 +981,9 @@ export default function App() {
           )}
         </section>
       </main>
+
+      {/* SEO & Knowledge Base Guide Section */}
+      <SeoFaqSection lang={lang} />
 
       {/* Footer */}
       <Footer

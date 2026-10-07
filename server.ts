@@ -2487,6 +2487,17 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Explicit SEO routes for search engine crawlers (Googlebot, Bingbot)
+app.get("/robots.txt", (req, res) => {
+  res.type("text/plain");
+  res.sendFile(path.join(process.cwd(), "public", "robots.txt"));
+});
+
+app.get("/sitemap.xml", (req, res) => {
+  res.type("application/xml");
+  res.sendFile(path.join(process.cwd(), "public", "sitemap.xml"));
+});
+
 // Vite middleware or production static serving
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
