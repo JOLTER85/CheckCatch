@@ -16,6 +16,10 @@ const SavedDomainsDrawer = React.lazy(() =>
 const LegalModal = React.lazy(() =>
   import('./components/LegalModal').then((m) => ({ default: m.LegalModal }))
 );
+const BlogPage = React.lazy(() =>
+  import('./components/BlogPage').then((m) => ({ default: m.BlogPage }))
+);
+import { BLOG_POSTS } from './data/blogPosts';
 import {
   DomainItem,
   FilterRules,
@@ -132,15 +136,33 @@ export default function App() {
   const [expandAllBreakdowns, setExpandAllBreakdowns] = useState<boolean>(false);
   const [hasAnalyzedSpreadsheet, setHasAnalyzedSpreadsheet] = useState<boolean>(false);
   const [legalModalType, setLegalModalType] = useState<LegalModalType>(null);
+  const [isBlogView, setIsBlogView] = useState<boolean>(false);
+  const [currentBlogSlug, setCurrentBlogSlug] = useState<string | null>(null);
 
-  // Synchronize URL hash with legal pages (/about, /contact, /privacy, /terms or #about, #contact, etc.)
+  // Synchronize URL path and hash with /blog, /blog/:slug, and legal pages
   useEffect(() => {
     const handleHashOrPathChange = () => {
-      const hash = window.location.hash.replace('#', '').toLowerCase();
-      const path = window.location.pathname.replace('/', '').toLowerCase();
-      const target = hash || path;
-      if (target === 'about' || target === 'contact' || target === 'privacy' || target === 'terms') {
-        setLegalModalType(target as LegalModalType);
+      const rawHash = window.location.hash.replace('#', '').toLowerCase();
+      const rawPath = window.location.pathname.replace(/^\//, '').toLowerCase();
+
+      if (rawPath === 'blog' || rawHash === 'blog') {
+        setIsBlogView(true);
+        setCurrentBlogSlug(null);
+        setLegalModalType(null);
+      } else if (rawPath.startsWith('blog/') || rawHash.startsWith('blog/')) {
+        const slug = (rawPath.startsWith('blog/') ? rawPath : rawHash).replace('blog/', '').trim();
+        setIsBlogView(true);
+        setCurrentBlogSlug(slug || null);
+        setLegalModalType(null);
+      } else {
+        setIsBlogView(false);
+        setCurrentBlogSlug(null);
+        const target = rawHash || rawPath;
+        if (target === 'about' || target === 'contact' || target === 'privacy' || target === 'terms') {
+          setLegalModalType(target as LegalModalType);
+        } else {
+          setLegalModalType(null);
+        }
       }
     };
 
@@ -152,6 +174,55 @@ export default function App() {
       window.removeEventListener('popstate', handleHashOrPathChange);
     };
   }, []);
+
+  // Sync document title and meta description for blog view
+  useEffect(() => {
+    if (isBlogView) {
+      if (currentBlogSlug) {
+        const post = BLOG_POSTS.find((p) => p.slug === currentBlogSlug);
+        if (post) {
+          document.title = `${lang === 'ar' ? post.title.ar : post.title.en} | CheckCatch Blog`;
+          const metaDesc = document.querySelector('meta[name="description"]');
+          if (metaDesc) {
+            metaDesc.setAttribute('content', lang === 'ar' ? post.summary.ar : post.summary.en);
+          }
+          return;
+        }
+      }
+      document.title =
+        lang === 'ar'
+          ? 'مدونة CheckCatch | أسرار واستراتيجيات قنص وتقييم النطاقات'
+          : 'CheckCatch Blog | Domain Dropcatching & Valuation Playbooks';
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) {
+        metaDesc.setAttribute(
+          'content',
+          lang === 'ar'
+            ? 'مقالات ودراسات حالة احترافية في تجارة النطاقات، قنص الدومينات الساقطة، واختبار الراديو الصوتي وتقييم الدومينات الثنائية.'
+            : 'In-depth research and tactical guides on phonetic radio tests, bulk auction screening, dropcatch timing, and institutional domain appraisals.'
+        );
+      }
+    }
+  }, [isBlogView, currentBlogSlug, lang]);
+
+  const handleOpenBlog = (slug?: string | null) => {
+    setIsBlogView(true);
+    setCurrentBlogSlug(slug || null);
+    setLegalModalType(null);
+    if (slug) {
+      window.history.pushState(null, '', `/blog/${slug}`);
+    } else {
+      window.history.pushState(null, '', '/blog');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNavigateHome = () => {
+    setIsBlogView(false);
+    setCurrentBlogSlug(null);
+    window.history.pushState(null, '', '/');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const openLegalModal = (type: LegalModalType) => {
     setLegalModalType(type);
@@ -597,10 +668,39 @@ export default function App() {
         lang={lang}
         onToggleLang={setLang}
         onOpenLegal={openLegalModal}
+        onOpenBlog={() => handleOpenBlog()}
       />
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+      {isBlogView ? (
+        <Suspense
+          fallback={
+            <div className="flex-1 max-w-7xl mx-auto px-4 py-24 text-center">
+              <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-xs text-slate-500 font-bold">
+                {lang === 'ar' ? 'جارٍ تحميل مقالات المدونة...' : 'Loading blog articles...'}
+              </p>
+            </div>
+          }
+        >
+          <BlogPage
+            lang={lang}
+            onNavigateHome={handleNavigateHome}
+            initialPostSlug={currentBlogSlug}
+            onSelectPostSlug={(slug) => {
+              setCurrentBlogSlug(slug);
+              if (slug) {
+                window.history.pushState(null, '', `/blog/${slug}`);
+              } else {
+                window.history.pushState(null, '', '/blog');
+              }
+            }}
+            onShowToast={(msg, type) => showToast(msg, type || 'info')}
+          />
+        </Suspense>
+      ) : (
+        <>
+          {/* Main Container */}
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
         {/* Smart 2-Word Domain Discovery Engine */}
         <section id="batch-analyzer-and-generator-section" className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -984,13 +1084,16 @@ export default function App() {
 
       {/* SEO & Knowledge Base Guide Section */}
       <SeoFaqSection lang={lang} />
+    </>
+  )}
 
-      {/* Footer */}
-      <Footer
-        lang={lang}
-        onOpenLegal={openLegalModal}
-        lastGeneratedAt={lastGeneratedAt}
-      />
+  {/* Footer */}
+  <Footer
+    lang={lang}
+    onOpenLegal={openLegalModal}
+    onOpenBlog={() => handleOpenBlog()}
+    lastGeneratedAt={lastGeneratedAt}
+  />
 
       {/* Legal & Informational Pages Modal (Code-Split Lazy Loaded) */}
       {legalModalType && (

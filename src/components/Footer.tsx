@@ -12,6 +12,7 @@ import {
   MessageCircle,
   ExternalLink,
   ShieldCheck,
+  BookOpen,
 } from 'lucide-react';
 import { Language, translations } from '../utils/translations';
 import { LegalModalType } from './LegalModal';
@@ -20,12 +21,14 @@ interface FooterProps {
   lang: Language;
   onOpenLegal: (type: LegalModalType) => void;
   lastGeneratedAt?: string | null;
+  onOpenBlog?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
   lang,
   onOpenLegal,
   lastGeneratedAt,
+  onOpenBlog,
 }) => {
   const t = translations[lang] || translations.en;
   const isAr = lang === 'ar';
@@ -61,6 +64,19 @@ export const Footer: React.FC<FooterProps> = ({
               {isAr ? 'الصفحات القانونية والمعلوماتية' : 'Legal & Platform Information'}
             </span>
             <ul className="grid grid-cols-2 gap-2 text-xs">
+              {onOpenBlog && (
+                <li className="col-span-2 sm:col-span-1">
+                  <button
+                    id="footer-blog-btn"
+                    type="button"
+                    onClick={onOpenBlog}
+                    className="flex items-center gap-1.5 text-blue-700 font-bold hover:underline transition-colors text-left"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+                    <span>{isAr ? 'مدونة قنص الدومينات' : 'Domain Blog'}</span>
+                  </button>
+                </li>
+              )}
               <li>
                 <button
                   id="footer-about-btn"

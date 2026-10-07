@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bookmark, ShieldCheck, Globe, ChevronDown, Check, Info, Mail } from 'lucide-react';
+import { Bookmark, ShieldCheck, Globe, ChevronDown, Check, Info, Mail, BookOpen } from 'lucide-react';
 import { Language, translations } from '../utils/translations';
 import { CheckCatchLogo } from './CheckCatchLogo';
 import { LegalModalType } from './LegalModal';
@@ -11,6 +11,7 @@ interface NavbarProps {
   lang?: Language;
   onToggleLang?: (lang: Language) => void;
   onOpenLegal?: (type: LegalModalType) => void;
+  onOpenBlog?: () => void;
 }
 
 const LANGUAGES: { code: Language; label: string; flag: string; nativeName: string }[] = [
@@ -26,6 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   lang = 'en',
   onToggleLang,
   onOpenLegal,
+  onOpenBlog,
 }) => {
   const t = translations[lang] || translations.en;
   const isAr = lang === 'ar';
@@ -86,29 +88,43 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Controls: About, Contact, Strict Rules Badge, Language Selector & Shortlist */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Informational Quick Links */}
-          {onOpenLegal && (
-            <div className="hidden md:flex items-center gap-1.5 border-r rtl:border-r-0 rtl:border-l border-slate-200 pr-2.5 rtl:pr-0 rtl:pl-2.5">
+          {/* Informational Quick Links & Blog */}
+          <div className="hidden md:flex items-center gap-1.5 border-r rtl:border-r-0 rtl:border-l border-slate-200 pr-2.5 rtl:pr-0 rtl:pl-2.5">
+            {onOpenBlog && (
               <button
-                id="nav-about-btn"
+                id="nav-blog-btn"
                 type="button"
-                onClick={() => onOpenLegal('about')}
-                className="min-h-[44px] flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-teal-800 hover:bg-teal-50/60 transition-all"
+                onClick={onOpenBlog}
+                className="min-h-[44px] flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-blue-700 bg-blue-50/70 hover:bg-blue-100/70 border border-blue-200 transition-all cursor-pointer"
               >
-                <Info className="w-4 h-4 text-teal-600" />
-                <span>{isAr ? 'عن المنصة' : 'About'}</span>
+                <BookOpen className="w-4 h-4 text-blue-600" />
+                <span>{isAr ? 'المدونة' : 'Blog'}</span>
               </button>
-              <button
-                id="nav-contact-btn"
-                type="button"
-                onClick={() => onOpenLegal('contact')}
-                className="min-h-[44px] flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-teal-800 hover:bg-teal-50/60 transition-all"
-              >
-                <Mail className="w-4 h-4 text-teal-600" />
-                <span>{isAr ? 'اتصل بنا' : 'Contact'}</span>
-              </button>
-            </div>
-          )}
+            )}
+
+            {onOpenLegal && (
+              <>
+                <button
+                  id="nav-about-btn"
+                  type="button"
+                  onClick={() => onOpenLegal('about')}
+                  className="min-h-[44px] flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-teal-800 hover:bg-teal-50/60 transition-all"
+                >
+                  <Info className="w-4 h-4 text-teal-600" />
+                  <span>{isAr ? 'عن المنصة' : 'About'}</span>
+                </button>
+                <button
+                  id="nav-contact-btn"
+                  type="button"
+                  onClick={() => onOpenLegal('contact')}
+                  className="min-h-[44px] flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-teal-800 hover:bg-teal-50/60 transition-all"
+                >
+                  <Mail className="w-4 h-4 text-teal-600" />
+                  <span>{isAr ? 'اتصل بنا' : 'Contact'}</span>
+                </button>
+              </>
+            )}
+          </div>
 
           {/* Rules indicator */}
           <div className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-50/80 border border-teal-200/80 text-xs font-semibold text-teal-900">
