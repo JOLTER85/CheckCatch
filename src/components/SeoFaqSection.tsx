@@ -8,14 +8,17 @@ import {
   Radio,
   Layers,
   TrendingUp,
+  ArrowRight,
+  ArrowLeft,
 } from 'lucide-react';
 import { Language } from '../utils/translations';
 
 interface SeoFaqSectionProps {
   lang: Language;
+  onSelectArticle?: (slug: string) => void;
 }
 
-export const SeoFaqSection: React.FC<SeoFaqSectionProps> = ({ lang }) => {
+export const SeoFaqSection: React.FC<SeoFaqSectionProps> = ({ lang, onSelectArticle }) => {
   const isAr = lang === 'ar';
   const isFr = lang === 'fr';
   const isEs = lang === 'es';
@@ -50,25 +53,31 @@ export const SeoFaqSection: React.FC<SeoFaqSectionProps> = ({ lang }) => {
       : 'Everything you need to know about dropcatching brandable domains, dictionary decomposition, and calculating realistic wholesale vs. retail valuations.',
     pillars: [
       {
+        slug: 'the-radio-test-domain-valuation-secret',
         icon: Radio,
         title: isAr ? 'اختبار الراديو الصوتي (Radio Test)' : 'The Phonetic Radio Test',
         desc: isAr
           ? 'المعيار الذهبي في تسويق النطاقات؛ يقيس مدى سهولة كتابة الدومين فور سماعه في حديث شفهي دون الحاجة لتهجئته أو توضيح حروفه.'
           : 'The gold standard of brandability; verifies that a listener can instantly and accurately type the domain upon hearing it spoken aloud without spelling confusion.',
+        cta: isAr ? 'قراءة الموضوع كاملاً' : 'Read Full Topic',
       },
       {
+        slug: 'detecting-gibberish-junk-consonant-traps',
         icon: Layers,
         title: isAr ? 'التفكيك القاموسي الدقيق (275K+ Words)' : 'Certified Dictionary Decomposition',
         desc: isAr
           ? 'فحص شامل يعتمد على قاموس معتمد يضم أكثر من 275 ألف جذر لغوي للتأكد من أن الدومين يتألف من كلمتين حقيقيتين واستبعاد الحروف العشوائية (Gibberish).'
           : 'Scans against a verified 275k+ English master dictionary to confirm true two-word compounds while rigorously filtering consonant typos and gibberish strings.',
+        cta: isAr ? 'قراءة الموضوع كاملاً' : 'Read Full Topic',
       },
       {
+        slug: 'wholesale-vs-retail-domain-pricing',
         icon: TrendingUp,
         title: isAr ? 'التقييم المؤسسي المزدوج (Wholesale vs Retail)' : 'Institutional Dual-Tier Valuation',
         desc: isAr
           ? 'فصل دقيق بين السعر التجاري السريع بين المستثمرين (Wholesale Liquidity) وقيمة البيع النهائي للشركات والمشاريع الريادية (Retail End-User Value).'
           : 'Calculates both immediate wholesale marketplace liquidity for domain dropcatchers and fair market retail acquisition value for funded venture startups.',
+        cta: isAr ? 'قراءة الموضوع كاملاً' : 'Read Full Topic',
       },
     ],
     faqHeading: isAr
@@ -142,25 +151,48 @@ export const SeoFaqSection: React.FC<SeoFaqSectionProps> = ({ lang }) => {
         </p>
       </div>
 
-      {/* 3 Pillars Grid */}
+      {/* 3 Pillars Grid - Interactive Article Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
         {content.pillars.map((pillar, idx) => {
           const Icon = pillar.icon;
           return (
-            <article
+            <a
               key={idx}
-              className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-blue-200 transition-colors space-y-3"
+              href={`/blog/${pillar.slug}`}
+              onClick={(e) => {
+                if (onSelectArticle) {
+                  e.preventDefault();
+                  onSelectArticle(pillar.slug);
+                }
+              }}
+              className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-blue-400 hover:shadow-md transition-all space-y-4 group cursor-pointer block text-inherit no-underline"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 flex items-center justify-center text-blue-700">
-                <Icon className="w-5 h-5 stroke-[2.2]" />
+              <div className="flex items-center justify-between">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 flex items-center justify-center text-blue-700 group-hover:scale-105 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-xs">
+                  <Icon className="w-5 h-5 stroke-[2.2]" />
+                </div>
+                <span className="text-[11px] font-bold text-blue-700 bg-blue-50 group-hover:bg-blue-600 group-hover:text-white px-2.5 py-1 rounded-full border border-blue-200 transition-colors">
+                  {isAr ? 'فتح المقال' : 'Read Topic'}
+                </span>
               </div>
-              <h3 className="text-sm font-bold text-slate-900">
+
+              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">
                 {pillar.title}
               </h3>
+
               <p className="text-xs text-slate-600 leading-relaxed">
                 {pillar.desc}
               </p>
-            </article>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-blue-600 group-hover:underline">
+                <span>{pillar.cta}</span>
+                {isAr ? (
+                  <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                ) : (
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                )}
+              </div>
+            </a>
           );
         })}
       </div>

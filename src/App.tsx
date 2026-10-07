@@ -1083,7 +1083,7 @@ export default function App() {
       </main>
 
       {/* SEO & Knowledge Base Guide Section */}
-      <SeoFaqSection lang={lang} />
+      <SeoFaqSection lang={lang} onSelectArticle={(slug) => handleOpenBlog(slug)} />
     </>
   )}
 

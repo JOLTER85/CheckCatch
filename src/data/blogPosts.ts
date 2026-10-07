@@ -341,8 +341,8 @@ When screening auction lists, focus on these proven linguistic formulas:
     slug: 'detecting-gibberish-junk-consonant-traps',
     featured: false,
     title: {
-      en: 'Avoiding the Gibberish Trap: Algorithmic Screening for Consonant-Heavy & Unpronounceable Drops',
-      ar: 'فخ الحروف العشوائية: كيف تفحص الدومينات خوارزمياً وتتجنب شراء النطاقات المهملة (Gibberish)',
+      en: 'Certified 275K+ Dictionary Decomposition: Algorithmic Screening for Consonant-Heavy & Gibberish Drops',
+      ar: 'التفكيك القاموسي الدقيق (275K+ Words): فحص النطاقات خوارزمياً واستبعاد الحروف العشوائية (Gibberish)',
     },
     summary: {
       en: 'Learn how automated bots flood drop lists with unpronounceable letter mashups, and how to utilize algorithmic linguistic filters to safeguard your portfolio capital.',
