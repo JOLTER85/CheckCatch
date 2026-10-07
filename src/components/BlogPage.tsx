@@ -76,18 +76,32 @@ export const BlogPage: React.FC<BlogPageProps> = ({
     return BLOG_POSTS.find((p) => p.slug === selectedPostSlug) || null;
   }, [selectedPostSlug]);
 
-  // Dynamic Schema.org structured data for active article (TechArticle, FAQPage, HowTo, Product/Review)
+  // Dynamic Schema.org structured data and document meta tags for Blog / Article
   useEffect(() => {
-    const existingScript = document.getElementById('article-structured-data');
+    const existingScript = document.getElementById('dynamic-blog-structured-data');
     if (existingScript) {
       existingScript.remove();
     }
 
+    const previousTitle = document.title;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    const previousDesc = metaDesc ? metaDesc.getAttribute('content') : '';
+
+    const script = document.createElement('script');
+    script.id = 'dynamic-blog-structured-data';
+    script.type = 'application/ld+json';
+
     if (currentPost) {
-      const script = document.createElement('script');
-      script.id = 'article-structured-data';
-      script.type = 'application/ld+json';
-      const articleSchema = {
+      // 1. Single Article View: Inject TechArticle + FAQPage + Breadcrumbs
+      const postTitle = isAr ? currentPost.title.ar : currentPost.title.en;
+      const postSummary = isAr ? currentPost.summary.ar : currentPost.summary.en;
+      
+      document.title = `${postTitle} | CheckCatch Blog`;
+      if (metaDesc) {
+        metaDesc.setAttribute('content', postSummary);
+      }
+
+      const articleSchema: Record<string, any> = {
         '@context': 'https://schema.org',
         '@graph': [
           {
@@ -99,8 +113,8 @@ export const BlogPage: React.FC<BlogPageProps> = ({
               'name': 'CheckCatch Domain Intelligence Blog',
               'url': 'https://checkcatch.com/blog',
             },
-            'headline': isAr ? currentPost.title.ar : currentPost.title.en,
-            'description': isAr ? currentPost.summary.ar : currentPost.summary.en,
+            'headline': postTitle,
+            'description': postSummary,
             'inLanguage': isAr ? 'ar' : 'en',
             'mainEntityOfPage': `https://checkcatch.com/blog/${currentPost.slug}`,
             'datePublished': currentPost.publishedDate,
@@ -149,7 +163,7 @@ export const BlogPage: React.FC<BlogPageProps> = ({
             'mainEntity': [
               {
                 '@type': 'Question',
-                'name': isAr ? currentPost.title.ar : currentPost.title.en,
+                'name': postTitle,
                 'acceptedAnswer': {
                   '@type': 'Answer',
                   'text': isAr ? currentPost.directAnswer.ar : currentPost.directAnswer.en,
@@ -158,54 +172,145 @@ export const BlogPage: React.FC<BlogPageProps> = ({
             ],
           },
           {
-            '@type': 'Product',
-            '@id': `https://checkcatch.com/#product-${currentPost.id}`,
-            'name': 'CheckCatch Domain Intelligence Engine',
-            'description': isAr ? currentPost.summary.ar : currentPost.summary.en,
-            'brand': {
-              '@type': 'Brand',
-              'name': 'CheckCatch',
-            },
-            'offers': {
-              '@type': 'Offer',
-              'price': '0',
-              'priceCurrency': 'USD',
-              'availability': 'https://schema.org/InStock',
-            },
-            'aggregateRating': {
-              '@type': 'AggregateRating',
-              'ratingValue': '4.9',
-              'reviewCount': '1280',
-              'bestRating': '5',
-              'worstRating': '1',
-            },
-            'review': [
+            '@type': 'BreadcrumbList',
+            '@id': `https://checkcatch.com/blog/${currentPost.slug}#breadcrumb`,
+            'itemListElement': [
               {
-                '@type': 'Review',
-                'author': {
-                  '@type': 'Person',
-                  'name': currentPost.expertQuote ? currentPost.expertQuote.author : 'Sarah Jenkins',
-                },
-                'reviewRating': {
-                  '@type': 'Rating',
-                  'ratingValue': '5',
-                  'bestRating': '5',
-                },
-                'reviewBody': currentPost.expertQuote
-                  ? (isAr ? currentPost.expertQuote.quote.ar : currentPost.expertQuote.quote.en)
-                  : 'CheckCatch provides unparalleled precision in 2-word domain valuation and radio testing.',
+                '@type': 'ListItem',
+                'position': 1,
+                'name': 'Home',
+                'item': 'https://checkcatch.com/',
+              },
+              {
+                '@type': 'ListItem',
+                'position': 2,
+                'name': 'Blog',
+                'item': 'https://checkcatch.com/blog',
+              },
+              {
+                '@type': 'ListItem',
+                'position': 3,
+                'name': postTitle,
+                'item': `https://checkcatch.com/blog/${currentPost.slug}`,
               },
             ],
           },
         ],
       };
+
+      // Add HowTo schema if it's the dropcatch guide
+      if (currentPost.slug === 'how-to-dropcatch-expired-domains-guide') {
+        articleSchema['@graph'].push({
+          '@type': 'HowTo',
+          '@id': `https://checkcatch.com/blog/${currentPost.slug}#howto`,
+          'name': isAr ? 'كيف تصطاد الدومينات الساقطة المنتهية خطوة بخطوة' : 'How to Dropcatch Expired High-Value Domains Step-by-Step',
+          'description': isAr
+            ? 'خطوات عملية لحجز طلبات القنص المسبقة واقتناص الدومينات الثنائية فور إسقاطها من السجل.'
+            : 'Actionable step-by-step institutional guide on backordering and catching expiring two-word domains.',
+          'step': [
+            {
+              '@type': 'HowToStep',
+              'position': 1,
+              'name': isAr ? 'فلترة كتالوج الحذف المعلق (Pending Delete)' : 'Filter Pending Delete Catalog',
+              'text': isAr
+                ? 'استيراد جدول المزادات وعزل النطاقات في أيام الحذف الخمسة الأخيرة.'
+                : 'Import auction catalog and isolate names in their final 5-day registry lock.',
+            },
+            {
+              '@type': 'HowToStep',
+              'position': 2,
+              'name': isAr ? 'فحص الكلمتين واختبار الراديو' : 'Run 2-Word & Radio Test Audit',
+              'text': isAr
+                ? 'فحص الاسم مقابل 275 ألف جذر واستبعاد العشوائيات والحروف المتشابهة صوتاً.'
+                : 'Screen against 275k dictionary roots and eliminate homophone collisions.',
+            },
+            {
+              '@type': 'HowToStep',
+              'position': 3,
+              'name': isAr ? 'وضع طلبات القنص المسبقة (Backorders)' : 'Place Multi-Catcher Backorders',
+              'text': isAr
+                ? 'حجز طلبات القنص عبر شبكات DropCatch و SnapNames و Catched.'
+                : 'Place simultaneous backorders across DropCatch, SnapNames, and Catched networks.',
+            },
+          ],
+        });
+      }
+
       script.text = JSON.stringify(articleSchema);
+      document.head.appendChild(script);
+    } else {
+      // 2. Blog Directory / List View: Inject Blog + CollectionPage
+      const blogTitle = isAr
+        ? 'مدونة CheckCatch لتقييم وقنص الدومينات | أدلة ومؤشرات 2026'
+        : 'CheckCatch Domain Intelligence Blog | Dropcatching & Valuation Guides';
+      const blogDesc = isAr
+        ? 'مقالات ودراسات حالة متقدمة بأسلوب الإجابة المباشرة (BLUF)، واختبار الراديو الصوتي، وقنص الدومينات الساقطة، واستثمار النطاقات الثنائية عالية السيولة.'
+        : 'Authoritative research, empirical valuation benchmarks, and tactical guides on two-word domain dropcatching and phonetic radio testing.';
+
+      document.title = blogTitle;
+      if (metaDesc) {
+        metaDesc.setAttribute('content', blogDesc);
+      }
+
+      const blogCollectionSchema = {
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'Blog',
+            '@id': 'https://checkcatch.com/blog#blog',
+            'name': 'CheckCatch Domain Intelligence Blog',
+            'url': 'https://checkcatch.com/blog',
+            'description': blogDesc,
+            'publisher': {
+              '@type': 'Organization',
+              'name': 'CheckCatch',
+              'url': 'https://checkcatch.com',
+              'logo': 'https://checkcatch.com/logo.svg',
+            },
+            'blogPost': BLOG_POSTS.map((post) => ({
+              '@type': 'BlogPosting',
+              'headline': isAr ? post.title.ar : post.title.en,
+              'description': isAr ? post.summary.ar : post.summary.en,
+              'url': `https://checkcatch.com/blog/${post.slug}`,
+              'datePublished': post.publishedDate,
+              'author': {
+                '@type': 'Person',
+                'name': post.author,
+              },
+            })),
+          },
+          {
+            '@type': 'BreadcrumbList',
+            '@id': 'https://checkcatch.com/blog#breadcrumb',
+            'itemListElement': [
+              {
+                '@type': 'ListItem',
+                'position': 1,
+                'name': 'Home',
+                'item': 'https://checkcatch.com/',
+              },
+              {
+                '@type': 'ListItem',
+                'position': 2,
+                'name': 'Blog',
+                'item': 'https://checkcatch.com/blog',
+              },
+            ],
+          },
+        ],
+      };
+
+      script.text = JSON.stringify(blogCollectionSchema);
       document.head.appendChild(script);
     }
 
     return () => {
-      const el = document.getElementById('article-structured-data');
+      const el = document.getElementById('dynamic-blog-structured-data');
       if (el) el.remove();
+      document.title = previousTitle;
+      if (metaDesc && previousDesc) {
+        metaDesc.setAttribute('content', previousDesc);
+      }
     };
   }, [currentPost, isAr]);
 
