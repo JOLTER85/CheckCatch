@@ -19,6 +19,9 @@ const LegalModal = React.lazy(() =>
 const BlogPage = React.lazy(() =>
   import('./components/BlogPage').then((m) => ({ default: m.BlogPage }))
 );
+const LlmsTxtModal = React.lazy(() =>
+  import('./components/LlmsTxtModal').then((m) => ({ default: m.LlmsTxtModal }))
+);
 import { BLOG_POSTS } from './data/blogPosts';
 import {
   DomainItem,
@@ -138,6 +141,7 @@ export default function App() {
   const [legalModalType, setLegalModalType] = useState<LegalModalType>(null);
   const [isBlogView, setIsBlogView] = useState<boolean>(false);
   const [currentBlogSlug, setCurrentBlogSlug] = useState<string | null>(null);
+  const [isLlmsModalOpen, setIsLlmsModalOpen] = useState<boolean>(false);
 
   // Synchronize URL path and hash with /blog, /blog/:slug, and legal pages
   useEffect(() => {
@@ -1092,8 +1096,20 @@ export default function App() {
     lang={lang}
     onOpenLegal={openLegalModal}
     onOpenBlog={() => handleOpenBlog()}
+    onOpenLlms={() => setIsLlmsModalOpen(true)}
     lastGeneratedAt={lastGeneratedAt}
   />
+
+      {/* LLMs.txt Modal (Code-Split Lazy Loaded) */}
+      {isLlmsModalOpen && (
+        <Suspense fallback={null}>
+          <LlmsTxtModal
+            isOpen={isLlmsModalOpen}
+            onClose={() => setIsLlmsModalOpen(false)}
+            lang={lang}
+          />
+        </Suspense>
+      )}
 
       {/* Legal & Informational Pages Modal (Code-Split Lazy Loaded) */}
       {legalModalType && (

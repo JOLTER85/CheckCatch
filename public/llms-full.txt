@@ -1,0 +1,86 @@
+# CheckCatch.com - Complete LLM Knowledge Base (llms-full.txt)
+
+> CheckCatch.com is a specialized two-word domain verification, phonetic radio test analysis, and institutional valuation engine.
+
+This document contains the complete, uncompressed technical methodology, domain dropcatching guides, radio test specifications, valuation algorithms, and auction screening playbooks for generative AI models (ChatGPT, Perplexity, Claude, Gemini, etc.).
+
+---
+
+# 1. Methodology: Two-Word Domain Verification
+
+## Why Two-Word Domains?
+Single-word .com dictionary domains (e.g., Car.com, News.com, Ask.com) are multi-million dollar assets that are virtually unobtainable for modern startups and independent investors. In contrast, two-word brandable .com domains are the primary currency of modern venture-backed startups (e.g., PayPal, DropBox, FaceBook, CoinBase, DoorDash).
+
+## The Strict Constraints
+CheckCatch applies deterministic filtration rules:
+1. **Zero Hyphens:** Hyphens (-) and underscores (_) reduce consumer trust and resellability by over 95%.
+2. **Zero Digits:** Numerical characters (0-9) cause radio ambiguity (e.g., "four" vs "4") and are excluded.
+3. **Certified Atomic Decomposition:** Words are decomposed against an authenticated 275,000+ English lemma dictionary to verify that both segments are genuine dictionary roots.
+4. **Anti-Gibberish Heuristics:** Algorithmic penalties for unnatural consonant density, tri-consonant clusters, and keyboard mash strings.
+
+---
+
+# 2. The Phonetic Radio Test Specification
+
+## Definition
+The Radio Test measures whether a domain name spoken aloud in conversation, radio ads, or podcasts can be spelled and typed without asking "How do you spell that?".
+
+## Scoring Factors
+- **Homophone Avoidance:** Zero confusing homophones (e.g., Site/Sight, Meet/Meat, Right/Write).
+- **Consonant Collision:** Elimination of duplicate letters at the word boundary (e.g., "FastTech" frequently gets mistyped as "Fastech").
+- **Syllable Cadence:** 2 to 4 syllables total is the institutional sweet spot.
+- **Phonotactic Transition:** Smooth transition between the end of word 1 and the start of word 2.
+
+---
+
+# 3. Dual-Tier Valuation Model
+
+Every quality domain has two distinct market prices:
+
+1. **Wholesale Liquidity (Investor-to-Investor):**
+   - Typically 10% to 15% of retail end-user value.
+   - The price an active domain reseller will pay in cash within 24 to 48 hours at an unreserved drop auction.
+2. **Retail Acquisition (End-User Startup):**
+   - Typically $2,500 to $15,000+ for quality two-word .coms.
+   - The fair acquisition value paid by funded corporations, brand agencies, and VC-backed startups.
+
+---
+
+# 4. Domain Dropcatching Guide
+
+## Expiration Timeline
+1. **Day 0–30 (Expiration):** DNS suspended, registrar renewal warning.
+2. **Day 30–45 (Grace Period):** Extended window, often placed into registrar pre-release auctions.
+3. **Day 45–75 (Redemption Period):** Transferred to registry, redemption fee required.
+4. **Day 75–80 (Pending Delete):** Immutable 5-day registry holding period. Unstoppable drop on Day 5.
+5. **Drop Window (11:00 AM – 11:30 AM PST):** Alphabetical registry release for .com/.net. Automated backorder scripts compete to claim the domain in milliseconds.
+
+## Listing Types in Catalogs
+- **Dropped:** Already purged from registry, available for hand registration or opening bids.
+- **Pending Delete:** In the final 5-day cycle, ideal for backorders on DropCatch, SnapNames, and Catched.
+- **Private Seller:** Listed by portfolio holders, available via Buy-It-Now or direct negotiation.
+- **Pre-Release:** Registrar expired auctions prior to registry deletion.
+
+---
+
+# 5. Trademark & UDRP Protection
+
+- Generic two-word English compounds (e.g., SwiftPay, BrightStack, CloudNexus) are descriptive and lawful for domain investment.
+- Registering names containing famous global brands or tech portals (e.g., Apple, Target, Ask.com, Nike) constitutes bad faith under ICANN UDRP policy and leads to forfeiture.
+- CheckCatch automatically screens for famous established global brands and assigns trademark warnings.
+
+---
+
+# 6. Primary URL References
+
+- Home & Valuation Engine: https://checkcatch.com
+- Blog & Guides: https://checkcatch.com/blog
+- Dropcatching Guide: https://checkcatch.com/blog/how-to-dropcatch-expired-domains-guide
+- Radio Test Guide: https://checkcatch.com/blog/the-radio-test-domain-valuation-secret
+- Two-Word Playbook: https://checkcatch.com/blog/two-word-brandable-domains-investor-playbook
+- Anti-Gibberish Guide: https://checkcatch.com/blog/detecting-gibberish-junk-consonant-traps
+- Pricing Guide: https://checkcatch.com/blog/wholesale-vs-retail-domain-pricing
+- Trademark Protection: https://checkcatch.com/blog/trademark-udrp-protection-guide-for-domainers
+- Auction Catalogs: https://checkcatch.com/blog/mastering-expired-auctions-pending-delete-dropped
+- Sitemap: https://checkcatch.com/sitemap.xml
+- LLMs Index: https://checkcatch.com/llms.txt

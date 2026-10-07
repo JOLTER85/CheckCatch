@@ -2498,6 +2498,17 @@ app.get("/sitemap.xml", (req, res) => {
   res.sendFile(path.join(process.cwd(), "public", "sitemap.xml"));
 });
 
+// AI Engine Discovery routes (llms.txt standard for ChatGPT, Perplexity, Claude)
+app.get("/llms.txt", (req, res) => {
+  res.setHeader("Content-Type", "text/markdown; charset=utf-8");
+  res.sendFile(path.join(process.cwd(), "public", "llms.txt"));
+});
+
+app.get("/llms-full.txt", (req, res) => {
+  res.setHeader("Content-Type", "text/markdown; charset=utf-8");
+  res.sendFile(path.join(process.cwd(), "public", "llms-full.txt"));
+});
+
 // Vite middleware or production static serving
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {

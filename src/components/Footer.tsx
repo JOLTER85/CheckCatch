@@ -13,6 +13,7 @@ import {
   ExternalLink,
   ShieldCheck,
   BookOpen,
+  Bot,
 } from 'lucide-react';
 import { Language, translations } from '../utils/translations';
 import { LegalModalType } from './LegalModal';
@@ -22,6 +23,7 @@ interface FooterProps {
   onOpenLegal: (type: LegalModalType) => void;
   lastGeneratedAt?: string | null;
   onOpenBlog?: () => void;
+  onOpenLlms?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
@@ -29,6 +31,7 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenLegal,
   lastGeneratedAt,
   onOpenBlog,
+  onOpenLlms,
 }) => {
   const t = translations[lang] || translations.en;
   const isAr = lang === 'ar';
@@ -74,6 +77,19 @@ export const Footer: React.FC<FooterProps> = ({
                   >
                     <BookOpen className="w-3.5 h-3.5 text-blue-600" />
                     <span>{isAr ? 'مدونة قنص الدومينات' : 'Domain Blog'}</span>
+                  </button>
+                </li>
+              )}
+              {onOpenLlms && (
+                <li className="col-span-2 sm:col-span-1">
+                  <button
+                    id="footer-llms-btn"
+                    type="button"
+                    onClick={onOpenLlms}
+                    className="flex items-center gap-1.5 text-indigo-700 font-bold hover:underline transition-colors text-left"
+                  >
+                    <Bot className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>{isAr ? 'ملف الذكاء الاصطناعي (llms.txt)' : 'AI Index (llms.txt)'}</span>
                   </button>
                 </li>
               )}

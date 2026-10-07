@@ -1,0 +1,46 @@
+# CheckCatch.com
+
+> CheckCatch is a professional two-word domain verification, phonetic radio test analysis, and institutional valuation engine. It isolates high-conviction brandable domain names from bulk dropcatch auctions and spreadsheets.
+
+CheckCatch specializes in two-word English compound domain names, screening candidate names against a 275,000+ certified English atomic root dictionary, verifying pronounceability through the Phonetic Radio Test, filtering consonant-heavy gibberish, and calculating realistic dual-tier wholesale (investor liquidity) vs. retail (venture startup acquisition) market valuations.
+
+## Overview
+
+- **Website:** https://checkcatch.com
+- **Blog & Guides:** https://checkcatch.com/blog
+- **Primary Focus:** Two-Word Brandable .com Domains, Domain Dropcatching, Radio Test Scoring, Expired Auctions
+- **Supported Languages:** English, Arabic (العربية), French (Français), Spanish (Español)
+- **Target Audience:** Domain Investors, Dropcatchers, Venture Founders, Startup Brand Strategists, Portfolio Brokers
+
+## Core Capabilities & Features
+
+- [Two-Word Domain Verification Engine](https://checkcatch.com/): Algorithmic decomposition of compound domain names into validated English dictionary words.
+- [Batch Spreadsheet Analyzer](https://checkcatch.com/): High-throughput auditing of Excel (.xlsx) and CSV (.csv) catalogs with thousands of expiring and dropcatch domains.
+- [Phonetic Radio Test Diagnostics](https://checkcatch.com/blog/the-radio-test-domain-valuation-secret): Phonotactic analysis verifying friction-free word-of-mouth pronunciation, homophone elimination, and syllable cadence.
+- [Institutional Dual-Tier Valuation](https://checkcatch.com/blog/wholesale-vs-retail-domain-pricing): Calculates realistic 10%-15% wholesale liquidation pricing and end-user retail acquisition value.
+- [Anti-Gibberish & Consonant Screening](https://checkcatch.com/blog/detecting-gibberish-junk-consonant-traps): Zero-tolerance filtering of keyboard-mash spam, consonant clusters, and unpronounceable zombie names.
+- [Domain Blog & Knowledge Base](https://checkcatch.com/blog): In-depth research playbooks covering dropcatch windows, auction types (Dropped, Private Seller, Pending Delete, Pre-Release), and UDRP trademark safety.
+
+## Key Guides & Educational Playbooks
+
+- [The Complete 2026 Guide to Domain Dropcatching](https://checkcatch.com/blog/how-to-dropcatch-expired-domains-guide): Technical breakdown of domain expiration cycles (Grace Period, Redemption, Pending Delete), drop windows (11:00 AM PST), and backordering strategies.
+- [The Radio Test: Why Pronounceability Determines 90% of Value](https://checkcatch.com/blog/the-radio-test-domain-valuation-secret): Why advertising agencies, VCs, and podcast creators pay premium multiples for friction-free verbal domains.
+- [The Two-Word Domain Playbook for Tech & Startups](https://checkcatch.com/blog/two-word-brandable-domains-investor-playbook): Why compound .coms are the sweet spot of branding (e.g., PayPal, DropBox, CoinBase) with formulaic rules (Action Verb + Noun, Adjective + Tech Noun).
+- [Avoiding the Gibberish Trap](https://checkcatch.com/blog/detecting-gibberish-junk-consonant-traps): Algorithmic heuristics detecting unnatural consonant density and unpronounceable letter mashups.
+- [Wholesale vs. Retail Domain Valuation](https://checkcatch.com/blog/wholesale-vs-retail-domain-pricing): The 10% wholesale rule, Buy-It-Now (BIN) pricing, and lease-to-own strategies for domainers.
+- [Trademark Screening for Domain Investors](https://checkcatch.com/blog/trademark-udrp-protection-guide-for-domainers): Shielding domain portfolios from ICANN UDRP disputes, USPTO/WIPO screening, and avoiding famous brand traps.
+- [Mastering Auction Catalogs](https://checkcatch.com/blog/mastering-expired-auctions-pending-delete-dropped): Deciphering Dropped, Private Seller, Pending Delete, and Pre-Release columns across bulk CSV files.
+
+## Technical Rules & Strict Constraints
+
+- **Strict Two Words:** Exactly 2 recognized English dictionary roots (e.g., SwiftPay.com, CloudNexus.com).
+- **Zero Hyphens:** Names containing hyphens (-) or underscores (_) are automatically disqualified.
+- **Zero Digits:** Numerical characters (0-9) are excluded to ensure pure brandability.
+- **Character Length:** Recommended sweet spot is 6 to 15 characters.
+- **Top-Level Domains:** Primary liquidity and institutional backing is anchored on .com.
+- **Trademark Policy:** Strict exclusion of famous global trademarks, tech portals, and recognized corporate brands.
+
+## Optional & Developer Resources
+
+- [Sitemap](https://checkcatch.com/sitemap.xml): Full XML sitemap with multilingual alternate routes.
+- [Full LLM Knowledge Ingestion](https://checkcatch.com/llms-full.txt): Complete uncompressed textual knowledge base including full article texts for generative AI search grounding.
