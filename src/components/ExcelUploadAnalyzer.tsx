@@ -10,9 +10,8 @@ import {
   Sliders,
   ChevronDown,
   XCircle,
-  KeyRound,
-  Target,
   Clock,
+  Tag,
 } from 'lucide-react';
 import { FilterRules, FilterEvaluationStats, UploadedSheetInfo, SearchTargetMode } from '../types';
 import { Language, translations } from '../utils/translations';
@@ -34,7 +33,7 @@ interface ExcelUploadAnalyzerProps {
     searchMode: SearchTargetMode,
     targetKeyword: string,
     relaxKeywordFilters?: boolean,
-    metadataMap?: Record<string, { endDate?: string; expirationDate?: string; rawRow?: Record<string, any> }>
+    metadataMap?: Record<string, { endDate?: string; expirationDate?: string; domainType?: string; rawRow?: Record<string, any> }>
   ) => void;
   evaluationStats: FilterEvaluationStats | null;
   setEvaluationStats: React.Dispatch<React.SetStateAction<FilterEvaluationStats | null>>;
@@ -43,77 +42,34 @@ interface ExcelUploadAnalyzerProps {
   lang?: Language;
 }
 
-const POPULAR_NICHES: Record<Language, string[]> = {
-  en: [
-    'Fintech & Payments',
-    'AI & Machine Learning',
-    'Cloud & DevOps',
-    'HealthTech & Bio',
-    'Cybersecurity',
-    'Web3 & Crypto',
-    'E-Commerce & Retail',
-    'Real Estate & PropTech',
-  ],
-  ar: [
-    'التقنية المالية والمدفوعات (Fintech)',
-    'الذكاء الاصطناعي والتعلم الآلي (AI)',
-    'الحوسبة السحابية (Cloud & DevOps)',
-    'التقنية الصحية والطبية (HealthTech)',
-    'الأمن السيبراني (Cybersecurity)',
-    'الويب 3 والكريبتو (Web3)',
-    'التجارة الإلكترونية (E-Commerce)',
-    'التقنية العقارية (PropTech)',
-  ],
-  fr: [
-    'Fintech & Paiements',
-    'IA & Apprentissage Automatique',
-    'Cloud & DevOps',
-    'Santé & Biotech',
-    'Cybersécurité',
-    'Web3 & Crypto',
-    'E-Commerce & Vente',
-    'PropTech & Immobilier',
-  ],
-  es: [
-    'Fintech y Pagos',
-    'IA y Aprendizaje Automático',
-    'Cloud y DevOps',
-    'Salud y Biotecnología',
-    'Ciberseguridad',
-    'Web3 y Cripto',
-    'Comercio Electrónico',
-    'Bienes Raíces y PropTech',
-  ],
-};
-
-const POPULAR_KEYWORDS = [
-  'AI',
-  'Tech',
-  'App',
-  'Data',
-  'Cloud',
-  'Smart',
-  'Bot',
-  'Lab',
-  'My',
-  'Pro',
-  'Hub',
-  'Go',
-  'Now',
-  'Best',
-  'Group',
-  'Pay',
-  'Capital',
-  'Invest',
-  'Coin',
-  'Fund',
-  'Health',
-  'Care',
-  'Home',
-  'Shop',
-  'Store',
-  'Bet',
+const STANDARD_DOMAIN_TYPES = [
+  'ALL',
+  'Dropped',
+  'Private Seller',
+  'Pending Delete',
+  'Pre-Release',
 ];
+
+function normalizeTypeToken(str?: string): string {
+  if (!str) return '';
+  return str.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function isTypeMatch(itemType?: string, filterType?: string): boolean {
+  if (!filterType || filterType === 'ALL') return true;
+  const nFilter = normalizeTypeToken(filterType);
+  const nItem = normalizeTypeToken(itemType);
+  if (!nItem) return false;
+  return nItem === nFilter || nItem.includes(nFilter) || nFilter.includes(nItem);
+}
+
+function isDateMatch(itemDate?: string, filterDate?: string): boolean {
+  if (!filterDate || filterDate === 'ALL') return true;
+  if (!itemDate) return false;
+  const cleanItem = itemDate.trim().toLowerCase();
+  const cleanFilter = filterDate.trim().toLowerCase();
+  return cleanItem.startsWith(cleanFilter) || cleanItem === cleanFilter;
+}
 
 export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
   rules,
@@ -128,38 +84,103 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
   const t = translations[lang] || translations.en;
   const [sheetInfo, setSheetInfo] = useState<UploadedSheetInfo | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [searchMode, setSearchMode] = useState<SearchTargetMode>('keyword');
-  const [contextTopic, setContextTopic] = useState('Fintech, AI, and modern SaaS ventures');
-  const [targetKeyword, setTargetKeyword] = useState('');
-  const [relaxKeywordFilters, setRelaxKeywordFilters] = useState(false);
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('ALL');
+  const [selectedDateFilter, setSelectedDateFilter] = useState<string>('ALL');
   const [showDiscardedModal, setShowDiscardedModal] = useState(false);
   const [showDataPreview, setShowDataPreview] = useState(false);
   const [serverStats, setServerStats] = useState<FilterEvaluationStats | null>(null);
   const [serverQualified, setServerQualified] = useState<string[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Calculate matching keyword domains directly from sheetInfo for instant UI feedback
-  const rawDomainsWithKeyword = useMemo(() => {
-    if (!sheetInfo || !targetKeyword.trim()) return [];
-    const kw = targetKeyword.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (!kw) return [];
-    return sheetInfo.detectedDomains.filter((d) => {
-      const clean = d.toLowerCase().replace(/https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
-      const lastDot = clean.lastIndexOf('.');
-      const name = lastDot !== -1 ? clean.substring(0, lastDot) : clean;
-      return clean.includes(kw) || name.includes(kw) || clean.replace(/[^a-z0-9]/g, '').includes(kw);
-    });
-  }, [sheetInfo, targetKeyword]);
+  // Available domain types derived from standard options + types detected in the spreadsheet
+  const availableTypes = useMemo(() => {
+    const list = [...STANDARD_DOMAIN_TYPES];
+    if (sheetInfo?.detectedTypes) {
+      for (const t of sheetInfo.detectedTypes) {
+        if (!t) continue;
+        const normalized = normalizeTypeToken(t);
+        const alreadyPresent = list.some((st) => normalizeTypeToken(st) === normalized);
+        if (!alreadyPresent) {
+          list.push(t);
+        }
+      }
+    }
+    return list;
+  }, [sheetInfo?.detectedTypes]);
 
-  // Reset server validation cache whenever rules, searchMode or keyword change
+  // Distinct dates detected in the spreadsheet
+  const availableDates = useMemo(() => {
+    if (sheetInfo?.detectedDates && sheetInfo.detectedDates.length > 0) {
+      return sheetInfo.detectedDates;
+    }
+    const dates = new Set<string>();
+    if (sheetInfo?.domainMetadataMap) {
+      Object.values(sheetInfo.domainMetadataMap).forEach((m: any) => {
+        if (m && m.endDate) {
+          const d = String(m.endDate).split(' ')[0];
+          if (d) dates.add(d);
+        }
+      });
+    }
+    return Array.from(dates).filter(Boolean).sort();
+  }, [sheetInfo]);
+
+  // Domain count by type
+  const typeCounts = useMemo(() => {
+    if (!sheetInfo) return {};
+    const counts: Record<string, number> = {};
+    for (const t of availableTypes) {
+      if (t === 'ALL') {
+        counts[t] = sheetInfo.detectedDomains.length;
+      } else {
+        counts[t] = sheetInfo.detectedDomains.filter((d) => {
+          const meta = sheetInfo.domainMetadataMap?.[d.toLowerCase()];
+          const domType = meta?.domainType || (sheetInfo.selectedTypeColumn ? meta?.rawRow?.[sheetInfo.selectedTypeColumn] : '');
+          return isTypeMatch(String(domType || ''), t);
+        }).length;
+      }
+    }
+    return counts;
+  }, [sheetInfo, availableTypes]);
+
+  // Domain count by date
+  const dateCounts = useMemo(() => {
+    if (!sheetInfo) return {};
+    const counts: Record<string, number> = {};
+    counts['ALL'] = sheetInfo.detectedDomains.length;
+    for (const d of availableDates) {
+      counts[d] = sheetInfo.detectedDomains.filter((dom) => {
+        const meta = sheetInfo.domainMetadataMap?.[dom.toLowerCase()];
+        const domDate = meta?.endDate || (sheetInfo.selectedDateColumn ? meta?.rawRow?.[sheetInfo.selectedDateColumn] : '');
+        return isDateMatch(String(domDate || ''), d);
+      }).length;
+    }
+    return counts;
+  }, [sheetInfo, availableDates]);
+
+  // Filtered candidate domains based on active Type and End Date filters
+  const filteredCandidateDomains = useMemo(() => {
+    if (!sheetInfo) return [];
+    return sheetInfo.detectedDomains.filter((d) => {
+      const meta = sheetInfo.domainMetadataMap?.[d.toLowerCase()];
+      const domType = meta?.domainType || (sheetInfo.selectedTypeColumn ? meta?.rawRow?.[sheetInfo.selectedTypeColumn] : '');
+      const domDate = meta?.endDate || (sheetInfo.selectedDateColumn ? meta?.rawRow?.[sheetInfo.selectedDateColumn] : '');
+
+      const matchesType = isTypeMatch(String(domType || ''), selectedTypeFilter);
+      const matchesDate = isDateMatch(String(domDate || ''), selectedDateFilter);
+      return matchesType && matchesDate;
+    });
+  }, [sheetInfo, selectedTypeFilter, selectedDateFilter]);
+
+  // Reset server validation cache whenever rules, type filter or date filter change
   useEffect(() => {
     setServerStats(null);
     setServerQualified(null);
-  }, [rules, searchMode, targetKeyword]);
+  }, [rules, selectedTypeFilter, selectedDateFilter]);
 
-  // Validate candidates against the master 275k English dictionary via the server validation endpoint
+  // Validate candidate domains against the master 275k English dictionary via server validation endpoint
   useEffect(() => {
-    if (!sheetInfo || sheetInfo.detectedDomains.length === 0) {
+    if (!sheetInfo || filteredCandidateDomains.length === 0) {
       setServerStats(null);
       setServerQualified(null);
       return;
@@ -170,12 +191,12 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        rawDomains: sheetInfo.detectedDomains,
+        rawDomains: filteredCandidateDomains,
         rules,
-        searchMode,
-        targetKeyword,
-        contextTopic,
-        relaxKeywordFilters,
+        searchMode: 'niche',
+        targetKeyword: '',
+        contextTopic: selectedTypeFilter !== 'ALL' ? selectedTypeFilter : 'Portfolio Domains',
+        relaxKeywordFilters: false,
       }),
     })
       .then((res) => res.json())
@@ -197,11 +218,11 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [sheetInfo?.detectedDomains, rules, count, searchMode, targetKeyword, contextTopic, relaxKeywordFilters, setEvaluationStats]);
+  }, [filteredCandidateDomains, rules, count, selectedTypeFilter, setEvaluationStats]);
 
-  // Re-calculate validation whenever sheetInfo, rules, searchMode, or keyword change
+  // Re-calculate validation whenever sheetInfo, rules, or filtered candidates change
   const validationResult = useMemo(() => {
-    if (!sheetInfo || sheetInfo.detectedDomains.length === 0) {
+    if (!sheetInfo || filteredCandidateDomains.length === 0) {
       return null;
     }
     if (serverStats && serverQualified) {
@@ -223,15 +244,15 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
         qualifiedDomains: tldStrict,
       };
     }
-    const res = validateDomainsAgainstRules(sheetInfo.detectedDomains, rules, {
-      searchMode,
-      targetKeyword,
-      contextTopic,
-      relaxKeywordFilters,
+    const res = validateDomainsAgainstRules(filteredCandidateDomains, rules, {
+      searchMode: 'niche',
+      targetKeyword: '',
+      contextTopic: selectedTypeFilter !== 'ALL' ? selectedTypeFilter : 'Portfolio',
+      relaxKeywordFilters: false,
     });
     res.stats.showingCount = Math.min(count, res.qualifiedDomains.length);
     return res;
-  }, [sheetInfo, rules, count, searchMode, targetKeyword, contextTopic, relaxKeywordFilters, serverStats, serverQualified]);
+  }, [sheetInfo, filteredCandidateDomains, rules, count, selectedTypeFilter, serverStats, serverQualified]);
 
   // Handle file selection
   const processSelectedFile = async (file: File) => {
@@ -309,7 +330,8 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
     const seen = new Set<string>();
 
     const dateColIdx = sheetInfo.selectedDateColumn ? sheetInfo.columns.indexOf(sheetInfo.selectedDateColumn) : -1;
-    const newMetadataMap: Record<string, { endDate?: string; expirationDate?: string; rawRow?: Record<string, any> }> = {};
+    const typeColIdx = sheetInfo.selectedTypeColumn ? sheetInfo.columns.indexOf(sheetInfo.selectedTypeColumn) : -1;
+    const newMetadataMap: Record<string, { endDate?: string; expirationDate?: string; domainType?: string; rawRow?: Record<string, any> }> = {};
 
     if (sheetInfo.allRows && Array.isArray(sheetInfo.allRows)) {
       for (const row of sheetInfo.allRows) {
@@ -321,6 +343,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
         }
         if (clean) {
           const endDateStr = dateColIdx !== -1 && row[dateColIdx] !== undefined ? formatSpreadsheetDate(row[dateColIdx]) : '';
+          const typeStr = typeColIdx !== -1 && row[typeColIdx] !== undefined ? String(row[typeColIdx] ?? '').trim() : '';
           const rowObj: Record<string, any> = {};
           sheetInfo.columns.forEach((col, idx) => {
             rowObj[col] = row[idx] ?? '';
@@ -328,6 +351,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
           const entry = {
             endDate: endDateStr || undefined,
             expirationDate: endDateStr || undefined,
+            domainType: typeStr || undefined,
             rawRow: rowObj,
           };
           newMetadataMap[clean] = entry;
@@ -361,12 +385,14 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
     setEvaluationStats(val.stats);
   };
 
-  const handleDateColumnChange = (newDateColumn: string) => {
+  const handleTypeColumnChange = (newTypeColumn: string) => {
     if (!sheetInfo) return;
-    const dateColIdx = newDateColumn ? sheetInfo.columns.indexOf(newDateColumn) : -1;
+    const typeColIdx = newTypeColumn ? sheetInfo.columns.indexOf(newTypeColumn) : -1;
     const domColIdx = sheetInfo.columns.indexOf(sheetInfo.selectedColumn);
+    const dateColIdx = sheetInfo.selectedDateColumn ? sheetInfo.columns.indexOf(sheetInfo.selectedDateColumn) : -1;
 
-    const newMetadataMap: Record<string, { endDate?: string; expirationDate?: string; rawRow?: Record<string, any> }> = {};
+    const newMetadataMap: Record<string, { endDate?: string; expirationDate?: string; domainType?: string; rawRow?: Record<string, any> }> = {};
+    const newTypes = new Set<string>();
 
     if (sheetInfo.allRows && Array.isArray(sheetInfo.allRows)) {
       for (const row of sheetInfo.allRows) {
@@ -374,6 +400,9 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
         const clean = val.replace(/https?:\/\//i, '').replace(/^www\./i, '').replace(/\/.*$/, '').toLowerCase();
         if (clean) {
           const endDateStr = dateColIdx !== -1 && row[dateColIdx] !== undefined ? formatSpreadsheetDate(row[dateColIdx]) : '';
+          const typeStr = typeColIdx !== -1 && row[typeColIdx] !== undefined ? String(row[typeColIdx] ?? '').trim() : '';
+          if (typeStr) newTypes.add(typeStr);
+
           const rowObj: Record<string, any> = {};
           sheetInfo.columns.forEach((col, idx) => {
             rowObj[col] = row[idx] ?? '';
@@ -381,6 +410,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
           const entry = {
             endDate: endDateStr || undefined,
             expirationDate: endDateStr || undefined,
+            domainType: typeStr || undefined,
             rawRow: rowObj,
           };
           newMetadataMap[clean] = entry;
@@ -392,9 +422,62 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
       }
     }
 
+    setServerStats(null);
+    setServerQualified(null);
+    setSheetInfo({
+      ...sheetInfo,
+      selectedTypeColumn: newTypeColumn || undefined,
+      detectedTypes: Array.from(newTypes),
+      domainMetadataMap: Object.keys(newMetadataMap).length > 0 ? newMetadataMap : sheetInfo.domainMetadataMap,
+    });
+  };
+
+  const handleDateColumnChange = (newDateColumn: string) => {
+    if (!sheetInfo) return;
+    const dateColIdx = newDateColumn ? sheetInfo.columns.indexOf(newDateColumn) : -1;
+    const domColIdx = sheetInfo.columns.indexOf(sheetInfo.selectedColumn);
+    const typeColIdx = sheetInfo.selectedTypeColumn ? sheetInfo.columns.indexOf(sheetInfo.selectedTypeColumn) : -1;
+
+    const newMetadataMap: Record<string, { endDate?: string; expirationDate?: string; domainType?: string; rawRow?: Record<string, any> }> = {};
+    const newDates = new Set<string>();
+
+    if (sheetInfo.allRows && Array.isArray(sheetInfo.allRows)) {
+      for (const row of sheetInfo.allRows) {
+        const val = String(row[domColIdx] || '').trim();
+        const clean = val.replace(/https?:\/\//i, '').replace(/^www\./i, '').replace(/\/.*$/, '').toLowerCase();
+        if (clean) {
+          const endDateStr = dateColIdx !== -1 && row[dateColIdx] !== undefined ? formatSpreadsheetDate(row[dateColIdx]) : '';
+          if (endDateStr) {
+            const datePart = endDateStr.split(' ')[0];
+            if (datePart) newDates.add(datePart);
+          }
+          const typeStr = typeColIdx !== -1 && row[typeColIdx] !== undefined ? String(row[typeColIdx] ?? '').trim() : '';
+
+          const rowObj: Record<string, any> = {};
+          sheetInfo.columns.forEach((col, idx) => {
+            rowObj[col] = row[idx] ?? '';
+          });
+          const entry = {
+            endDate: endDateStr || undefined,
+            expirationDate: endDateStr || undefined,
+            domainType: typeStr || undefined,
+            rawRow: rowObj,
+          };
+          newMetadataMap[clean] = entry;
+          const baseClean = clean.split('.')[0].replace(/[^a-z0-9-]/g, '');
+          if (baseClean && !newMetadataMap[baseClean]) {
+            newMetadataMap[baseClean] = entry;
+          }
+        }
+      }
+    }
+
+    setServerStats(null);
+    setServerQualified(null);
     setSheetInfo({
       ...sheetInfo,
       selectedDateColumn: newDateColumn || undefined,
+      detectedDates: Array.from(newDates).filter(Boolean).sort(),
       domainMetadataMap: Object.keys(newMetadataMap).length > 0 ? newMetadataMap : sheetInfo.domainMetadataMap,
     });
   };
@@ -403,30 +486,18 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
     const candidates = validationResult?.qualifiedDomains || [];
 
     if (!candidates || candidates.length === 0) {
-      if (searchMode === 'keyword' && targetKeyword.trim()) {
-        onErrorToast(
-          lang === 'ar'
-            ? `لم يتم العثور على أي دومين يجمع بين الكلمة المختارة "${targetKeyword.trim()}" وكلمة إنجليزية صحيحة أخرى (كلمتين فقط) في الملف المرفوع.`
-            : lang === 'fr'
-            ? `Aucun domaine de 2 mots combinant "${targetKeyword.trim()}" et un mot anglais valide n'a été trouvé dans le fichier.`
-            : `No 2-word domains combining "${targetKeyword.trim()}" and a valid English word were found in your uploaded file.`
-        );
-      } else {
-        onErrorToast(
-          lang === 'ar'
-            ? 'لم يتم العثور على أي دومينات مطابقة للشروط الصارمة في الملف المرفوع.'
-            : lang === 'fr'
-            ? 'Aucun domaine conforme aux filtres stricts dans le fichier.'
-            : 'No domains matching the strict filters were found in your uploaded file.'
-        );
-      }
+      onErrorToast(
+        lang === 'ar'
+          ? `لم يتم العثور على أي دومينات ثنائية مطابقة للشروط في النوع [${selectedTypeFilter === 'ALL' ? 'الكل' : selectedTypeFilter}] والتاريخ [${selectedDateFilter === 'ALL' ? 'كل التواريخ' : selectedDateFilter}].`
+          : `No two-word domains matched the strict filters for Type [${selectedTypeFilter}] and Date [${selectedDateFilter}].`
+      );
       return;
     }
 
     const effectiveStats = validationResult?.stats || {
-      totalUploaded: sheetInfo?.detectedDomains?.length || 0,
+      totalUploaded: filteredCandidateDomains.length,
       passedFilters: candidates.length,
-      failedCount: Math.max(0, (sheetInfo?.detectedDomains?.length || 0) - candidates.length),
+      failedCount: Math.max(0, filteredCandidateDomains.length - candidates.length),
       showingCount: Math.min(count, candidates.length),
       breakdown: { dashes: 0, numbers: 0, tlds: 0, words: 0, invalid: 0, keywordMismatch: 0 },
       discarded: [],
@@ -434,16 +505,14 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
 
     onAnalyze(
       candidates,
-      contextTopic,
+      selectedTypeFilter !== 'ALL' ? selectedTypeFilter : 'Curated Portfolio',
       effectiveStats,
-      searchMode,
-      targetKeyword,
-      relaxKeywordFilters,
+      'niche',
+      '',
+      false,
       sheetInfo?.domainMetadataMap
     );
   };
-
-  const currentNiches = POPULAR_NICHES[lang] || POPULAR_NICHES.en;
 
   return (
     <div id="excel-upload-analyzer-panel" className="space-y-5">
@@ -545,7 +614,8 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
       {sheetInfo && (
         <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+              {/* Selected Domain Column */}
               <div className="flex items-center gap-2">
                 <Sliders className="w-4 h-4 text-teal-600" />
                 <span className="text-xs font-semibold text-slate-700">
@@ -565,6 +635,33 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                 </select>
               </div>
 
+              {/* Selected Type Column */}
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-indigo-600" />
+                <span className="text-xs font-semibold text-slate-700">
+                  {lang === 'ar' ? 'عمود النوع (Type):' : 'Type Column:'}
+                </span>
+                <select
+                  id="select-type-column"
+                  value={sheetInfo.selectedTypeColumn || ''}
+                  onChange={(e) => handleTypeColumnChange(e.target.value)}
+                  className="bg-white border border-slate-300 text-slate-800 text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                >
+                  <option value="">{lang === 'ar' ? '(تلقائي / غير محدد)' : '(None / Auto-detect)'}</option>
+                  {sheetInfo.columns.map((col) => (
+                    <option key={col} value={col}>
+                      {col}
+                    </option>
+                  ))}
+                </select>
+                {sheetInfo.selectedTypeColumn && (
+                  <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                    {sheetInfo.selectedTypeColumn}
+                  </span>
+                )}
+              </div>
+
+              {/* Selected End Date Column */}
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-rose-600" />
                 <span className="text-xs font-semibold text-slate-700">
@@ -585,7 +682,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                 </select>
                 {sheetInfo.selectedDateColumn && (
                   <span className="text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-                    {lang === 'ar' ? 'مفعّل' : 'Active'}
+                    {sheetInfo.selectedDateColumn}
                   </span>
                 )}
               </div>
@@ -645,250 +742,199 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
         </div>
       )}
 
-      {/* Target Mode Switcher: Search by Word (Default) vs Search by Niche */}
-      <div className="space-y-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-            <Target className="w-3.5 h-3.5 text-blue-600" />
-            <span>{t.excelAnalyzer.targetModeTitle}</span>
-          </label>
+      {/* Domain Type & End Date Filter Card (Replaces Target Discovery Strategy) */}
+      <div id="type-and-date-filters-card" className="space-y-4 p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 shadow-xs">
+        {/* Header */}
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <Sliders className="w-4 h-4 text-blue-600" />
+            <h3 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-wide">
+              {lang === 'ar' ? 'فلاتر الدومين: نوع الدومين وتاريخ الانتهاء' : 'Selected Domain & End Date Filters'}
+            </h3>
+          </div>
+          {sheetInfo && (
+            <span className="text-[11px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+              {filteredCandidateDomains.length} / {sheetInfo.detectedDomains.length} {lang === 'ar' ? 'مطابق للفلتر' : 'matching filter'}
+            </span>
+          )}
         </div>
 
-        {/* Dual Mode Buttons */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 p-1 bg-slate-100 rounded-xl border border-slate-200 gap-1.5">
-          <button
-            id="search-mode-keyword-btn"
-            type="button"
-            onClick={() => {
-              setSearchMode('keyword');
-              setServerStats(null);
-              setServerQualified(null);
-            }}
-            className={`min-h-[44px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
-              searchMode === 'keyword'
-                ? 'bg-blue-600 text-white shadow-xs border border-blue-600'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white'
-            }`}
-          >
-            <KeyRound className="w-4 h-4 text-white shrink-0" />
-            <div className="text-left rtl:text-right">
-              <div className="leading-tight">{t.controls.searchByWord}</div>
-              <div className="text-[10px] opacity-90 font-normal">{t.excelAnalyzer.searchByKeyword}</div>
-            </div>
-          </button>
-
-          <button
-            id="search-mode-niche-btn"
-            type="button"
-            onClick={() => {
-              setSearchMode('niche');
-              setServerStats(null);
-              setServerQualified(null);
-            }}
-            className={`min-h-[44px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
-              searchMode === 'niche'
-                ? 'bg-blue-600 text-white shadow-xs border border-blue-600'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white'
-            }`}
-          >
-            <Target className="w-4 h-4 text-white shrink-0" />
-            <div className="text-left rtl:text-right">
-              <div className="leading-tight">{t.controls.searchByNiche}</div>
-              <div className="text-[10px] opacity-90 font-normal">{t.excelAnalyzer.searchByNiche}</div>
-            </div>
-          </button>
-        </div>
-
-        {/* Dynamic Input based on Active Search Mode (Keyword first, Niche second) */}
-        {searchMode === 'keyword' ? (
-          <div id="keyword-mode-input-section" className="space-y-2 pt-1">
-            <div className="flex items-center justify-between flex-wrap gap-1">
-              <label htmlFor="target-keyword-input" className="block text-xs font-semibold text-slate-700">
-                {t.excelAnalyzer.targetKeywordLabel}
-              </label>
-              <span className="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+        {/* 1. Filter by Domain Type (Selected Domain Column) */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between flex-wrap gap-1">
+            <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <Tag className="w-3.5 h-3.5 text-indigo-600" />
+              <span>
                 {lang === 'ar'
-                  ? 'يبحث عن أفضل دومين يحتوي على تلك الكلمة'
-                  : lang === 'fr'
-                  ? 'Cherche les meilleurs domaines contenant ce mot'
-                  : 'Finds top domains containing this word'}
+                  ? 'Selected Domain Column (نوع الدومين):'
+                  : 'Selected Domain Column (Type):'}
               </span>
-            </div>
-            <div className="relative">
-              <input
-                id="target-keyword-input"
-                type="text"
-                value={targetKeyword}
-                aria-label={t.excelAnalyzer.targetKeywordLabel || 'Target Keyword'}
-                onChange={(e) => {
-                  setTargetKeyword(e.target.value);
-                  setServerStats(null);
-                  setServerQualified(null);
-                }}
-                placeholder={t.excelAnalyzer.targetKeywordPlaceholder}
-                className="min-h-[44px] w-full rounded-xl bg-white border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-mono shadow-xs"
-              />
-            </div>
+            </label>
+            <span className="text-[10px] text-slate-500 font-medium">
+              {lang === 'ar' ? 'اختر أحد الخيارات للفلترة الفورية:' : 'Select an option to filter instantly:'}
+            </span>
+          </div>
 
-            {/* Arabic Input Detection Notice */}
-            {targetKeyword && /[\u0600-\u06FF]/.test(targetKeyword) && (
-              <p className="text-[11px] text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200 flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span>يرجى كتابة الكلمة بالأحرف الإنجليزية (مثل: cloud, pay, data, ai) للبحث في أسماء الدومينات.</span>
-              </p>
-            )}
-
-            {/* Quick Keyword Suggestion Chips */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-[10px] text-slate-500">{t.controls.quickPresets}</span>
-              {POPULAR_KEYWORDS.map((kw) => (
+          {/* Type Choice Pills */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            {availableTypes.map((typeOption) => {
+              const countForType = typeCounts[typeOption] ?? 0;
+              const isSelected = selectedTypeFilter === typeOption;
+              return (
                 <button
-                  key={kw}
+                  key={typeOption}
+                  id={`type-filter-${typeOption.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
                   type="button"
                   onClick={() => {
-                    setTargetKeyword(kw);
+                    setSelectedTypeFilter(typeOption);
                     setServerStats(null);
                     setServerQualified(null);
                   }}
-                  className={`min-h-[36px] text-xs font-mono px-2.5 py-1.5 rounded-lg border transition-all flex items-center justify-center ${
-                    targetKeyword.trim().toLowerCase() === kw.toLowerCase()
-                      ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-xs'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
+                  className={`min-h-[42px] px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border ${
+                    isSelected
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs scale-[1.02]'
+                      : countForType > 0
+                      ? 'bg-white hover:bg-slate-100 text-slate-800 border-slate-200 hover:border-slate-300'
+                      : 'bg-slate-100 text-slate-400 border-slate-200 opacity-60'
                   }`}
                 >
-                  {kw}
+                  <span>{typeOption === 'ALL' ? (lang === 'ar' ? 'ALL (الكل)' : 'ALL') : typeOption}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                      isSelected
+                        ? 'bg-white/25 text-white'
+                        : 'bg-slate-100 text-slate-700 border border-slate-200'
+                    }`}
+                  >
+                    {countForType}
+                  </span>
                 </button>
-              ))}
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 2. Filter by End Date (End Date Column) */}
+        <div className="space-y-2 pt-3 border-t border-slate-200">
+          <div className="flex items-center justify-between flex-wrap gap-1">
+            <label htmlFor="select-end-date-filter" className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-rose-600" />
+              <span>
+                {lang === 'ar'
+                  ? 'End Date Column (تاريخ الانتهاء):'
+                  : 'End Date Column (Auction End):'}
+              </span>
+            </label>
+            <span className="text-[10px] text-slate-500 font-medium">
+              {lang === 'ar' ? 'العام: كل التواريخ (ALL)، أو اختر تاريخاً محدداً من القائمة' : 'General: ALL dates, or choose a specific date'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <div className="relative flex-1 min-w-[200px]">
+              <select
+                id="select-end-date-filter"
+                value={selectedDateFilter}
+                onChange={(e) => {
+                  setSelectedDateFilter(e.target.value);
+                  setServerStats(null);
+                  setServerQualified(null);
+                }}
+                className="min-h-[44px] w-full rounded-xl bg-white border border-slate-300 px-3.5 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-xs cursor-pointer"
+              >
+                <option value="ALL">
+                  {lang === 'ar' ? 'ALL — كل التواريخ' : 'ALL — All Dates'} ({sheetInfo?.detectedDomains?.length || 0} {lang === 'ar' ? 'دومين' : 'domains'})
+                </option>
+                {availableDates.map((d) => (
+                  <option key={d} value={d}>
+                    📅 {d} ({dateCounts[d] ?? 0} {lang === 'ar' ? 'دومين' : 'domains'})
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* Live Matches Found In Uploaded Spreadsheet */}
-            {sheetInfo && targetKeyword.trim() && (
-              <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-xs space-y-2 mt-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {rawDomainsWithKeyword.length > 0 ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-800 shrink-0" />
-                    ) : (
-                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                    )}
-                    <span className="text-xs font-bold text-slate-800">
-                      {rawDomainsWithKeyword.length > 0
-                        ? lang === 'ar'
-                          ? `تم العثور على ${rawDomainsWithKeyword.length} دومين يحتوي على "${targetKeyword.trim()}" في ملفك`
-                          : lang === 'fr'
-                          ? `${rawDomainsWithKeyword.length} domaine(s) trouvé(s) avec "${targetKeyword.trim()}" dans votre fichier`
-                          : `Found ${rawDomainsWithKeyword.length} domain(s) containing "${targetKeyword.trim()}" in your file`
-                        : lang === 'ar'
-                        ? `لم يتم العثور على دومينات تحتوي على "${targetKeyword.trim()}" في ملفك المرفوع`
-                        : lang === 'fr'
-                        ? `Aucun domaine contenant "${targetKeyword.trim()}" trouvé dans votre fichier`
-                        : `No domains containing "${targetKeyword.trim()}" found in uploaded file`}
-                    </span>
-                  </div>
-                  {rawDomainsWithKeyword.length > 0 && (
-                    <span className="text-[10px] font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-bold">
-                      {rawDomainsWithKeyword.length} matches
-                    </span>
-                  )}
-                </div>
-
-                {/* If all keyword domains were excluded by strict 2-word rules, offer instant relaxation */}
-                {rawDomainsWithKeyword.length > 0 && validationResult && validationResult.qualifiedDomains.length === 0 && (
-                  <div className="pt-2 border-t border-slate-100 space-y-2">
-                    <p className="text-[11px] text-amber-800 leading-relaxed">
-                      {lang === 'ar'
-                        ? 'الدومينات المحتوية على كلمتك لم تجتز شرط الكلمتين الإنجليزيتين الصارم. انقر لتضمينها وتقييمها:'
-                        : lang === 'fr'
-                        ? 'Les domaines contenant votre mot n’ont pas passé la règle stricte des 2 mots. Cliquez pour les évaluer :'
-                        : 'Domains containing your keyword did not meet the strict 2-word rule. Click to evaluate anyway:'}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRelaxKeywordFilters(true);
-                        setServerStats(null);
-                        setServerQualified(null);
-                      }}
-                      className="w-full py-1.5 px-3 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-xs flex items-center justify-center gap-1.5"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>
-                        {lang === 'ar'
-                          ? `تضمين وتقييم كافة الـ ${rawDomainsWithKeyword.length} دومين المحتوية على "${targetKeyword.trim()}"`
-                          : lang === 'fr'
-                          ? `Inclure & évaluer les ${rawDomainsWithKeyword.length} domaine(s) contenant "${targetKeyword.trim()}"`
-                          : `Include & evaluate all ${rawDomainsWithKeyword.length} domain(s) with "${targetKeyword.trim()}"`}
-                      </span>
-                    </button>
-                  </div>
-                )}
-
-                {/* Relaxed filters checkbox toggle */}
-                {rawDomainsWithKeyword.length > 0 && (
-                  <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
-                    <input
-                      id="relax-keyword-checkbox"
-                      type="checkbox"
-                      checked={relaxKeywordFilters}
-                      onChange={(e) => {
-                        setRelaxKeywordFilters(e.target.checked);
-                        setServerStats(null);
-                        setServerQualified(null);
-                      }}
-                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-4 w-4 bg-white"
-                    />
-                    <label htmlFor="relax-keyword-checkbox" className="text-[11px] text-slate-700 cursor-pointer select-none">
-                      {t.excelAnalyzer.relaxFiltersDesc}
-                    </label>
-                  </div>
-                )}
-              </div>
+            {selectedDateFilter !== 'ALL' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDateFilter('ALL');
+                  setServerStats(null);
+                  setServerQualified(null);
+                }}
+                className="min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors shrink-0"
+              >
+                {lang === 'ar' ? 'إعادة ضبط التاريخ (ALL)' : 'Reset Date (ALL)'}
+              </button>
             )}
           </div>
-        ) : (
-          <div id="niche-mode-input-section" className="space-y-2 pt-1">
-            <div className="flex items-center justify-between flex-wrap gap-1">
-              <label htmlFor="target-context-input" className="block text-xs font-semibold text-slate-700">
-                {t.excelAnalyzer.contextTopicLabel}
-              </label>
-              <span className="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                {lang === 'ar'
-                  ? 'يبحث عن أفضل دومينات من ذلك النيش'
-                  : lang === 'fr'
-                  ? 'Recherche les meilleurs domaines de ce secteur'
-                  : 'Ranks best domains for this niche'}
-              </span>
-            </div>
-            <div className="relative">
-              <input
-                id="target-context-input"
-                type="text"
-                value={contextTopic}
-                aria-label={t.excelAnalyzer.contextTopicLabel || 'Target Niche or Industry Concept'}
-                onChange={(e) => setContextTopic(e.target.value)}
-                placeholder={t.excelAnalyzer.contextTopicPlaceholder}
-                className="min-h-[44px] w-full rounded-xl bg-white border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-xs"
-              />
-            </div>
 
-            {/* Quick Niche Suggestion Chips */}
+          {/* Quick Date Chips if 10 or fewer distinct dates */}
+          {availableDates.length > 0 && availableDates.length <= 10 && (
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-[10px] text-slate-500">{t.controls.quickPresets}</span>
-              {currentNiches.map((niche) => (
+              <span className="text-[10px] text-slate-500">{lang === 'ar' ? 'تواريخ سريعة:' : 'Quick dates:'}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDateFilter('ALL');
+                  setServerStats(null);
+                  setServerQualified(null);
+                }}
+                className={`min-h-[32px] text-[11px] px-2.5 py-1 rounded-lg border font-mono transition-all flex items-center gap-1 ${
+                  selectedDateFilter === 'ALL'
+                    ? 'bg-rose-600 text-white border-rose-600 font-bold shadow-xs'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                <span>ALL</span>
+              </button>
+              {availableDates.map((d) => (
                 <button
-                  key={niche}
+                  key={d}
                   type="button"
-                  onClick={() => setContextTopic(niche)}
-                  className={`min-h-[36px] text-xs px-3 py-1.5 rounded-lg border transition-all flex items-center justify-center ${
-                    contextTopic.toLowerCase().includes(niche.toLowerCase().split(' ')[0])
-                      ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-xs'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
+                  onClick={() => {
+                    setSelectedDateFilter(d);
+                    setServerStats(null);
+                    setServerQualified(null);
+                  }}
+                  className={`min-h-[32px] text-[11px] px-2.5 py-1 rounded-lg border font-mono transition-all flex items-center gap-1 ${
+                    selectedDateFilter === d
+                      ? 'bg-rose-600 text-white border-rose-600 font-bold shadow-xs'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
-                  {niche}
+                  <span>{d}</span>
+                  <span className="opacity-75">({dateCounts[d] ?? 0})</span>
                 </button>
               ))}
             </div>
+          )}
+        </div>
+
+        {/* Live Filter Summary message */}
+        {sheetInfo && (
+          <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200/80 flex items-center justify-between text-xs text-blue-900 font-medium flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+              <span>
+                {lang === 'ar'
+                  ? `الفلتر المطبق: النوع [${selectedTypeFilter === 'ALL' ? 'الكل' : selectedTypeFilter}] • تاريخ الانتهاء [${selectedDateFilter === 'ALL' ? 'كل التواريخ' : selectedDateFilter}] • المتبقي للفحص: ${filteredCandidateDomains.length} دومين`
+                  : `Active Filter: Type [${selectedTypeFilter}] • End Date [${selectedDateFilter}] • Pool: ${filteredCandidateDomains.length} domain(s)`}
+              </span>
+            </div>
+            {(selectedTypeFilter !== 'ALL' || selectedDateFilter !== 'ALL') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedTypeFilter('ALL');
+                  setSelectedDateFilter('ALL');
+                  setServerStats(null);
+                  setServerQualified(null);
+                }}
+                className="text-[11px] font-bold text-blue-700 hover:underline shrink-0"
+              >
+                {lang === 'ar' ? 'إعادة ضبط الفلاتر' : 'Reset All'}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -903,33 +949,26 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
                   {lang === 'ar' ? 'ملخص تدقيق الشروط الصارمة' : lang === 'fr' ? 'Résumé de Vérification Stricte' : 'Strict Rule Verification Summary'}
                 </h4>
-                {searchMode === 'keyword' && targetKeyword && (
-                  <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold">
-                    "{targetKeyword}"
-                  </span>
-                )}
               </div>
 
               {/* Preview badge showing X total uploaded -> Y passed -> Showing Top Z */}
               <div className="mt-1.5 text-sm md:text-base font-extrabold text-slate-900 flex flex-wrap items-center gap-1.5">
                 <span className="px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 font-semibold">
-                  {validationResult.stats.totalUploaded} {lang === 'ar' ? 'إجمالي الملف' : lang === 'fr' ? 'total fichier' : 'total in file'}
+                  {validationResult.stats.totalUploaded} {lang === 'ar' ? 'إجمالي الدومينات المفلترة' : lang === 'fr' ? 'total filtré' : 'filtered candidate pool'}
                 </span>
                 <span className="text-blue-600 font-black">→</span>
                 <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
                   {validationResult.stats.passedFilters > 0
                     ? `${validationResult.stats.passedFilters} ${lang === 'ar' ? 'مؤهل (كلمتان)' : lang === 'fr' ? 'qualifiés (2 mots)' : 'qualified candidates'}`
-                    : rawDomainsWithKeyword.length > 0
-                    ? `${rawDomainsWithKeyword.length} ${lang === 'ar' ? 'مطابق للكلمة' : lang === 'fr' ? 'correspondances' : 'keyword matches'}`
                     : lang === 'ar' ? '0 مؤهل' : lang === 'fr' ? '0 qualifié' : '0 passed'}
                 </span>
                 <span className="text-blue-600 font-black">→</span>
                 <span className="px-2.5 py-0.5 rounded-lg bg-blue-600 text-white font-black shadow-xs">
                   {lang === 'ar'
-                    ? `عرض أفضل ${Math.min(count, validationResult.stats.passedFilters || rawDomainsWithKeyword.length)} نتائج`
+                    ? `عرض أفضل ${Math.min(count, validationResult.stats.passedFilters)} نتائج`
                     : lang === 'fr'
-                    ? `Affichage du Top ${Math.min(count, validationResult.stats.passedFilters || rawDomainsWithKeyword.length)} résultats`
-                    : `Showing Top ${Math.min(count, validationResult.stats.passedFilters || rawDomainsWithKeyword.length)} results`}
+                    ? `Affichage du Top ${Math.min(count, validationResult.stats.passedFilters)} résultats`
+                    : `Showing Top ${Math.min(count, validationResult.stats.passedFilters)} results`}
                 </span>
               </div>
             </div>
@@ -972,11 +1011,6 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
                 ✗ {validationResult.stats.breakdown.words} {lang === 'ar' ? 'ليست كلمتين' : lang === 'fr' ? 'non-2 mots' : 'non-2-word names'}
               </span>
             )}
-            {Boolean(validationResult.stats.breakdown.keywordMismatch && validationResult.stats.breakdown.keywordMismatch > 0) && (
-              <span className="px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 font-medium">
-                ✗ {validationResult.stats.breakdown.keywordMismatch} {lang === 'ar' ? `لا يحتوي على "${targetKeyword}"` : lang === 'fr' ? `sans le mot "${targetKeyword}"` : `missing "${targetKeyword}"`}
-              </span>
-            )}
             {Boolean(validationResult.stats.breakdown.lengthMismatch && validationResult.stats.breakdown.lengthMismatch > 0) && (
               <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-700">
                 ✗ {validationResult.stats.breakdown.lengthMismatch} {lang === 'ar' ? 'خارج نطاق عدد الحروف المحدد' : lang === 'fr' ? 'hors longueur' : 'outside char length range'}
@@ -986,10 +1020,10 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
               <span className="text-emerald-800 font-bold flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3 text-emerald-800" />
                 {lang === 'ar'
-                  ? 'جميع دومينات الملف مطابقة للشروط الصارمة بالكامل!'
+                  ? 'جميع دومينات الفلتر مطابقة للشروط الصارمة بالكامل!'
                   : lang === 'fr'
-                  ? 'Tous les domaines du fichier respectent les règles strictes !'
-                  : 'All domains in spreadsheet satisfy every active filter rule!'}
+                  ? 'Tous les domaines du filtre respectent les règles strictes !'
+                  : 'All domains in active filter satisfy every active filter rule!'}
               </span>
             )}
           </div>

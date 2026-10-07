@@ -161,6 +161,13 @@ export interface Translations {
     browse: string;
     loadSample: string;
     domainColumn: string;
+    typeColumn: string;
+    dateColumn: string;
+    typeFilterLabel: string;
+    allTypes: string;
+    dateFilterLabel: string;
+    allDates: string;
+    showingMatchingDomains: (count: number, total: number) => string;
     previewRows: string;
     hidePreview: string;
     targetModeTitle: string;
@@ -359,6 +366,13 @@ export const translations: Record<Language, Translations> = {
       browse: 'browse',
       loadSample: 'Load Sample Portfolio (.xlsx)',
       domainColumn: 'Selected Domain Column:',
+      typeColumn: 'Selected Type Column:',
+      dateColumn: 'Selected End Date Column:',
+      typeFilterLabel: 'Filter by Domain / Listing Type',
+      allTypes: 'ALL (All Types)',
+      dateFilterLabel: 'Filter by End Date',
+      allDates: 'ALL (All Dates)',
+      showingMatchingDomains: (count: number, total: number) => `Showing ${count} of ${total} domains matching filters`,
       previewRows: 'Preview First 5 Rows',
       hidePreview: 'Hide File Preview',
       targetModeTitle: 'Target Discovery Strategy',
@@ -555,6 +569,13 @@ export const translations: Record<Language, Translations> = {
       browse: 'استعراض الملفات',
       loadSample: 'تحميل ملف تجريبي جاهز (.xlsx)',
       domainColumn: 'عمود الدومينات المختار:',
+      typeColumn: 'عمود النوع المختار:',
+      dateColumn: 'عمود تاريخ الانتهاء:',
+      typeFilterLabel: 'تصفية حسب نوع الدومين / المزاد (Domain Type)',
+      allTypes: 'ALL (جميع الأنواع)',
+      dateFilterLabel: 'تصفية حسب تاريخ الانتهاء (End Date)',
+      allDates: 'ALL (كل التواريخ)',
+      showingMatchingDomains: (count: number, total: number) => `عرض ${count} من أصل ${total} دومين مطابقة للفلتر`,
       previewRows: 'معاينة أول 5 أسطر',
       hidePreview: 'إخفاء معاينة الملف',
       targetModeTitle: 'استراتيجية البحث والفرز',
@@ -751,6 +772,13 @@ export const translations: Record<Language, Translations> = {
       browse: 'parcourir',
       loadSample: 'Charger un Fichier Exemple (.xlsx)',
       domainColumn: 'Colonne Domaine Sélectionnée :',
+      typeColumn: 'Colonne Type Sélectionnée :',
+      dateColumn: 'Colonne Date de Fin :',
+      typeFilterLabel: 'Filtrer par type de domaine (Type d\'enchère)',
+      allTypes: 'TOUS (Tous types)',
+      dateFilterLabel: 'Filtrer par date de fin',
+      allDates: 'TOUTES (Toutes dates)',
+      showingMatchingDomains: (count: number, total: number) => `Affichage de ${count} sur ${total} domaines correspondants`,
       previewRows: 'Aperçu des 5 Premières Lignes',
       hidePreview: 'Masquer l’Aperçu',
       targetModeTitle: 'Stratégie de Découverte',
@@ -947,6 +975,13 @@ export const translations: Record<Language, Translations> = {
       browse: 'examinar',
       loadSample: 'Cargar Portafolio de Ejemplo (.xlsx)',
       domainColumn: 'Columna de Dominio Seleccionada:',
+      typeColumn: 'Columna de Tipo Seleccionada:',
+      dateColumn: 'Columna de Fecha de Fin:',
+      typeFilterLabel: 'Filtrar por tipo de dominio',
+      allTypes: 'TODOS (Todos los tipos)',
+      dateFilterLabel: 'Filtrar por fecha de finalización',
+      allDates: 'TODAS (Todas las fechas)',
+      showingMatchingDomains: (count: number, total: number) => `Mostrando ${count} de ${total} dominios coincidentes`,
       previewRows: 'Vista Previa Primeras 5 Filas',
       hidePreview: 'Ocultar Vista Previa',
       targetModeTitle: 'Estrategia de Descubrimiento',

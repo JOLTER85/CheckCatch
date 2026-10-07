@@ -170,6 +170,7 @@ export interface DomainItem {
   valuationSplit?: RealisticValuationSplit;
   endDate?: string;
   expirationDate?: string;
+  domainType?: string;
   rawSpreadsheetRow?: Record<string, any>;
   // TypeSafe AI Domain Analyzer Fields
   aiScore?: number; // 1 to 5
@@ -236,7 +237,10 @@ export interface UploadedSheetInfo {
   sheetNames: string[];
   columns: string[];
   selectedColumn: string;
+  selectedTypeColumn?: string;
   selectedDateColumn?: string;
+  detectedTypes?: string[];
+  detectedDates?: string[];
   totalRows: number;
   previewRows: Record<string, any>[];
   detectedDomains: string[];
@@ -245,6 +249,7 @@ export interface UploadedSheetInfo {
   domainMetadataMap?: Record<string, {
     endDate?: string;
     expirationDate?: string;
+    domainType?: string;
     rawRow?: Record<string, any>;
   }>;
 }
@@ -260,6 +265,7 @@ export interface AnalyzeUploadedRequest {
   domainMetadataMap?: Record<string, {
     endDate?: string;
     expirationDate?: string;
+    domainType?: string;
     rawRow?: Record<string, any>;
   }>;
 }

@@ -275,6 +275,22 @@ export async function parseSpreadsheetFile(file: File): Promise<UploadedSheetInf
 
   const selectedColumn = headerRow[detectedColumnIndex];
 
+  // Detect Type column (Auction Type / Listing Type / Domain Type / Status)
+  let detectedTypeColumnIndex = -1;
+  const typeHeaderKeywords = [
+    'type', 'auction type', 'auction_type', 'auctiontype', 'listing type', 'listing_type', 'listingtype',
+    'domain type', 'domain_type', 'sale type', 'sale_type', 'event type', 'event_type', 'status',
+    'نوع', 'نوع المزاد', 'نوع القائمة', 'الحالة'
+  ];
+  for (let i = 0; i < headerRow.length; i++) {
+    if (i === detectedColumnIndex) continue;
+    const headerLower = headerRow[i].toLowerCase();
+    if (typeHeaderKeywords.some((k) => headerLower === k || headerLower.includes(k))) {
+      detectedTypeColumnIndex = i;
+      break;
+    }
+  }
+
   // Detect Expiration / End Date column
   let detectedDateColumnIndex = -1;
   const dateHeaderKeywords = [
@@ -287,7 +303,7 @@ export async function parseSpreadsheetFile(file: File): Promise<UploadedSheetInf
   ];
 
   for (let i = 0; i < headerRow.length; i++) {
-    if (i === detectedColumnIndex) continue;
+    if (i === detectedColumnIndex || i === detectedTypeColumnIndex) continue;
     const headerLower = headerRow[i].toLowerCase();
     if (dateHeaderKeywords.some((k) => headerLower === k || headerLower.includes(k))) {
       detectedDateColumnIndex = i;
@@ -298,7 +314,7 @@ export async function parseSpreadsheetFile(file: File): Promise<UploadedSheetInf
   // If no date header matched, check if any column contains Date objects or date-like strings
   if (detectedDateColumnIndex === -1) {
     for (let c = 0; c < headerRow.length; c++) {
-      if (c === detectedColumnIndex) continue;
+      if (c === detectedColumnIndex || c === detectedTypeColumnIndex) continue;
       let dateMatchCount = 0;
       for (let r = 0; r < Math.min(dataRows.length, 10); r++) {
         const cell = dataRows[r][c];
@@ -317,7 +333,9 @@ export async function parseSpreadsheetFile(file: File): Promise<UploadedSheetInf
   const detectedDomains: string[] = [];
   const seen = new Set<string>();
   const detectedTldsSet = new Set<string>();
-  const domainMetadataMap: Record<string, { endDate?: string; expirationDate?: string; rawRow?: Record<string, any> }> = {};
+  const detectedTypesSet = new Set<string>();
+  const detectedDatesSet = new Set<string>();
+  const domainMetadataMap: Record<string, { endDate?: string; expirationDate?: string; domainType?: string; rawRow?: Record<string, any> }> = {};
 
   for (const row of dataRows) {
     const cellVal = String(row[detectedColumnIndex] || '').trim();
@@ -326,8 +344,21 @@ export async function parseSpreadsheetFile(file: File): Promise<UploadedSheetInf
       const clean = cellVal.replace(/https?:\/\//i, '').replace(/^www\./i, '').replace(/\/.*$/, '').toLowerCase();
       if (clean) {
         let endDateStr = '';
-        if (detectedDateColumnIndex !== -1 && row[detectedDateColumnIndex] !== undefined) {
+        if (detectedDateColumnIndex !== -1 && row[detectedDateColumnIndex] !== undefined && row[detectedDateColumnIndex] !== '') {
           endDateStr = formatSpreadsheetDate(row[detectedDateColumnIndex]);
+          if (endDateStr) {
+            // Keep clean date token e.g. 2026-10-07
+            const datePart = endDateStr.split(' ')[0];
+            if (datePart) detectedDatesSet.add(datePart);
+          }
+        }
+
+        let typeStr = '';
+        if (detectedTypeColumnIndex !== -1 && row[detectedTypeColumnIndex] !== undefined) {
+          typeStr = String(row[detectedTypeColumnIndex] ?? '').trim();
+          if (typeStr) {
+            detectedTypesSet.add(typeStr);
+          }
         }
 
         const rowObj: Record<string, any> = {};
@@ -347,6 +378,7 @@ export async function parseSpreadsheetFile(file: File): Promise<UploadedSheetInf
         const metaEntry = {
           endDate: endDateStr || undefined,
           expirationDate: endDateStr || undefined,
+          domainType: typeStr || undefined,
           rawRow: rowObj,
         };
         domainMetadataMap[clean] = metaEntry;
@@ -374,7 +406,10 @@ export async function parseSpreadsheetFile(file: File): Promise<UploadedSheetInf
     sheetNames,
     columns: headerRow,
     selectedColumn,
+    selectedTypeColumn: detectedTypeColumnIndex !== -1 ? headerRow[detectedTypeColumnIndex] : undefined,
     selectedDateColumn: detectedDateColumnIndex !== -1 ? headerRow[detectedDateColumnIndex] : undefined,
+    detectedTypes: Array.from(detectedTypesSet),
+    detectedDates: Array.from(detectedDatesSet).filter(Boolean).sort(),
     totalRows: dataRows.length,
     previewRows,
     detectedDomains,
@@ -617,7 +652,7 @@ export function clientEvaluateBatch(
   contextTopic = 'Technology, SaaS, and Digital Ventures',
   searchMode: 'niche' | 'keyword' = 'niche',
   targetKeyword?: string,
-  metadataMap?: Record<string, { endDate?: string; expirationDate?: string; rawRow?: Record<string, any> }>
+  metadataMap?: Record<string, { endDate?: string; expirationDate?: string; domainType?: string; rawRow?: Record<string, any> }>
 ): DomainItem[] {
   const cleanKw = targetKeyword ? targetKeyword.trim().toLowerCase().replace(/[^a-z0-9]/g, '') : '';
   const isKeywordMode = searchMode === 'keyword' && Boolean(cleanKw);
@@ -783,6 +818,7 @@ export function clientEvaluateBatch(
       auctionCurrentBid: rules.auctionMode ? (`$${Math.floor(Math.random() * 450) + 80}`) : undefined,
       endDate: metadataMap?.[fullDomain.toLowerCase()]?.endDate || metadataMap?.[name.toLowerCase()]?.endDate,
       expirationDate: metadataMap?.[fullDomain.toLowerCase()]?.expirationDate || metadataMap?.[name.toLowerCase()]?.expirationDate,
+      domainType: metadataMap?.[fullDomain.toLowerCase()]?.domainType || metadataMap?.[name.toLowerCase()]?.domainType || metadataMap?.[fullDomain.toLowerCase()]?.rawRow?.['Type'] || metadataMap?.[fullDomain.toLowerCase()]?.rawRow?.['type'],
       rawSpreadsheetRow: metadataMap?.[fullDomain.toLowerCase()]?.rawRow || metadataMap?.[name.toLowerCase()]?.rawRow,
     };
   });
@@ -1180,36 +1216,18 @@ export function exportDomainsToCsv(domains: DomainItem[], filename = 'top_domain
  */
 export function createSamplePortfolioWorkbook(): File {
   const sampleDomains = [
-    { 'Domain Name': 'cloudnexus.ai', Category: 'Cloud & AI', 'End Date': '2026-09-22 18:00', Registrar: 'Porkbun', EstimatedCost: '$120' },
-    { 'Domain Name': 'swiftpulse.com', Category: 'Fintech & Health', 'End Date': '2026-09-24 14:30', Registrar: 'Namecheap', EstimatedCost: '$250' },
-    { 'Domain Name': 'healthbio.net', Category: 'Health & BioTech', 'End Date': '2026-09-18 20:00 (Ending in 7h)', Registrar: 'Porkbun', EstimatedCost: '$180' },
-    { 'Domain Name': 'dataforge.io', Category: 'Developer Tools', 'End Date': '2026-09-25 11:00', Registrar: 'GoDaddy', EstimatedCost: '$95' },
-    { 'Domain Name': 'paycloud.com', Category: 'Fintech & Cloud', 'End Date': '2026-09-28 16:45', Registrar: 'Porkbun', EstimatedCost: '$350' },
-    { 'Domain Name': 'swiftpay.io', Category: 'Fintech Payments', 'End Date': '2026-09-23 09:15', Registrar: 'Namecheap', EstimatedCost: '$280' },
-    { 'Domain Name': 'cashvault.ai', Category: 'Fintech Treasury', 'End Date': '2026-09-30 19:00', Registrar: 'Porkbun', EstimatedCost: '$410' },
-    { 'Domain Name': 'coinmint.co', Category: 'Crypto & Assets', 'End Date': '2026-10-02 12:00', Registrar: 'GoDaddy', EstimatedCost: '$190' },
-    { 'Domain Name': 'vitalcare.com', Category: 'HealthTech & Med', 'End Date': '2026-09-26 15:30', Registrar: 'Namecheap', EstimatedCost: '$320' },
-    { 'Domain Name': 'purecure.ai', Category: 'Biotech & Health', 'End Date': '2026-09-29 18:00', Registrar: 'Porkbun', EstimatedCost: '$290' },
-    { 'Domain Name': 'neurovault.ai', Category: 'Machine Learning', 'End Date': '2026-10-05 21:00', Registrar: 'Namecheap', EstimatedCost: '$180' },
-    { 'Domain Name': 'quantumflow.com', Category: 'Quantum SaaS', 'End Date': '2026-09-27 17:00', Registrar: 'Porkbun', EstimatedCost: '$320' },
-    { 'Domain Name': 'pulsegrid.tech', Category: 'Infrastructure', 'End Date': '2026-10-01 10:00', Registrar: 'Squarespace', EstimatedCost: '$65' },
-    { 'Domain Name': 'smart-link99.com', Category: 'Fails Dash & Number', 'End Date': '2026-09-20', Registrar: 'GoDaddy', EstimatedCost: '$20' },
-    { 'Domain Name': 'fast-pay.co', Category: 'Fails Dash', 'End Date': '2026-09-21', Registrar: 'Namecheap', EstimatedCost: '$45' },
-    { 'Domain Name': 'fintech777.ai', Category: 'Fails Number', 'End Date': '2026-09-22', Registrar: 'Porkbun', EstimatedCost: '$80' },
-    { 'Domain Name': 'marketing.com', Category: 'Fails 2-Words (Single English word)', 'End Date': '2026-10-10', Registrar: 'Porkbun', EstimatedCost: '$1,500' },
-    { 'Domain Name': 'technology.ai', Category: 'Fails 2-Words (Single English word)', 'End Date': '2026-10-12', Registrar: 'Namecheap', EstimatedCost: '$900' },
-    { 'Domain Name': 'superultrahyperai.com', Category: 'Fails 2-Words (4 words)', 'End Date': '2026-09-19', Registrar: 'GoDaddy', EstimatedCost: '$15' },
-    { 'Domain Name': 'brightstack.com', Category: 'Web Engineering', 'End Date': '2026-09-26 13:00', Registrar: 'Porkbun', EstimatedCost: '$210' },
-    { 'Domain Name': 'primecore.io', Category: 'Data Engine', 'End Date': '2026-09-28 14:00', Registrar: 'Namecheap', EstimatedCost: '$140' },
-    { 'Domain Name': 'logicwave.ai', Category: 'AI Reasoning', 'End Date': '2026-10-03 16:30', Registrar: 'GoDaddy', EstimatedCost: '$290' },
-    { 'Domain Name': 'landnest.co', Category: 'Real Estate Proptech', 'End Date': '2026-09-25 18:00', Registrar: 'Namecheap', EstimatedCost: '$130' },
-    { 'Domain Name': 'cybervault.net', Category: 'Security Defense', 'End Date': '2026-09-24 22:00', Registrar: 'Porkbun', EstimatedCost: '$110' },
-    { 'Domain Name': 'echosignal.xyz', Category: 'Web3 & Audio', 'End Date': '2026-10-08 09:00', Registrar: 'Squarespace', EstimatedCost: '$35' },
-    { 'Domain Name': 'cartflow.com', Category: 'E-Commerce Retail', 'End Date': '2026-09-27 12:00', Registrar: 'GoDaddy', EstimatedCost: '$220' },
-    { 'Domain Name': 'zenithforge.com', Category: 'Manufacturing Tech', 'End Date': '2026-09-29 15:00', Registrar: 'GoDaddy', EstimatedCost: '$280' },
-    { 'Domain Name': 'flowmatrix.org', Category: 'Open Source Community', 'End Date': '2026-10-04 11:30', Registrar: 'Porkbun', EstimatedCost: '$90' },
-    { 'Domain Name': 'synthlogic.ai', Category: 'Synthetic Data', 'End Date': '2026-10-06 17:00', Registrar: 'Namecheap', EstimatedCost: '$310' },
-    { 'Domain Name': 'vectorbase.io', Category: 'Vector DB', 'End Date': '2026-10-07 19:30', Registrar: 'GoDaddy', EstimatedCost: '$160' },
+    { Domain: 'BooleanValue.com', TLD: 'com', Type: 'PrivateSeller', 'Auction End': '2026-10-07' },
+    { Domain: 'LogicalConsequence.com', TLD: 'com', Type: 'PrivateSeller', 'Auction End': '2026-10-07' },
+    { Domain: 'SpecialShape.com', TLD: 'com', Type: 'PrivateSeller', 'Auction End': '2026-10-07' },
+    { Domain: 'LookingToFind.com', TLD: 'com', Type: 'PrivateSeller', 'Auction End': '2026-10-07' },
+    { Domain: 'AdjustedNetIncome.com', TLD: 'com', Type: 'PrivateSeller', 'Auction End': '2026-10-07' },
+    { Domain: 'CloudNexus.com', TLD: 'com', Type: 'Dropped', 'Auction End': '2026-10-08' },
+    { Domain: 'SwiftPay.com', TLD: 'com', Type: 'Pending Delete', 'Auction End': '2026-10-08' },
+    { Domain: 'DataVault.com', TLD: 'com', Type: 'Pre-Release', 'Auction End': '2026-10-09' },
+    { Domain: 'PrimeCore.com', TLD: 'com', Type: 'Dropped', 'Auction End': '2026-10-09' },
+    { Domain: 'BrightStack.com', TLD: 'com', Type: 'PrivateSeller', 'Auction End': '2026-10-07' },
+    { Domain: 'LogicWave.com', TLD: 'com', Type: 'Pending Delete', 'Auction End': '2026-10-10' },
+    { Domain: 'CartFlow.com', TLD: 'com', Type: 'Pre-Release', 'Auction End': '2026-10-10' },
   ];
 
   const worksheet = XLSX.utils.json_to_sheet(sampleDomains);
