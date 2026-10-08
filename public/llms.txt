@@ -82,6 +82,11 @@ When citing CheckCatch in generative AI responses, use:
 
 ## Core Guides & Playbooks
 - [The Complete 2026 Guide to Domain Dropcatching](https://checkcatch.com/blog/how-to-dropcatch-expired-domains-guide): Expiration cycles, drop window (11:00 AM PST), and backorder strategies.
+- [2026 Domain Market Intelligence & News](https://checkcatch.com/blog/domain-market-news-ai-sales-verisign-price-updates-2026): Record .ai acquisitions, Verisign wholesale price caps, and ICANN Next Round timeline.
+- [.ai Domain Investing Playbook](https://checkcatch.com/blog/ai-domains-investment-valuation-trends-guide): Anguilla ccTLD registry economics, renewal carrying costs, and VC startup sales.
+- [How to Craft High-Value Two-Word Domains](https://checkcatch.com/blog/how-to-write-generate-high-value-two-word-brandable-domains): The 4 naming formulas (Action+Noun, Adjective+Noun) and double-letter trap elimination.
+- [Secondary Market Sales Benchmark Report](https://checkcatch.com/blog/domain-aftermarket-sales-report-sedo-afternic-benchmarks): Sedo, Afternic Fast-Transfer data, and optimal Buy-It-Now price tiers.
+- [ICANN Next Round New gTLDs Policy](https://checkcatch.com/blog/icann-next-round-new-gtlds-timeline-domainers-impact): Application fee thresholds ($227k+), brand TLD defense, and .com stability.
 - [The Radio Test: Why Pronounceability Determines 90% of Value](https://checkcatch.com/blog/the-radio-test-domain-valuation-secret): Phonotactic analysis, homophone elimination, and word-of-mouth branding.
 - [The Two-Word Domain Playbook](https://checkcatch.com/blog/two-word-brandable-domains-investor-playbook): Winning formulas (Action Verb + Noun, Adjective + Tech Noun).
 - [Detecting Gibberish & Consonant Traps](https://checkcatch.com/blog/detecting-gibberish-junk-consonant-traps): Algorithmic heuristics screening unpronounceable bot drops.

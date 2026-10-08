@@ -76,7 +76,7 @@ export const Footer: React.FC<FooterProps> = ({
                     className="flex items-center gap-1.5 text-blue-700 font-bold hover:underline transition-colors text-left"
                   >
                     <BookOpen className="w-3.5 h-3.5 text-blue-600" />
-                    <span>{isAr ? 'مدونة قنص الدومينات' : 'Domain Blog'}</span>
+                    <span>{isAr ? 'مواضيع وأخبار الدومينات' : 'Domain News & Articles'}</span>
                   </button>
                 </li>
               )}

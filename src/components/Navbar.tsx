@@ -95,10 +95,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                 id="nav-blog-btn"
                 type="button"
                 onClick={onOpenBlog}
-                className="min-h-[44px] flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-blue-700 bg-blue-50/70 hover:bg-blue-100/70 border border-blue-200 transition-all cursor-pointer"
+                className="min-h-[44px] flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-blue-700 bg-blue-50/90 hover:bg-blue-100 border border-blue-200 transition-all cursor-pointer shadow-2xs"
               >
                 <BookOpen className="w-4 h-4 text-blue-600" />
-                <span>{isAr ? 'المدونة' : 'Blog'}</span>
+                <span>{isAr ? 'الأخبار والمواضيع' : 'News & Articles'}</span>
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+                </span>
               </button>
             )}
 

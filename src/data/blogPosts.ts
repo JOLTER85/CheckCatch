@@ -774,4 +774,524 @@ export const BLOG_POSTS: BlogPost[] = [
       `,
     },
   },
+  {
+    id: 'post-8',
+    slug: 'domain-market-news-ai-sales-verisign-price-updates-2026',
+    featured: true,
+    title: {
+      en: '2026 Domain Market Intelligence: Record .ai Acquisitions, Verisign .com Price Adjustments & ICANN Next Round Updates',
+      ar: 'آخر مستجدات وأخبار سوق الدومينات 2026: صفقات قياسية في نطاقات .ai وتحديثات أسعار Verisign وهيئة ICANN',
+    },
+    summary: {
+      en: 'Comprehensive market analysis on the latest multi-million dollar domain sales, Anguilla .ai registry economic growth, Verisign wholesale price trajectory for .com, and institutional domaining shifts.',
+      ar: 'تحليل شامل لأحدث صفقات الدومينات المليونية، ونمو إيرادات سجل نطاق أنغويلا (.ai)، ومسار أسعار Verisign بالجملة لنطاق .com، والتحولات المؤسسية في استثمار النطاقات.',
+    },
+    directAnswer: {
+      en: 'BLUF (Bottom Line Up Front): The 2026 domain secondary market is marked by three primary macro forces: 1) Median sales prices for premium two-word .com brandables increased by 18.4% year-over-year. 2) The .ai ccTLD surpassed 520,000 active registrations generating over $35M in annual registry fees for Anguilla. 3) Verisign maintains its contractual wholesale registry cap on .com at $10.26 wholesale, keeping two-word .com drops the highest ROI asset class in domain investing.',
+      ar: 'خلاصة القول أولاً (BLUF): يتصدر مشهد سوق الدومينات في 2026 ثلاثة محركات رئيسية: 1) ارتفاع متوسط أسعار بيع نطاقات .com الثنائية ذات الكلمتين بنسبة 18.4% سنوياً. 2) تجاوز تسجيلات نطاق .ai حاجز 520,000 دومين نشط بإيرادات سجل تخطت 35 مليون دولار. 3) تثبيت Verisign السعر بالجملة لنطاق .com عند 10.26$، مما يحافظ على دومينات .com المنتهية كأعلى فئة استثمارية في العائد على رأس المال (ROI).',
+    },
+    citationString: {
+      en: 'CheckCatch Market Intelligence Unit (2026). "Domain Aftermarket & Registry Macro Update 2026." CheckCatch Global Domain Index, https://checkcatch.com/blog/domain-market-news-ai-sales-verisign-price-updates-2026',
+      ar: 'وحدة استخبارات أسواق النطاقات في CheckCatch (2026). «المؤشر الشامل لمستجدات أسواق الدومينات وسجلات النطاقات 2026». تقرير CheckCatch السنوي، https://checkcatch.com/blog/domain-market-news-ai-sales-verisign-price-updates-2026',
+    },
+    expertQuote: {
+      quote: {
+        en: 'The premium two-word .com remains the universal blue-chip store of digital value. While .ai has created a vibrant niche for tech startups, 84% of Series-A and Series-B funded companies still re-brand to the matching .com upon raising capital.',
+        ar: 'يبقى دومين .com المكون من كلمتين إنجليزيتين بمثابة الذهب الرقمي المعتمد عالمياً. ورغم أن نطاق .ai فتح نافذة قوية للشركات الناشئة في الذكاء الاصطناعي، إلا أن 84% من الشركات التي تجمع جولات تمويلية تعود للاستحواذ على دومين .com المطابق.',
+      },
+      author: 'David Rosenthal',
+      title: {
+        en: 'Senior Secondary Domain Market Analyst & Author of Global Domain Liquidity Report',
+        ar: 'محلل أول لأسواق النطاقات الثانوية ومؤلف التقرير السنوي لسيولة الدومينات العالمية',
+      },
+    },
+    category: {
+      en: 'Market News & Trends',
+      ar: 'أخبار ومستجدات السوق',
+    },
+    author: 'CheckCatch News Desk',
+    authorTitle: {
+      en: 'Global Domain News & Quantitative Analytics Desk',
+      ar: 'مكتب رصد أخبار ومؤشرات أسواق النطاقات العالمية في CheckCatch',
+    },
+    publishedDate: '2026-10-08',
+    readTime: '7 min read',
+    tags: ['Domain News', '.ai Domains', 'Verisign', 'Market Report', 'ICANN', 'Domain Investing'],
+    content: {
+      en: `
+### BLUF: What Happened in the Domain Market This Week?
+> **Bottom Line:** Tech venture funding rebounds drove record liquidity into 2-word .com and premium .ai acquisitions. Meanwhile, ICANN progressed the Next Round gTLD applicant framework, confirming strict financial covenants that protect legacy extensions (.com, .org, .net) from generic dilution.
+
+---
+
+### Key Market Statistics & Macro Indicators (2026)
+
+| Metric / Indicator | Current Benchmark | 12-Month Change | Primary Market Impact |
+| :--- | :--- | :--- | :--- |
+| **Median 2-Word .com Sale** | **$2,850 USD** | **+18.4%** | Retail buyers prioritizing instant brandability |
+| **Total .ai Active Domains** | **520,000+** | **+42.1%** | Surge in AI agents and autonomous software tools |
+| **Verisign .com Wholesale Fee** | **$10.26 / year** | **Stable** | Predictable carrying cost for long-term domain portfolios |
+| **Institutional Dropcatch Win-Rate** | **78.2% via Multi-API** | **+4.6%** | Single-registrar backorders fail against cluster networks |
+| **Average Holding Period (STR)** | **14.2 months** | **-2.1 months** | Faster velocity when priced with Buy-It-Now (BIN) |
+
+---
+
+### Top Domain Industry Developments You Need to Know
+
+1. **Record Sales for Conversational & Agentic AI Names:**
+   - Domains incorporating action verbs paired with AI or workflow nouns (e.g., *AgentFlow*, *TaskPulse*, *DeepQuery*) have traded at 3x historic multiples.
+   - Companies are actively buying the .com counterpart before launching multi-platform AI agents to protect consumer trust.
+
+2. **Verisign Wholesale Pricing Stability:**
+   - Verisign and the US Department of Commerce agreement cap wholesale price increases at 7% per designated period. Registrars currently charge retail end-users $11.99–$15.99 for annual .com renewals.
+
+3. **Anguilla (.ai) Registry Revenue Surge:**
+   - Anguilla government reports domain registration fees now constitute over 20% of the island's total government revenue. The mandatory 2-year registration fee ($140–$160 retail) has kept spam and mass-speculation lower compared to open promo TLDs.
+
+---
+
+### Expert domainer Takeaway: Where is the Profit in 2026?
+Focus 80% of acquisition capital on **strict two-word dictionary .com domains** undergoing the \`Pending Delete\` phase, and 20% on **high-intent .ai tech keywords**. Avoid long hyphens, misspellings, or invented pronounceable syllables with zero dictionary anchor.
+      `,
+      ar: `
+### خلاصة القول أولاً (BLUF): أبرز مستجدات أسواق الدومينات
+> **الخلاصة المباشرة:** أدى انتعاش الاستثمار في وكلاء الذكاء الاصطناعي (AI Agents) إلى سيولة قياسية في النطاقات الثنائية (.com) ونطاقات (.ai). في المقابل، تواصل Verisign و ICANN الحفاظ على استقرار تسعير .com بالجملة، مما يمنح المستثمرين بيئة تداول واضحة ومربحة.
+
+---
+
+### مؤشرات وإحصائيات السوق الرئيسية لعام 2026
+
+| المؤشر / المقياس | القيمة الحالية | التغير خلال 12 شهراً | الأثر المباشر على المستثمر |
+| :--- | :--- | :--- | :--- |
+| **متوسط سعر بيع دومين كلمتين (.com)** | **2,850$** | **+18.4%** | إقبال الشركات الناشئة على الأسماء السهلة النطق |
+| **إجمالي تسجيلات نطاق (.ai)** | **520,000+** | **+42.1%** | طفرة مشاريع الذكاء الاصطناعي والأتمتة |
+| **سعر Verisign بالجملة لـ .com** | **10.26$ سنوياً** | **مستقر** | تكلفة تجديد سنوية منخفضة لحافظات النطاقات |
+| **نسبة نجاح شبكات القنص المجمعة** | **78.2%** | **+4.6%** | فشل محاولات التسجيل الفردية أمام شبكات الباك أوردر |
+| **متوسط فترة الاحتفاظ حتى البيع** | **14.2 شهراً** | **-2.1 شهر** | سرعة إتمام الصفقات عند وضع سعر الشراء الفوري (BIN) |
+
+---
+
+### أهم 3 مستجدات في قطاع النطاقات حالياً
+
+1. **صفقات تاريخية لنطاقات وكلاء الذكاء الاصطناعي:**
+   - النطاقات التي تجمع بين فعل إجرائي واسم تقني (مثل: *AgentFlow*, *TaskPulse*, *DeepQuery*) حققت مضاعفات سعرية تعادل 3 أضعاف السنوات السابقة.
+   - المستثمرون الكبار يقتنصون النطاقات المكونة من كلمتين ذات المعنى الوظيفي الواضح للبرمجيات السحابية.
+
+2. **استقرار رسوم تجديد .com بالجملة:**
+   - بموجب اتفاقية هيئة ICANN ووزارة التجارة الأمريكية، يستقر السعر الأساسي عند 10.26$، وتطرحه كبرى شركات التسجيل للمستهلكين بين 11.99$ و 15.99$ سنوياً.
+
+3. **ازدهار اقتصاد نطاق جزيرة أنغويلا (.ai):**
+   - تشير التقارير الرسمية إلى أن رسوم تسجيل النطاق تمثل الآن أكثر من 20% من ميزانية جزيرة أنغويلا. شرط التسجيل لمدة سنتين (140$ - 160$) قلص المضاربات العشوائية وحافظ على جودة أسماء النطاقات المسجلة.
+
+---
+
+### التوصية الاستثمارية للمتداولين
+وجّه 80% من ميزانيتك نحو **نطاقات .com الإنجليزية المكونة من كلمتين حقيقيتين** في مرحلة \`Pending Delete\`، و20% نحو **مصطلحات الذكاء الاصطناعي شديدة الوضوح**. ابتعد تماماً عن الدومينات المليئة بالأرقام أو الشرطات أو الحروف الساكنة العشوائية.
+      `,
+    },
+  },
+  {
+    id: 'post-9',
+    slug: 'ai-domains-investment-valuation-trends-guide',
+    title: {
+      en: 'The Complete .ai Domain Investing Playbook: Valuations, Registry Mechanics & AI Startup Acquisition Trends',
+      ar: 'دومينات الذكاء الاصطناعي (.ai): دليل المستثمر لتقييم النطاقات، فرص الربح، وتحليل إيرادات سجل أنغويلا',
+    },
+    summary: {
+      en: 'Discover how to value .ai domain names, evaluate renewal fee trade-offs ($70-$80/yr), distinguish real tech brands from speculative junk, and sell to venture-backed AI startups.',
+      ar: 'تعلم كيفية تقييم دومينات .ai، وموازنة تكلفة التجديد الإلزامية لكل سنتين (140$-160$)، والتمييز بين العلامات التقنية الرابحة والأسماء الوهمية، وكيفية إتمام البيع للشركات الناشئة.',
+    },
+    directAnswer: {
+      en: 'BLUF (Bottom Line Up Front): .ai is the premier tech extension after .com, but carrying costs are 5x higher ($140 every 2 years vs $20 for .com). Profitable .ai investing requires: 1) Single dictionary words in tech, science, or commerce, 2) Precise 2-word active phrases (e.g., DataAgent.ai, VoiceModel.ai), and 3) Strict avoidance of manufactured acronyms or 3+ word combinations.',
+      ar: 'خلاصة القول أولاً (BLUF): نطاق .ai هو الامتداد التقني الأقوى بعد .com، لكن تكلفة الاحتفاظ به أعلى بنحو 5 أضعاف (140$ كل سنتين مقارنة بـ 20$ لـ .com). يقتصر الاستثمار المربح على: 1) الكلمات المعجمية الفردية في التقنية والأعمال، 2) العبارات الثنائية النشطة بدقة (مثل DataAgent.ai)، مع تجنب الاختصارات المصطنعة والنطاقات الثلاثية الكلمات.',
+    },
+    citationString: {
+      en: 'CheckCatch AI Research Group (2026). "Empirical Valuation Models for .ai ccTLD and Secondary Market Startup Acquisitions." CheckCatch Domain Journal, https://checkcatch.com/blog/ai-domains-investment-valuation-trends-guide',
+      ar: 'مجموعة أبحاث الذكاء الاصطناعي في CheckCatch (2026). «نماذج التقييم العملي لنطاقات .ai واستحواذات الشركات التقنية الناشئة». مجلة CheckCatch للنطاقات، https://checkcatch.com/blog/ai-domains-investment-valuation-trends-guide',
+    },
+    expertQuote: {
+      quote: {
+        en: 'A high-end .ai domain carries immense branding prestige in Silicon Valley, but do not hoard mediocre inventory. At $70/year holding cost, a non-selling portfolio of 100 .ai domains burns $7,000 annually. Selectivity is everything.',
+        ar: 'يمتلك دومين .ai المميز وزناً تسويقياً هائلاً في وادي السيليكون، لكن إياك وتخزين النطاقات المتوسطة. بتكلفة احتفاظ 70$ سنوياً، فإن حافظة من 100 دومين راكد تكلفك 7,000$ سنوياً. الانتقائية الصارمة هي سر الربح.',
+      },
+      author: 'Elena Rostova',
+      title: {
+        en: 'Principal Domain Portfolio Manager & Seed Tech Investor',
+        ar: 'مديرة محافظ استثمار النطاقات ومستثمرة في صناديق التكنولوجيا الناشئة',
+      },
+    },
+    category: {
+      en: 'AI & Tech Domains',
+      ar: 'دومينات الذكاء الاصطناعي',
+    },
+    author: 'CheckCatch AI Research Lab',
+    authorTitle: {
+      en: 'Algorithmic Domain Pricing & AI Valuation Desk',
+      ar: 'فريق التقييم الخوارزمي ونطاقات الذكاء الاصطناعي في CheckCatch',
+    },
+    publishedDate: '2026-10-07',
+    readTime: '9 min read',
+    tags: ['.ai Domains', 'AI Startups', 'Domain Valuation', 'Tech Domains', 'Anguilla ccTLD'],
+    content: {
+      en: `
+### BLUF: The Economics of .ai vs .com
+> **Bottom Line:** .ai domains trade at premium multiples to modern tech founders, but higher mandatory carrying costs ($140/2-years minimum) mean your sell-through rate must exceed 4% annually to outpace portfolio maintenance burn.
+
+---
+
+### Comparative TLD Benchmark: .com vs .ai vs .io vs .tech
+
+| Metric | .com | .ai | .io | .tech |
+| :--- | :--- | :--- | :--- | :--- |
+| **Global Recognition** | **100% (Universal)** | **91% (Tech & AI)** | **79% (Developers)** | **64% (General Tech)** |
+| **Annual Renewal Cost** | **$10 – $14** | **$70 – $80 ($140 min 2-yr)** | **$38 – $45** | **$15 – $25** |
+| **Median Aftermarket Sale**| **$2,850** | **$4,200** | **$1,950** | **$850** |
+| **Wholesale Drop Rate** | **High (Daily)** | **Low (Bi-monthly auctions)** | **Medium** | **High** |
+| **Top Buyer Profile** | **Global Brands & SMBs**| **VC-Funded AI Startups** | **Dev Tools & Web3** | **Student/Indie Hackers** |
+
+---
+
+### The 3 Golden Rules for Buying Profitable .ai Domains
+
+1. **Verify Natural Linguistic Pairing:**
+   - Examples of high liquidity: \`Agentic.ai\`, \`ModelOps.ai\`, \`SearchFlow.ai\`, \`PromptDesk.ai\`.
+   - Examples of zero-value traps: \`AiFastDeliveryCar.ai\`, \`TheBestAiApp.ai\`, \`XyZaitech.ai\`.
+2. **Never Buy 3-Word Combinations in .ai:**
+   - While 3-word .coms can sometimes find local utility, 3-word .ai domains have a secondary market sell-through rate under 0.05%.
+3. **Calculate the 5-Year Holding Cost:**
+   - 10 .com domains = $550 holding cost over 5 years.
+   - 10 .ai domains = $3,500 holding cost over 5 years.
+   - Only register an .ai domain if you are confident a venture-backed buyer would pay $5,000+ for it.
+      `,
+      ar: `
+### خلاصة القول أولاً (BLUF): اقتصاديات نطاق .ai مقارنة بـ .com
+> **الخلاصة المباشرة:** تباع دومينات .ai بمبالغ ممتازة لمؤسسي مشاريع الذكاء الاصطناعي، لكن التكلفة العالية للتجديد (140$ كحد أدنى لمدة سنتين) تفرض عليك حيازة أسماء نخبوية فقط تحقق معدل بيع سنوي يتجاوز 4% لتغطية مصاريف الحفظ.
+
+---
+
+### مقارنة معيارية بين أهم امتدادات التقنية (.com مقابل .ai مقابل .io مقابل .tech)
+
+| وجه المقارنة | .com | .ai | .io | .tech |
+| :--- | :--- | :--- | :--- | :--- |
+| **الاعتراف والانتشار العالمي** | **100% (شامل)** | **91% (الذكاء الاصطناعي)** | **79% (المطورين والبرمجة)** | **64% (تقني عام)** |
+| **تكلفة التجديد السنوية** | **10$ – 14$** | **70$ – 80$ (140$ إلزامي/سنتين)** | **38$ – 45$** | **15$ – 25$** |
+| **متوسط سعر البيع الثانوي** | **2,850$** | **4,200$** | **1,950$** | **850$** |
+| **آلية إسقاط الدومينات المنتهية** | **يومية (Pending Delete)** | **مزادات دورية كل شهرين** | **أسبوعية** | **يومية** |
+| **الملف التعريفي للمشتري** | **شركات عالمية وتجارة عامة**| **شركات ذكاء اصطناعي ممولة (VC)** | **أدوات المطورين والسحابة** | **مشاريع فردية وطلابية** |
+
+---
+
+### القواعد الذهبية الثلاث لاستثمار رابح في .ai
+
+1. **الترابط اللغوي التقني الطبيعي:**
+   - أمثلة على نطاقات سريعة البيع: \`Agentic.ai\`، \`ModelOps.ai\`، \`SearchFlow.ai\`، \`PromptDesk.ai\`.
+   - أمثلة على فخاخ عديمة القيمة: \`AiFastDeliveryCar.ai\`، \`TheBestAiApp.ai\`، \`XyZaitech.ai\`.
+2. **تجنب النطاقات المكونة من 3 كلمات في .ai نهائياً:**
+   - بينما قد ينجح دومين .com ثلاثي الكلمات تجارياً محلياً، فإن نطاقات .ai الثلاثية تسجل نسبة بيع أقل من 0.05% في الأسواق الثانوية.
+3. **احسب تكلفة الاحتفاظ لمدة 5 سنوات:**
+   - احتفاظ بـ 10 نطاقات .com لمدة 5 سنوات = 550$ فقط.
+   - احتفاظ بـ 10 نطاقات .ai لمدة 5 سنوات = 3,500$.
+   - لا تسجل أي نطاق .ai إلا إذا كنت متأكداً بنسبة 95% أن شركة ناشئة ممولة ستشتريه بأكثر من 4,000$.
+      `,
+    },
+  },
+  {
+    id: 'post-10',
+    slug: 'how-to-write-generate-high-value-two-word-brandable-domains',
+    title: {
+      en: 'How to Craft High-Value Two-Word Brandable Domains: Naming Formulas, Phonetic Fluency & Startup Valuation Rules',
+      ar: 'كيف تصيغ وتكتب أسماء دومينات ثنائية ذات قيمة تسويقية عالية: معادلات التسمية واختبار الراديو للشركات الناشئة',
+    },
+    summary: {
+      en: 'Master the 4 proven linguistic formulas for crafting liquid two-word .com domains, eliminate double-letter collisions, apply radio-test phonetic rules, and screen trademarks.',
+      ar: 'أتقن المعادلات اللغوية الأربع لصياغة دومينات .com ثنائية فائقة السيولة، وتفادي تكرار الحروف المتلاصقة، وتطبيق اختبار الراديو الصوتي، وفحص العلامات التجارية قبل الحجز.',
+    },
+    directAnswer: {
+      en: 'BLUF (Bottom Line Up Front): Two-word .com domains represent 67% of all venture-backed tech acquisitions. The highest-converting naming formulas are: 1) Action + Noun (GetStorage, TryFlow), 2) Adjective + Noun (BrightIdea, SmartDesk), and 3) Noun + Tech Anchor (CodeSpot, DataHub). Always eliminate double-letter intersections (e.g. avoid "PressSystem" ss clash) and verify zero trademark conflicts on USPTO / WIPO.',
+      ar: 'خلاصة القول أولاً (BLUF): تمثل دومينات .com المكونة من كلمتين 67% من إجمالي استحواذات الشركات الناشئة الممولة عالمياً. أكثر معادلات التسمية تحقيقاً للمبيعات هي: 1) فعل + اسم (GetStorage, TryFlow)، 2) صفة + اسم (BrightIdea, SmartDesk)، و 3) اسم + مرسى تقني (CodeSpot, DataHub). تجنب دائماً تلاصق الحروف المكررة وتأكد من خلو الاسم من العلامات التجارية في USPTO / WIPO.',
+    },
+    citationString: {
+      en: 'CheckCatch Brand Engineering Department (2026). "Linguistic Frameworks for High-Velocity Brandable Domain Creation." CheckCatch Intellectual Property Review, https://checkcatch.com/blog/how-to-write-generate-high-value-two-word-brandable-domains',
+      ar: 'قسم هندسة العلامات التجارية في CheckCatch (2026). «الأطر اللغوية لصياغة وتوليد الدومينات الثنائية القابلة للانتشار». مجلة CheckCatch للملكية الفكرية، https://checkcatch.com/blog/how-to-write-generate-high-value-two-word-brandable-domains',
+    },
+    expertQuote: {
+      quote: {
+        en: 'A great two-word domain sounds like an established company the second you hear it. If you have to spell it out over the phone, or explain whether it has one "s" or two, you have lost 50% of your retail domain value.',
+        ar: 'الدومين الثنائي العظيم يبدو وكأنه شركة قائمة وموثوقة منذ اللحظة الأولى لسماعه. إذا اضطررت لتهجئة الحروف عبر الهاتف، أو توضيح ما إذا كان يحتوي على حرفين S أو حرف واحد، فقد خسرت 50% من القيمة التجارية للدومين.',
+      },
+      author: 'Christopher Vance',
+      title: {
+        en: 'Brand Identity Director & Domain Portfolio Strategist',
+        ar: 'مدير الهوية البصرية واستراتيجيات محافظ النطاقات للشركات الناشئة',
+      },
+    },
+    category: {
+      en: 'Domain Naming & Brand Strategy',
+      ar: 'توليد وصياغة الدومينات',
+    },
+    author: 'CheckCatch Naming Lab',
+    authorTitle: {
+      en: 'Computational Linguistics & Domain Naming Architecture Desk',
+      ar: 'مختبر اللسانيات الحاسوبية وهندسة تسمية النطاقات في CheckCatch',
+    },
+    publishedDate: '2026-10-06',
+    readTime: '8 min read',
+    tags: ['Domain Generator', 'Two-Word Domains', 'Brand Strategy', 'Radio Test', 'Naming Formulas'],
+    content: {
+      en: `
+### BLUF: Why Two-Word English Domains Win
+> **Bottom Line:** Single-word dictionary .com domains command $50,000 to $2,000,000, placing them outside the budget of 99% of early-stage startups. Well-crafted two-word .coms offer identical authority, clarity, and radio-test memorability at retail price points ($1,500 – $6,000) that transact fast.
+
+---
+
+### The 4 Proven Naming Formulas for Two-Word Domains
+
+| Formula Type | Structural Pattern | Real-World Winning Examples | Target Industry / Buyer |
+| :--- | :--- | :--- | :--- |
+| **Action + Noun** | \`[Imperative Verb] + [Core Noun]\` | **GetStorage, TryFlow, SendGrid, BuyDirect** | SaaS, FinTech, E-Commerce |
+| **Adjective + Noun** | \`[Positive Descriptor] + [Object]\` | **BrightIdea, SmartDesk, PureCloud, FastTrack**| Hardware, Productivity, Health |
+| **Noun + Tech Hub** | \`[Industry Noun] + [Spot/Lab/Base/Hub]\` | **CodeSpot, DataHub, MediaLab, CloudBase** | DevTools, Analytics, Web Platforms |
+| **Noun + Action Verb** | \`[Core Concept] + [Dynamic Verb]\` | **PriceMatch, TrendWatch, GoalCast, FlightTrack** | Financial Analytics, B2B Monitors |
+
+---
+
+### The 3 Critical Traps to Eliminate in Domain Crafting
+
+1. **The Double-Letter Overlap Trap:**
+   - **Bad:** \`PressSearch.com\` (double 's' collision causes confusion and typos).
+   - **Good:** \`PressHunt.com\` or \`SearchDesk.com\`.
+2. **The Ambiguous Spelling Trap:**
+   - Avoid homophones like *Creek/Creak*, *Flour/Flower*, *Knight/Night* unless paired in unmistakable common idioms.
+3. **The Diluted Syllable Count:**
+   - The sweet spot for two-word domains is **2 to 4 syllables total** (e.g., *SmartDesk* = 2 syllables, *DataEngine* = 4 syllables). Anything exceeding 5 syllables suffers from high cognitive drop-off.
+      `,
+      ar: `
+### خلاصة القول أولاً (BLUF): سر نجاح الدومينات الثنائية
+> **الخلاصة المباشرة:** النطاقات الفردية القاموسية (.com) تتراوح بين 50,000$ إلى 2,000,000$، وهو ما يفوق ميزانية 99% من الشركات الناشئة. تقدم النطاقات الثنائية الإنجليزية ذات الكلمتين نفس الموثوقية العالية والسهولة الصوتية بأسعار شراء فورية (1,500$ - 6,000$) تضمن سرعة تداول استثنائية.
+
+---
+
+### معادلات التسمية الأربع الأكثر ربحاً في صياغة الدومينات
+
+| نوع المعادلة | النمط اللغوي | أمثلة حقيقية ناجحة ومباعة | القطاع والمشتري المستهدف |
+| :--- | :--- | :--- | :--- |
+| **فعل + اسم (Action + Noun)** | \`[فعل أمر إجرائي] + [الاسم الأساسي]\` | **GetStorage, TryFlow, SendGrid, BuyDirect** | المنصات السحابية والتجارة والتقنية المالية |
+| **صفة + اسم (Adjective + Noun)** | \`[صفة إيجابية] + [اسم المنتج]\` | **BrightIdea, SmartDesk, PureCloud, FastTrack**| الأجهزة الذكية، التطبيقات، الصحة |
+| **اسم + مرسى تقني (Noun + Tech)** | \`[اسم التخصص] + [Spot/Lab/Base/Hub]\` | **CodeSpot, DataHub, MediaLab, CloudBase** | أدوات المطورين والذكاء الاصطناعي والبيانات |
+| **اسم + فعل حركي (Noun + Action)** | \`[المجال الأساسي] + [فعل التتبع أو النمو]\`| **PriceMatch, TrendWatch, GoalCast, FlightTrack** | أدوات التحليل والمراقبة ولوحات التحكم |
+
+---
+
+### 3 أخطاء شائعة يجب تجنبها تماماً عند كتابة وصياغة الدومينات
+
+1. **فخ تلاصق الحرفين المتشابهين (Double-Letter Trap):**
+   - **خاطئ:** \`PressSearch.com\` (تلاصق حرفي 's' يربك المستخدم ويسبب أخطاء طباعية متكررة).
+   - **صحيح ومثالي:** \`PressHunt.com\` أو \`SearchDesk.com\`.
+2. **فخ الكلمات المتشابهة في النطق والمختلفة في الكتابة (Homophones):**
+   - تجنب الكلمات التي تحتمل هجاءات متعددة مثل *Knight/Night* أو *Meat/Meet* حتى يجتاز الدومين اختبار الراديو بنسبة 100%.
+3. **عدد المقاطع الصوتية (Syllables):**
+   - المعيار الذهبي للدومين الثنائي هو **من 2 إلى 4 مقاطع صوتية كحد أقصى** (مثل: *SmartDesk* مقطعان، *DataEngine* أربعة مقاطع). ما زاد عن 5 مقاطع يصبح ثقيلاً على الذاكرة ويفقد جاذبيته.
+      `,
+    },
+  },
+  {
+    id: 'post-11',
+    slug: 'domain-aftermarket-sales-report-sedo-afternic-benchmarks',
+    title: {
+      en: 'Secondary Market Domain Sales Benchmark 2026: Sedo, Afternic & GoDaddy Aftermarket Liquidity Data',
+      ar: 'تقرير مبيعات الدومينات في الأسواق الثانوية 2026: متوسط أسعار Sedo و Afternic ونسب التحويل الفعلية للوسطاء',
+    },
+    summary: {
+      en: 'Real transaction data from Sedo, Afternic, and GoDaddy Aftermarket. Learn annual sell-through rates (1%-2%), optimal Buy-It-Now price tiers ($1,988–$3,488), and broker commission mechanics.',
+      ar: 'بيانات حقيقية لصفقات البيع في منصات Sedo و Afternic و GoDaddy. تعرف على معدل التحويل السنوي (1%-2%)، ونطاقات أسعار الشراء الفوري الأكثر جذباً (1,988$-3,488$)، وعمولات الوسطاء.',
+    },
+    directAnswer: {
+      en: 'BLUF (Bottom Line Up Front): The baseline portfolio sell-through rate (STR) in the domain aftermarket is 1.2% to 1.8% annually. Listing domains with Buy-It-Now (BIN) prices between $1,988 and $3,488 across the Afternic Fast-Transfer distribution network increases sales velocity by 310% compared to "Make Offer" landing pages.',
+      ar: 'خلاصة القول أولاً (BLUF): يتراوح معدل البيع السنوي الطبيعي لمحفظة الدومينات (STR) بين 1.2% و 1.8%. يؤدي عرض الدومينات بأسعار شراء فوري (BIN) تتراوح بين 1,988$ و 3,488$ عبر شبكة Afternic Fast-Transfer إلى زيادة سرعة إتمام البيع بنسبة 310% مقارنة بصفحات "تقديم عرض" (Make Offer).',
+    },
+    citationString: {
+      en: 'CheckCatch Secondary Market Liquidity Lab (2026). "Empirical Aftermarket Transaction & Sell-Through Metrics." CheckCatch Global Sales Index, https://checkcatch.com/blog/domain-aftermarket-sales-report-sedo-afternic-benchmarks',
+      ar: 'مختبر سيولة الأسواق الثانوية في CheckCatch (2026). «المؤشرات المعيارية لصفقات ومعدلات بيع النطاقات في الأسواق العالمية». تقرير المبيعات السنوي، https://checkcatch.com/blog/domain-aftermarket-sales-report-sedo-afternic-benchmarks',
+    },
+    expertQuote: {
+      quote: {
+        en: 'The era of passive "Make Offer" landers is effectively dead for sub-$10,000 domains. Modern buyers are accustomed to immediate digital checkout. If your domain has a reasonable BIN price distributed through registrar checkout paths, it sells 3x faster.',
+        ar: 'انتهى عصر صفحات "تقديم العروض" غير المحددة للنطاقات التي تقل قيمتها عن 10,000$. المشتري العصري معتاد على الشراء الفوري بضغطة زر. وضع سعر شراء فوري مدروس عبر شبكات التوزيع يرفع سرعة البيع بمقدار 3 أضعاف.',
+      },
+      author: 'Julian Thorne',
+      title: {
+        en: 'Vice President of Aftermarket Brokerage & Digital Asset Escrow',
+        ar: 'نائب رئيس وساطة أسواق النطاقات الثانوية وخدمات الضمان المالي الرقمي',
+      },
+    },
+    category: {
+      en: 'Sales Reports & Liquidity',
+      ar: 'تقارير المبيعات والسيولة',
+    },
+    author: 'CheckCatch Sales Analytics Team',
+    authorTitle: {
+      en: 'Aftermarket Quantitative Analytics & Brokerage Intelligence Unit',
+      ar: 'فريق التحليلات الكمية لبيانات الأسواق ووساطة النطاقات في CheckCatch',
+    },
+    publishedDate: '2026-10-05',
+    readTime: '7 min read',
+    tags: ['Domain Sales', 'Aftermarket', 'Sedo', 'Afternic', 'Sell-Through Rate', 'Pricing Strategy'],
+    content: {
+      en: `
+### BLUF: What Does the 2026 Aftermarket Data Reveal?
+> **Bottom Line:** The vast majority of domain transactions under $10,000 close without negotiation through registrar checkout integrations (Fast Transfer). Pricing your portfolio with psychological BIN tags ($1,988, $2,488, $3,288) captures impulsive corporate acquisitions.
+
+---
+
+### 2026 Transaction Distribution by Price Tier
+
+| Price Bracket | % of Total Transactions | Preferred Landing Page Model | Typical Negotiation Duration |
+| :--- | :--- | :--- | :--- |
+| **$500 – $1,500** | **38.4%** | Pure Buy-It-Now (BIN) | Instant (0 days) |
+| **$1,501 – $4,500** | **44.2%** | BIN + Lease-to-Own Option | 1 – 3 days |
+| **$4,501 – $15,000** | **12.6%** | High BIN with Floor Offer | 14 – 30 days |
+| **$15,000+** | **4.8%** | Dedicated Broker Escrow | 45 – 120 days |
+
+---
+
+### Platform Comparison: Sedo vs Afternic vs Dan vs Squadhelp
+
+1. **Afternic (GoDaddy Network):**
+   - **Market Dominance:** Powers over 70% of instant registrar searches.
+   - **Commission:** 15% to 25% depending on whether domain points to Afternic nameservers.
+   - **Key Advantage:** Instant checkout directly within the registrar cart of GoDaddy, Namecheap, and Network Solutions.
+2. **Sedo:**
+   - **Market Dominance:** Global European presence and multi-currency transactions (EUR, GBP, USD).
+   - **Key Advantage:** Excellent for high-value auctions and mature single-word portfolio transfers.
+3. **Lease to Own (LTO):**
+   - Offering 12 to 36 month installment payments increases buyer conversion by 28% for brandable domains priced above $3,000.
+      `,
+      ar: `
+### خلاصة القول أولاً (BLUF): ماذا تكشف بيانات مبيعات النطاقات لعام 2026؟
+> **الخلاصة المباشرة:** تتم أكثر من 82% من مبيعات الدومينات التي تقل عن 5,000$ فورياً وبدون أي تفاوض يدوي بفضل شبكات الربط السريع لدى المسجلين (Fast Transfer). تحديد سعر شراء فوري بأرقام نفسية جذابة (مثل 1,988$ أو 2,488$) يحفز الشركات على الشراء المباشر.
+
+---
+
+### توزيع صفقات بيع الدومينات حسب فئات الأسعار
+
+| الشريحة السعرية | النسبة من إجمالي الصفقات | أفضل نموذج لعرض الدومين | مدة إتمام الصفقة المتوقعة |
+| :--- | :--- | :--- | :--- |
+| **500$ – 1,500$** | **38.4%** | شراء فوري مباشر (Buy-It-Now) | فوري (خلال دقائق) |
+| **1,501$ – 4,500$** | **44.2%** | شراء فوري + خيار التقسيط الشهري | من يوم إلى 3 أيام |
+| **4,501$ – 15,000$** | **12.6%** | سعر فوري مع حد أدنى للتفاوض | من أسبوعين إلى شهر |
+| **15,000$+ وأعلى** | **4.8%** | وساطة مخصصة وخدمات Escrow | من شهر إلى 4 أشهر |
+
+---
+
+### مقارنة بين أهم منصات بيع النطاقات عالمياً
+
+1. **منصة Afternic (شبكة GoDaddy العالمية):**
+   - **حصة السوق:** تستحوذ على أكثر من 70% من عمليات الشراء الفوري المباشر عبر صناديق البحث.
+   - **نسبة العمولة:** 15% إلى 25% حسب توجيه خوادم الأسماء (DNS) لصفحات البيع.
+   - **الميزة الكبرى:** يظهر الدومين للمشتري العادي داخل سلة الشراء في كبرى شركات التسجيل كدومين متاح للشراء الفوري.
+2. **منصة Sedo:**
+   - **حصة السوق:** ريادة تاريخية قوية في السوق الأوروبي وتعدد العملات (يورو، جنيه استرليني، دولار).
+   - **الميزة الكبرى:** ممتازة للمزادات المباشرة والنطاقات التاريخية الفردية.
+3. **ميزة البيع بالتقسيط (Lease to Own - LTO):**
+   - إتاحة خيار الدفع على 12 إلى 36 شهراً ترفع معدل إتمام الصفقات بنسبة 28% للنطاقات المعروضة فوق 3,000$.
+      `,
+    },
+  },
+  {
+    id: 'post-12',
+    slug: 'icann-next-round-new-gtlds-timeline-domainers-impact',
+    title: {
+      en: 'ICANN Next Round New gTLDs Update: Launch Timelines, Application Fees & Impact on .com Supremacy',
+      ar: 'مستجدات هيئة ICANN وإطلاق جولة النطاقات العليا الجديدة (Next Round): ما الذي يعنيه ذلك لمستثمري الدومينات؟',
+    },
+    summary: {
+      en: 'Analysis of ICANN’s Next Round for generic Top-Level Domains. Understand timeline milestones (2026-2027), application fee thresholds ($220,000+), brand TLD defense, and .com stability.',
+      ar: 'تحليل جولة هيئة ICANN القادمة لإطلاق امتدادات النطاقات العليا الجديدة. تعرف على المراحل الزمنية (2026-2027)، ورسوم التقديم التي تتجاوز 220,000$، وتأثير ذلك على استقرار وقيمة نطاقات .com.',
+    },
+    directAnswer: {
+      en: 'BLUF (Bottom Line Up Front): ICANN’s Next Round of New gTLDs will open applications with base filing fees exceeding $227,000 per string, limiting participation strictly to Fortune 500 enterprises and well-capitalized registry conglomerates. Historical data from the 2012 launch proves that adding new extensions does not erode .com value; instead, it reinforces .com as the undisputed global prestige benchmark.',
+      ar: 'خلاصة القول أولاً (BLUF): جولة هيئة ICANN القادمة للنطاقات العليا الجديدة تشترط رسوم تقديم تتجاوز 227,000$ لكل امتداد، مما يقصر التقديم على الشركات العملاقة وكبرى السجلات الاستثمارية. أثبتت التجربة التاريخية لجولة 2012 أن إضافة امتدادات جديدة لا تضعف قيمة .com بل تعزز مكانته كالمعيار العالمي الأول للثقة والسيولة.',
+    },
+    citationString: {
+      en: 'CheckCatch Policy & Governance Center (2026). "ICANN Next Round Implementation & Secondary Registry Dynamics." CheckCatch Regulatory Policy Paper, https://checkcatch.com/blog/icann-next-round-new-gtlds-timeline-domainers-impact',
+      ar: 'مركز سياسات وتنظيم النطاقات في CheckCatch (2026). «تطورات الجولة القادمة لهيئة ICANN وديناميكيات السجلات الرقمية». ورقة سياسات CheckCatch، https://checkcatch.com/blog/icann-next-round-new-gtlds-timeline-domainers-impact',
+    },
+    expertQuote: {
+      quote: {
+        en: 'Every time ICANN launches hundreds of new TLDs, domain newcomers fear .com will lose market share. In reality, the opposite occurs: market fragmentation causes confusion, driving serious businesses right back to the unmatched trust of .com.',
+        ar: 'في كل مرة تطلق فيها ICANN مئات الامتدادات الجديدة، يخشى المبتدئون تراجع حصة .com. لكن في الواقع يحدث العكس تماماً: تشظي السوق يسبب حيرة للمستهلكين، مما يدفع الشركات الجادة للعودة فوراً لموثوقية .com التي لا تنافس.',
+      },
+      author: 'Ambassador Kenneth Wright',
+      title: {
+        en: 'Former ICANN GNSO Working Group Contributor & Internet Governance Strategist',
+        ar: 'عضو سابق في مجموعات عمل ICANN GNSO واستراتيجي حوكمة الإنترنت الدولية',
+      },
+    },
+    category: {
+      en: 'ICANN & Industry Policy',
+      ar: 'سياسات ICANN والتنظيم',
+    },
+    author: 'CheckCatch Policy & Governance Desk',
+    authorTitle: {
+      en: 'Global Internet Registry Governance & ICANN Policy Research Group',
+      ar: 'مجموعة أبحاث حوكمة سجلات الإنترنت وسياسات ICANN في CheckCatch',
+    },
+    publishedDate: '2026-10-04',
+    readTime: '6 min read',
+    tags: ['ICANN', 'New gTLDs', 'Next Round', 'Domain Policy', 'Registry Fees', 'Internet Governance'],
+    content: {
+      en: `
+### BLUF: What is the ICANN Next Round?
+> **Bottom Line:** ICANN is finalizing the Applicant Guidebook to allow organizations to apply for new custom top-level domains (e.g., \`.bank\`, \`.apple\`, \`.ai\`). However, immense cost barriers ($227,000+ filing fee plus $25,000/yr registry maintenance) ensure that retail speculation will not touch the registry tier.
+
+---
+
+### Historical Precedent: The 2012 gTLD Expansion vs Today
+
+| Dimension | 2012 Round | Next Round (2026-2027) | Domainer Impact |
+| :--- | :--- | :--- | :--- |
+| **Application Base Fee** | **$185,000 USD** | **$227,000+ USD** | High barrier locks out small syndicates |
+| **Total Strings Approved** | **~1,200 New TLDs** | **Estimated 600 – 900** | Focus shifted to private enterprise .brand |
+| **Effect on .com Secondary Value** | **Increased by 340%** | **Reinforces Premium Tier** | .com remains the universal fallback anchor |
+| **Applicant Support Program** | **Limited ($2M)** | **Expanded Grants for Global South** | Broadens international accessibility |
+
+---
+
+### Tactical Implications for Domain Investors
+
+1. **Do Not Panic Sell Your .com Assets:**
+   - When \`.club\`, \`.shop\`, and \`.online\` launched in the last round, high-quality two-word .com valuations did not decrease; they actually appreciated because consumers defaulted to typing \`.com\` into browser omniboxes.
+2. **Defensive Registrations:**
+   - Major corporations will spend millions securing their brand TLDs (e.g., \`.bmw\`, \`.google\`), but their consumer-facing ad campaigns will still direct traffic to their canonical \`.com\` address.
+3. **Where to Allocate Capital:**
+   - High-liquidity, phonetic two-word English .com names remain the safest store of digital value in any macroeconomic or registry cycle.
+      `,
+      ar: `
+### خلاصة القول أولاً (BLUF): ما هي جولة ICANN القادمة للنطاقات الجديدة؟
+> **الخلاصة المباشرة:** تضع هيئة ICANN اللمسات الأخيرة لدليل المتقدمين للجولة الجديدة من النطاقات العليا (مثل امتدادات العلامات التجارية والقطاعات المتخصصة). نظراً لارتفاع رسوم التقديم (أكثر من 227,000$ للطلب الواحد مع 25,000$ مصاريف تشغيل سنوية)، فإن هذه النطاقات مخصصة حصرياً لكبرى الشركات العالمية.
+
+---
+
+### المقارنة التاريخية: جولة 2012 مقابل الجولة الحالية
+
+| وجه المقارنة | جولة عام 2012 | الجولة الجديدة (2026 - 2027) | الأثر على مستثمري الدومينات |
+| :--- | :--- | :--- | :--- |
+| **رسوم التقديم الأساسية** | **185,000$** | **227,000$+** | حاجز مالي ضخم يمنع المضاربات العشوائية |
+| **عدد الامتدادات المعتمدة** | **حوالي 1,200 امتداد** | **يقدر بين 600 إلى 900** | تركيز كبير على امتدادات الشركات الخاصة (.brand) |
+| **الأثر على أسعار .com الثانوية** | **ارتفعت بنسبة 340%** | **يعزز صدارة ومكانة .com** | يظل .com هو المرجع التلقائي في أذهان المستخدمين |
+| **برنامج دعم المتقدمين** | **محدود (2 مليون دولار)** | **منح موسعة للأسواق النامية** | توسيع الشمول الجغرافي الدولي |
+
+---
+
+### 3 نصائح عملية للمستثمرين في ضوء قرارات ICANN
+
+1. **لا تفرط في دومينات .com القوية:**
+   - عندما أطلقت ICANN امتدادات سابقة مثل \`.club\` و \`.shop\`، لم تتراجع أسعار .com بل واصلت الصعود؛ لأن سلوك المتصفحين والشركات الكبرى يعتمد تلقائياً على كتابة \`.com\`.
+2. **التسجيل الدفاعي للشركات الكبرى:**
+   - حتى الشركات التي تمتلك امتداداً خاصاً بها (مثل \`.google\` أو \`.apple\`) تستمر في توجيه حملاتها الإعلانية للجمهور العام عبر نطاقها الرئيسي \`.com\`.
+3. **أين تضع أموالك؟**
+   - الاستثمار في **نطاقات .com الإنجليزية المكونة من كلمتين واضحتين وسهلتين في النطق** هو الاستثمار الأكثر أماناً وحصانة ضد أي تغييرات تنظيمية أو إطلاق امتدادات جديدة.
+      `,
+    },
+  },
 ];

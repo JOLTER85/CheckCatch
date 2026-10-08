@@ -775,19 +775,56 @@ export const BlogPage: React.FC<BlogPageProps> = ({
               <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200">
                 <BookOpen className="w-3.5 h-3.5 text-blue-600" />
                 <span>
-                  {isAr ? 'مدونة CheckCatch للمحترفين' : 'CheckCatch Domain Intelligence Blog'}
+                  {isAr ? 'مركز أخبار ومقالات الدومينات | CheckCatch Intelligence' : 'CheckCatch Domain Intelligence & News Hub'}
                 </span>
               </div>
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
                 {isAr
-                  ? 'أسرار واستراتيجيات قنص وتقييم النطاقات'
-                  : 'Domain Dropcatching & Valuation Playbooks'}
+                  ? 'آخر أخبار ومستجدات الدومينات وأدلة التقييم'
+                  : 'Domain Market News, Trends & Valuation Guides'}
               </h1>
               <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-medium">
                 {isAr
-                  ? 'مقالات ودراسات حالة متقدمة بأسلوب الإجابة المباشرة (BLUF)، واختبار الراديو، وقنص الدومينات الساقطة (Dropped & Pending Delete) مع أرقام واقتباسات معتمدة.'
-                  : 'In-depth research and tactical guides utilizing BLUF direct answers, phonetic radio tests, bulk auction screening, and verified market valuation metrics.'}
+                  ? 'تغطية شاملة لأحدث صفقات النطاقات المليونية، ونمو نطاقات الذكاء الاصطناعي (.ai)، وتحديثات أسعار Verisign وهيئة ICANN، مع أدلة صياغة النطاقات الثنائية وقنص الدومينات الساقطة بأسلوب الإجابة المباشرة (BLUF).'
+                  : 'Comprehensive coverage of record .ai acquisitions, Verisign wholesale price trajectory, ICANN Next Round updates, two-word brandable formulas, and institutional dropcatch playbooks.'}
               </p>
+
+              {/* Breaking Domain News Ticker */}
+              <div className="max-w-4xl mx-auto pt-1">
+                <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-50 via-orange-50 to-blue-50 border border-amber-200/90 shadow-2xs flex items-center justify-between flex-wrap gap-2 text-xs">
+                  <div className="flex items-center gap-2 font-bold text-amber-900">
+                    <span className="flex h-2.5 w-2.5 relative">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-600"></span>
+                    </span>
+                    <Flame className="w-4 h-4 text-amber-600" />
+                    <span>{isAr ? 'شريط آخر المستجدات:' : 'Market Wire:'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectPost('domain-market-news-ai-sales-verisign-price-updates-2026')}
+                      className="px-2.5 py-1 rounded-lg bg-white border border-amber-200 hover:border-amber-400 font-semibold text-slate-800 text-[11px] hover:text-blue-700 transition-colors cursor-pointer"
+                    >
+                      {isAr ? '🔥 صفقات قياسية في نطاقات .ai وتحديثات Verisign' : '🔥 Record .ai Acquisitions & Verisign .com Caps'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectPost('ai-domains-investment-valuation-trends-guide')}
+                      className="px-2.5 py-1 rounded-lg bg-white border border-amber-200 hover:border-amber-400 font-semibold text-slate-800 text-[11px] hover:text-blue-700 transition-colors cursor-pointer"
+                    >
+                      {isAr ? '📈 تحليل إيرادات سجل أنغويلا ونطاقات AI' : '📈 Anguilla .ai Registry Revenue Surges Past $35M'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectPost('icann-next-round-new-gtlds-timeline-domainers-impact')}
+                      className="px-2.5 py-1 rounded-lg bg-white border border-amber-200 hover:border-amber-400 font-semibold text-slate-800 text-[11px] hover:text-blue-700 transition-colors cursor-pointer hidden sm:inline-block"
+                    >
+                      {isAr ? '🌐 مستجدات جولة ICANN القادمة للنطاقات الجديدة' : '🌐 ICANN Next Round Applicant Guidebook Milestones'}
+                    </button>
+                  </div>
+                </div>
+              </div>
 
               {/* Search Bar */}
               <div className="max-w-xl mx-auto pt-2">
@@ -915,8 +952,25 @@ export const BlogPage: React.FC<BlogPageProps> = ({
                     >
                       <div className="space-y-3">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                            {isAr ? post.category.ar : post.category.en}
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 ${
+                              post.category.en === 'Market News & Trends'
+                                ? 'bg-amber-50 text-amber-900 border-amber-300'
+                                : post.category.en === 'AI & Tech Domains'
+                                ? 'bg-purple-50 text-purple-900 border-purple-300'
+                                : post.category.en === 'Sales Reports & Liquidity'
+                                ? 'bg-emerald-50 text-emerald-900 border-emerald-300'
+                                : post.category.en === 'Domain Naming & Brand Strategy'
+                                ? 'bg-indigo-50 text-indigo-900 border-indigo-300'
+                                : 'bg-blue-50 text-blue-800 border-blue-200'
+                            }`}
+                          >
+                            {post.category.en === 'Market News & Trends' ? (
+                              <Flame className="w-3 h-3 text-amber-600" />
+                            ) : post.category.en === 'AI & Tech Domains' ? (
+                              <Sparkles className="w-3 h-3 text-purple-600" />
+                            ) : null}
+                            <span>{isAr ? post.category.ar : post.category.en}</span>
                           </span>
                           <span className="text-[11px] text-slate-400 flex items-center gap-1 font-mono">
                             <Clock className="w-3 h-3" />
