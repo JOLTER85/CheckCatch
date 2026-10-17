@@ -2487,7 +2487,12 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Explicit SEO routes for search engine crawlers (Googlebot, Bingbot)
+// Explicit SEO & AdSense routes for search engine crawlers and AdSense bots
+app.get("/ads.txt", (req, res) => {
+  res.type("text/plain");
+  res.sendFile(path.join(process.cwd(), "public", "ads.txt"));
+});
+
 app.get("/robots.txt", (req, res) => {
   res.type("text/plain");
   res.sendFile(path.join(process.cwd(), "public", "robots.txt"));

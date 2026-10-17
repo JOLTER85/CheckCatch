@@ -12,6 +12,9 @@ import {
   XCircle,
   Clock,
   Tag,
+  Search,
+  Sparkles,
+  X,
 } from 'lucide-react';
 import { FilterRules, FilterEvaluationStats, UploadedSheetInfo, SearchTargetMode } from '../types';
 import { Language, translations } from '../utils/translations';
@@ -20,6 +23,7 @@ import {
   validateDomainsAgainstRules,
   createSamplePortfolioWorkbook,
   formatSpreadsheetDate,
+  clientDecomposeWords,
 } from '../utils/spreadsheet';
 
 interface ExcelUploadAnalyzerProps {
@@ -86,6 +90,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('ALL');
   const [selectedDateFilter, setSelectedDateFilter] = useState<string>('ALL');
+  const [selectedKeywordFilter, setSelectedKeywordFilter] = useState<string>('');
   const [showDiscardedModal, setShowDiscardedModal] = useState(false);
   const [showDataPreview, setShowDataPreview] = useState(false);
   const [serverStats, setServerStats] = useState<FilterEvaluationStats | null>(null);
@@ -125,6 +130,85 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
     return Array.from(dates).filter(Boolean).sort();
   }, [sheetInfo]);
 
+  // Extract frequent words across detected domains in the uploaded spreadsheet
+  const popularKeywords = useMemo(() => {
+    if (!sheetInfo || !sheetInfo.detectedDomains || sheetInfo.detectedDomains.length === 0) {
+      return [];
+    }
+
+    const freq: Record<string, number> = {};
+    const domains = sheetInfo.detectedDomains;
+
+    const commonRoots = [
+      'ai', 'app', 'art', 'auto', 'bank', 'base', 'bay', 'best', 'bio', 'bit', 'block', 'boat',
+      'bot', 'box', 'brain', 'brand', 'build', 'buy', 'camp', 'capital', 'care', 'cash', 'cast',
+      'cell', 'chain', 'chat', 'city', 'clean', 'click', 'cloud', 'club', 'code', 'coin', 'core',
+      'craft', 'credit', 'crypto', 'cure', 'cyber', 'daily', 'dark', 'data', 'deal', 'deck',
+      'deep', 'desk', 'dev', 'doc', 'dock', 'drift', 'drive', 'drop', 'easy', 'echo', 'edge',
+      'fast', 'feed', 'file', 'fin', 'find', 'fit', 'fix', 'flex', 'flow', 'flux', 'fly', 'food',
+      'force', 'forge', 'free', 'fund', 'game', 'gate', 'gear', 'gen', 'gift', 'glow', 'gold',
+      'green', 'grid', 'group', 'guard', 'guide', 'health', 'help', 'hire', 'hold', 'home',
+      'host', 'hub', 'hunt', 'hype', 'idea', 'info', 'intel', 'key', 'lab', 'labs', 'land',
+      'law', 'lead', 'leap', 'learn', 'lens', 'life', 'light', 'line', 'link', 'live', 'loan',
+      'lock', 'logic', 'loop', 'love', 'mail', 'map', 'mark', 'market', 'match', 'max', 'med',
+      'media', 'meet', 'mega', 'mesh', 'meta', 'mind', 'mint', 'mode', 'money', 'move', 'nano',
+      'nest', 'net', 'network', 'neural', 'news', 'nexus', 'node', 'nova', 'omni', 'one', 'open',
+      'orbit', 'pack', 'page', 'park', 'pass', 'path', 'pay', 'peer', 'pick', 'pilot', 'pipe',
+      'pixel', 'plan', 'play', 'plus', 'point', 'pool', 'port', 'post', 'prime', 'pro', 'prompt',
+      'pulse', 'pure', 'push', 'quantum', 'quick', 'rank', 'rate', 'reach', 'read', 'real',
+      'rise', 'robot', 'rock', 'root', 'safe', 'scale', 'scan', 'scope', 'search', 'secure',
+      'seed', 'send', 'share', 'shift', 'ship', 'shop', 'show', 'sign', 'site', 'skill', 'smart',
+      'snap', 'soft', 'solo', 'soul', 'sound', 'space', 'spark', 'spin', 'spot', 'stack', 'star',
+      'start', 'state', 'stay', 'step', 'stock', 'store', 'stream', 'studio', 'style', 'suite',
+      'swap', 'swift', 'sync', 'synth', 'sys', 'tag', 'task', 'team', 'tech', 'time', 'token',
+      'tool', 'top', 'track', 'trade', 'trend', 'trip', 'true', 'trust', 'tune', 'turbo', 'vault',
+      'vector', 'venture', 'verse', 'view', 'villa', 'vision', 'vital', 'voice', 'vote', 'voyage',
+      'wall', 'wallet', 'ware', 'wave', 'wealth', 'web', 'well', 'wide', 'win', 'wire', 'wise',
+      'word', 'work', 'works', 'world', 'yard', 'yield', 'zero', 'zone'
+    ];
+
+    for (const d of domains) {
+      const clean = d.trim().toLowerCase().replace(/https?:\/\//i, '').replace(/^www\./i, '').split('/')[0];
+      const lastDot = clean.lastIndexOf('.');
+      const name = lastDot !== -1 ? clean.substring(0, lastDot) : clean;
+      const cleanSlug = name.replace(/[^a-z0-9]/g, '');
+      if (!cleanSlug) continue;
+
+      const domainWords = new Set<string>();
+
+      // 1. Decompose with clientDecomposeWords
+      const decomposed = clientDecomposeWords(cleanSlug);
+      if (decomposed && decomposed.length > 1) {
+        decomposed.forEach((w) => {
+          const cw = w.toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (cw.length >= 2) domainWords.add(cw);
+        });
+      }
+
+      // 2. Tokenize by dashes or dots
+      name.split(/[-_.]+/).forEach((t) => {
+        const ct = t.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (ct.length >= 2) domainWords.add(ct);
+      });
+
+      // 3. Check common root keywords occurring at beginning or end of slug
+      for (const root of commonRoots) {
+        if (cleanSlug === root || (cleanSlug.startsWith(root) && cleanSlug.length > root.length) || (cleanSlug.endsWith(root) && cleanSlug.length > root.length)) {
+          domainWords.add(root);
+        }
+      }
+
+      domainWords.forEach((word) => {
+        freq[word] = (freq[word] || 0) + 1;
+      });
+    }
+
+    return Object.entries(freq)
+      .filter(([w, count]) => w.length >= 2 && count >= 1)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, 30);
+  }, [sheetInfo]);
+
   // Domain count by type
   const typeCounts = useMemo(() => {
     if (!sheetInfo) return {};
@@ -158,9 +242,11 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
     return counts;
   }, [sheetInfo, availableDates]);
 
-  // Filtered candidate domains based on active Type and End Date filters
+  // Filtered candidate domains based on active Type, End Date, and Keyword filters
   const filteredCandidateDomains = useMemo(() => {
     if (!sheetInfo) return [];
+    const cleanKw = selectedKeywordFilter.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+
     return sheetInfo.detectedDomains.filter((d) => {
       const meta = sheetInfo.domainMetadataMap?.[d.toLowerCase()];
       const domType = meta?.domainType || (sheetInfo.selectedTypeColumn ? meta?.rawRow?.[sheetInfo.selectedTypeColumn] : '');
@@ -168,15 +254,36 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
 
       const matchesType = isTypeMatch(String(domType || ''), selectedTypeFilter);
       const matchesDate = isDateMatch(String(domDate || ''), selectedDateFilter);
-      return matchesType && matchesDate;
-    });
-  }, [sheetInfo, selectedTypeFilter, selectedDateFilter]);
 
-  // Reset server validation cache whenever rules, type filter or date filter change
+      if (!matchesType || !matchesDate) return false;
+
+      if (!cleanKw) return true;
+
+      const raw = d.trim().toLowerCase().replace(/https?:\/\//i, '').replace(/^www\./i, '').split('/')[0];
+      const lastDot = raw.lastIndexOf('.');
+      const name = lastDot !== -1 ? raw.substring(0, lastDot) : raw;
+      const cleanSlug = name.replace(/[^a-z0-9]/g, '');
+
+      // Direct slug containment (e.g. "cloudbase" contains "cloud")
+      if (cleanSlug.includes(cleanKw)) {
+        return true;
+      }
+
+      // Check decomposed words
+      const words = clientDecomposeWords(cleanSlug, cleanKw);
+      if (words.some((w) => w.toLowerCase() === cleanKw)) {
+        return true;
+      }
+
+      return false;
+    });
+  }, [sheetInfo, selectedTypeFilter, selectedDateFilter, selectedKeywordFilter]);
+
+  // Reset server validation cache whenever rules, type filter, date filter, or keyword filter change
   useEffect(() => {
     setServerStats(null);
     setServerQualified(null);
-  }, [rules, selectedTypeFilter, selectedDateFilter]);
+  }, [rules, selectedTypeFilter, selectedDateFilter, selectedKeywordFilter]);
 
   // Validate candidate domains against the master 275k English dictionary via server validation endpoint
   useEffect(() => {
@@ -186,6 +293,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
       return;
     }
 
+    const cleanKw = selectedKeywordFilter.trim();
     let cancelled = false;
     fetch('/api/validate-spreadsheet-domains', {
       method: 'POST',
@@ -193,9 +301,9 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
       body: JSON.stringify({
         rawDomains: filteredCandidateDomains,
         rules,
-        searchMode: 'niche',
-        targetKeyword: '',
-        contextTopic: selectedTypeFilter !== 'ALL' ? selectedTypeFilter : 'Portfolio Domains',
+        searchMode: cleanKw ? 'keyword' : 'niche',
+        targetKeyword: cleanKw,
+        contextTopic: selectedTypeFilter !== 'ALL' ? selectedTypeFilter : (cleanKw ? `Keyword: ${cleanKw}` : 'Portfolio Domains'),
         relaxKeywordFilters: false,
       }),
     })
@@ -218,13 +326,14 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [filteredCandidateDomains, rules, count, selectedTypeFilter, setEvaluationStats]);
+  }, [filteredCandidateDomains, rules, count, selectedTypeFilter, selectedKeywordFilter, setEvaluationStats]);
 
   // Re-calculate validation whenever sheetInfo, rules, or filtered candidates change
   const validationResult = useMemo(() => {
     if (!sheetInfo || filteredCandidateDomains.length === 0) {
       return null;
     }
+    const cleanKw = selectedKeywordFilter.trim();
     if (serverStats && serverQualified) {
       const normTlds = rules.tlds.map((t) => (t.toLowerCase().startsWith('.') ? t.toLowerCase() : `.${t.toLowerCase()}`));
       const tldStrict = normTlds.length > 0
@@ -245,14 +354,14 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
       };
     }
     const res = validateDomainsAgainstRules(filteredCandidateDomains, rules, {
-      searchMode: 'niche',
-      targetKeyword: '',
-      contextTopic: selectedTypeFilter !== 'ALL' ? selectedTypeFilter : 'Portfolio',
+      searchMode: cleanKw ? 'keyword' : 'niche',
+      targetKeyword: cleanKw,
+      contextTopic: selectedTypeFilter !== 'ALL' ? selectedTypeFilter : (cleanKw ? `Keyword: ${cleanKw}` : 'Portfolio'),
       relaxKeywordFilters: false,
     });
     res.stats.showingCount = Math.min(count, res.qualifiedDomains.length);
     return res;
-  }, [sheetInfo, filteredCandidateDomains, rules, count, selectedTypeFilter, serverStats, serverQualified]);
+  }, [sheetInfo, filteredCandidateDomains, rules, count, selectedTypeFilter, selectedKeywordFilter, serverStats, serverQualified]);
 
   // Handle file selection
   const processSelectedFile = async (file: File) => {
@@ -274,6 +383,9 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
     try {
       setServerStats(null);
       setServerQualified(null);
+      setSelectedKeywordFilter('');
+      setSelectedTypeFilter('ALL');
+      setSelectedDateFilter('ALL');
       const parsed = await parseSpreadsheetFile(file);
       setSheetInfo(parsed);
       const val = validateDomainsAgainstRules(parsed.detectedDomains, rules);
@@ -484,12 +596,13 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
 
   const handleRunAnalysis = () => {
     const candidates = validationResult?.qualifiedDomains || [];
+    const cleanKw = selectedKeywordFilter.trim();
 
     if (!candidates || candidates.length === 0) {
       onErrorToast(
         lang === 'ar'
-          ? `لم يتم العثور على أي دومينات ثنائية مطابقة للشروط في النوع [${selectedTypeFilter === 'ALL' ? 'الكل' : selectedTypeFilter}] والتاريخ [${selectedDateFilter === 'ALL' ? 'كل التواريخ' : selectedDateFilter}].`
-          : `No two-word domains matched the strict filters for Type [${selectedTypeFilter}] and Date [${selectedDateFilter}].`
+          ? `لم يتم العثور على أي دومينات ثنائية مطابقة للشروط في النوع [${selectedTypeFilter === 'ALL' ? 'الكل' : selectedTypeFilter}] والتاريخ [${selectedDateFilter === 'ALL' ? 'كل التواريخ' : selectedDateFilter}]${cleanKw ? ` والكلمة ["${cleanKw}"]` : ''}.`
+          : `No two-word domains matched the strict filters for Type [${selectedTypeFilter}], Date [${selectedDateFilter}]${cleanKw ? `, and Keyword ["${cleanKw}"]` : ''}.`
       );
       return;
     }
@@ -499,16 +612,16 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
       passedFilters: candidates.length,
       failedCount: Math.max(0, filteredCandidateDomains.length - candidates.length),
       showingCount: Math.min(count, candidates.length),
-      breakdown: { dashes: 0, numbers: 0, tlds: 0, words: 0, invalid: 0, keywordMismatch: 0 },
+      breakdown: { dashes: 0, numbers: 0, tlds: 0, words: 0, invalid: 0, keywordMismatch: 0, lengthMismatch: 0 },
       discarded: [],
     };
 
     onAnalyze(
       candidates,
-      selectedTypeFilter !== 'ALL' ? selectedTypeFilter : 'Curated Portfolio',
+      selectedTypeFilter !== 'ALL' ? selectedTypeFilter : (cleanKw ? `Keyword: ${cleanKw}` : 'Curated Portfolio'),
       effectiveStats,
-      'niche',
-      '',
+      cleanKw ? 'keyword' : 'niche',
+      cleanKw,
       false,
       sheetInfo?.domainMetadataMap
     );
@@ -749,7 +862,7 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
           <div className="flex items-center gap-2">
             <Sliders className="w-4 h-4 text-blue-600" />
             <h3 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-wide">
-              {lang === 'ar' ? 'فلاتر الدومين: نوع الدومين وتاريخ الانتهاء' : 'Selected Domain & End Date Filters'}
+              {lang === 'ar' ? 'فلاتر الدومين: نوع الدومين وتاريخ الانتهاء والكلمة' : 'Selected Domain, End Date & Keyword Filters'}
             </h3>
           </div>
           {sheetInfo && (
@@ -960,6 +1073,179 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
           )}
         </div>
 
+        {/* 3. Filter by Keyword / Word in Domain (Search & Select) */}
+        <div className="space-y-3 pt-3 border-t border-slate-200">
+          <div className="flex items-center justify-between flex-wrap gap-1">
+            <label htmlFor="input-keyword-filter" className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <Search className="w-3.5 h-3.5 text-violet-700" />
+              <span>
+                {lang === 'ar'
+                  ? 'Domain Keyword Search (بحث وتصفية بكلمة في الدومين):'
+                  : lang === 'fr'
+                  ? 'Recherche par mot dans le domaine :'
+                  : 'Search & Select Word in Domain (Keyword Filter):'}
+              </span>
+            </label>
+            <span className="text-xs text-slate-700 font-semibold">
+              {lang === 'ar'
+                ? 'اكتب كلمة يدوياً أو اختر كلمة شائعة من دومينات الملف:'
+                : lang === 'fr'
+                ? 'Tapez un mot ou choisissez un mot détecté :'
+                : 'Type a word or pick from frequent keywords in domains:'}
+            </span>
+          </div>
+
+          {/* Search Input & Select Dropdown in a responsive layout */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {/* A. Text Input for typing any word to filter */}
+            <div className="relative">
+              <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none text-slate-400">
+                <Search className="w-4 h-4 text-violet-600" />
+              </div>
+              <input
+                id="input-keyword-filter"
+                type="text"
+                value={selectedKeywordFilter}
+                onChange={(e) => {
+                  setSelectedKeywordFilter(e.target.value);
+                  setServerStats(null);
+                  setServerQualified(null);
+                }}
+                placeholder={
+                  lang === 'ar'
+                    ? 'اكتب كلمة للبحث (مثال: ai, cloud, smart, data)...'
+                    : lang === 'fr'
+                    ? 'Tapez un mot (ex : ai, cloud, smart)...'
+                    : 'Type a word to search (e.g. ai, cloud, smart)...'
+                }
+                className="w-full min-h-[44px] ps-9 pe-9 rounded-xl bg-white border border-slate-300 text-xs sm:text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all shadow-xs"
+              />
+              {selectedKeywordFilter && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedKeywordFilter('');
+                    setServerStats(null);
+                    setServerQualified(null);
+                  }}
+                  className="absolute inset-y-0 end-0 flex items-center pe-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  aria-label="Clear keyword filter"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* B. Dropdown Select for choosing from detected words */}
+            <div className="relative">
+              <select
+                id="select-suggested-keyword"
+                value={popularKeywords.some(([kw]) => kw === selectedKeywordFilter.trim().toLowerCase()) ? selectedKeywordFilter.trim().toLowerCase() : ''}
+                onChange={(e) => {
+                  setSelectedKeywordFilter(e.target.value);
+                  setServerStats(null);
+                  setServerQualified(null);
+                }}
+                className="w-full min-h-[44px] rounded-xl bg-white border border-slate-300 px-3.5 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all shadow-xs cursor-pointer"
+              >
+                <option value="">
+                  {lang === 'ar'
+                    ? '⚡ اختر كلمة شائعة من الدومينات المرفوعة...'
+                    : lang === 'fr'
+                    ? '⚡ Choisir un mot fréquent parmi les domaines...'
+                    : '⚡ Select frequent keyword from domains...'}
+                </option>
+                {popularKeywords.map(([kw, count]) => (
+                  <option key={kw} value={kw}>
+                    🏷️ {kw} ({count} {lang === 'ar' ? 'دومين' : 'domains'})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* C. Quick Clickable Keyword Badges/Pills from domains */}
+          {popularKeywords.length > 0 && (
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
+                <span className="flex items-center gap-1 font-semibold text-slate-700">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  {lang === 'ar'
+                    ? 'كلمات مقترحة سريعة من الدومينات (اضغط للفلترة المباشرة):'
+                    : lang === 'fr'
+                    ? 'Mots suggérés (cliquez pour filtrer) :'
+                    : 'Suggested words in file (click to filter):'}
+                </span>
+                {selectedKeywordFilter && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedKeywordFilter('');
+                      setServerStats(null);
+                      setServerQualified(null);
+                    }}
+                    className="text-violet-700 hover:underline font-bold text-[11px]"
+                  >
+                    {lang === 'ar' ? 'مسح فلتر الكلمة' : 'Clear keyword'}
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                {/* Reset button badge */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedKeywordFilter('');
+                    setServerStats(null);
+                    setServerQualified(null);
+                  }}
+                  className={`min-h-[30px] px-2.5 py-1 rounded-lg text-xs font-bold transition-all border ${
+                    !selectedKeywordFilter
+                      ? 'bg-violet-800 text-white border-violet-900 shadow-xs'
+                      : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                  }`}
+                >
+                  {lang === 'ar' ? 'الكل (بدون فلتر كلمة)' : 'ALL (No keyword)'}
+                </button>
+
+                {/* Badges for top keywords */}
+                {popularKeywords.slice(0, 16).map(([kw, kwCount]) => {
+                  const isSelected = selectedKeywordFilter.trim().toLowerCase() === kw;
+                  return (
+                    <button
+                      key={kw}
+                      type="button"
+                      onClick={() => {
+                        const newVal = isSelected ? '' : kw;
+                        setSelectedKeywordFilter(newVal);
+                        setServerStats(null);
+                        setServerQualified(null);
+                      }}
+                      className={`min-h-[30px] px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 border ${
+                        isSelected
+                          ? 'bg-violet-800 text-white border-violet-950 shadow-xs scale-[1.02]'
+                          : 'bg-white text-slate-800 border-slate-300 hover:bg-violet-50 hover:border-violet-300 hover:text-violet-900'
+                      }`}
+                    >
+                      <span>{kw}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded-full font-sans font-extrabold ${
+                          isSelected
+                            ? 'bg-violet-950 text-violet-100'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        {kwCount}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Live Filter Summary message */}
         {sheetInfo && (
           <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200/80 flex items-center justify-between text-xs text-blue-900 font-medium flex-wrap gap-2">
@@ -967,22 +1253,23 @@ export const ExcelUploadAnalyzer: React.FC<ExcelUploadAnalyzerProps> = ({
               <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
               <span>
                 {lang === 'ar'
-                  ? `الفلتر المطبق: النوع [${selectedTypeFilter === 'ALL' ? 'الكل' : selectedTypeFilter}] • تاريخ الانتهاء [${selectedDateFilter === 'ALL' ? 'كل التواريخ' : selectedDateFilter}] • المتبقي للفحص: ${filteredCandidateDomains.length} دومين`
-                  : `Active Filter: Type [${selectedTypeFilter}] • End Date [${selectedDateFilter}] • Pool: ${filteredCandidateDomains.length} domain(s)`}
+                  ? `الفلتر المطبق: النوع [${selectedTypeFilter === 'ALL' ? 'الكل' : selectedTypeFilter}] • تاريخ الانتهاء [${selectedDateFilter === 'ALL' ? 'كل التواريخ' : selectedDateFilter}]${selectedKeywordFilter ? ` • الكلمة ["${selectedKeywordFilter}"]` : ''} • المتبقي للفحص: ${filteredCandidateDomains.length} دومين`
+                  : `Active Filter: Type [${selectedTypeFilter}] • End Date [${selectedDateFilter}]${selectedKeywordFilter ? ` • Keyword ["${selectedKeywordFilter}"]` : ''} • Pool: ${filteredCandidateDomains.length} domain(s)`}
               </span>
             </div>
-            {(selectedTypeFilter !== 'ALL' || selectedDateFilter !== 'ALL') && (
+            {(selectedTypeFilter !== 'ALL' || selectedDateFilter !== 'ALL' || selectedKeywordFilter) && (
               <button
                 type="button"
                 onClick={() => {
                   setSelectedTypeFilter('ALL');
                   setSelectedDateFilter('ALL');
+                  setSelectedKeywordFilter('');
                   setServerStats(null);
                   setServerQualified(null);
                 }}
                 className="text-[11px] font-bold text-blue-700 hover:underline shrink-0"
               >
-                {lang === 'ar' ? 'إعادة ضبط الفلاتر' : 'Reset All'}
+                {lang === 'ar' ? 'إعادة ضبط كل الفلاتر' : 'Reset All'}
               </button>
             )}
           </div>
